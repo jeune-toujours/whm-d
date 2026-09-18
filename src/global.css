@@ -1,0 +1,9 @@
+:root { font-family: 'Open Sans', sans-serif; font-synthesis: none; }
+* { box-sizing: border-box; }
+html { min-width: 320px; }
+body { margin: 0; }
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+.brand-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.brand > img { width: 28px; height: 28px; object-fit: contain; display: block; }
+:focus-visible { outline: 3px solid #b78200; outline-offset: 3px; }

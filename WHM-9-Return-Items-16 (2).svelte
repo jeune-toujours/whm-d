@@ -1,4 +1,5 @@
 <script>
+  import { ArrowRight, Check, ChevronLeft, Lock, Moon, Search, Sun, TriangleAlert, Truck, Warehouse, X } from '@lucide/svelte';
   import { tick } from 'svelte';
 
   /*
@@ -101,7 +102,7 @@
   ];
 
   const pickupWarehouse = {
-    title: 'Склад WHM — Север',
+    title: 'Склад — Север',
     address: 'Москва, Сигнальный проезд, 16',
     hours: 'Ежедневно, 09:00–20:00'
   };
@@ -378,7 +379,7 @@
         paymentState = 'processing';
         const payment = await onOpenPayment({
           amount: deliveryPrice,
-          description: 'Доставка вещей со склада WHM',
+          description: 'Доставка вещей со склада',
           returnPayload: buildPayload()
         });
 
@@ -454,16 +455,10 @@
 </script>
 
 <svelte:head>
-  <title>WHM — Возврат вещей</title>
+  <title>Возврат вещей · Клиентский интерфейс</title>
   <meta
     name="description"
-    content="Оформление частичного или полного возврата вещей из хранения WHM"
-  />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
-    rel="stylesheet"
+    content="Оформление частичного или полного возврата вещей из хранения"
   />
 </svelte:head>
 
@@ -473,8 +468,7 @@
 
   <header class="app-header">
     <button class="brand" type="button" aria-label="Закрыть оформление" onclick={requestExit}>
-      <span class="brand-mark" aria-hidden="true"><img src="/bee.svg" alt="" /></span>
-      <span class="brand-name">WHM</span>
+      <span class="system-label">Клиентский интерфейс</span>
     </button>
 
     <div class="header-actions">
@@ -489,14 +483,9 @@
         onclick={toggleTheme}
       >
         {#if isDark}
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="3.4"></circle>
-            <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"></path>
-          </svg>
+          <Sun aria-hidden="true" />
         {:else}
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20.5 15.1A8.4 8.4 0 0 1 8.9 3.5 8.6 8.6 0 1 0 20.5 15.1Z"></path>
-          </svg>
+          <Moon aria-hidden="true" />
         {/if}
       </button>
     </div>
@@ -512,7 +501,7 @@
             class:complete={index < currentStep}
             aria-current={index === currentStep ? 'step' : undefined}
           >
-            <span>{index < currentStep ? '✓' : index + 1}</span>
+            <span>{#if index < currentStep}<Check size={14} aria-hidden="true" />{:else}{index + 1}{/if}</span>
             <strong>{step.label}</strong>
           </div>
         {/each}
@@ -524,7 +513,7 @@
         <section class="success-layout screen-enter">
           <div class="success-card">
             <div class="success-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></svg>
+              <Check aria-hidden="true" />
             </div>
             <div class="success-copy">
               <h1>Заявка на возврат создана</h1>
@@ -579,7 +568,7 @@
             </div>
 
             <div class="info-banner">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16.5v.01M12 3 2.8 20h18.4Z"></path></svg>
+              <TriangleAlert aria-hidden="true" />
               <p>Стоимость хранения изменится после фактической передачи вещей.</p>
             </div>
 
@@ -590,7 +579,7 @@
                 onclick={() => onNavigateToOrder({ ...buildPayload(), orderId })}
               >
                 <span>Перейти к заказу</span>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                <ArrowRight aria-hidden="true" />
               </button>
               <button
                 class="secondary-button"
@@ -605,7 +594,7 @@
           <section class="content-panel">
             <div class="panel-top">
               <button class="back-button" type="button" aria-label="Назад" onclick={goBack}>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+                <ChevronLeft aria-hidden="true" />
               </button>
               <span class="form-progress">{currentStep + 1} / {steps.length}</span>
             </div>
@@ -617,7 +606,7 @@
               </div>
 
               <label class="search-field">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+                <Search aria-hidden="true" />
                 <input
                   type="search"
                   placeholder="Поиск по названию или номеру"
@@ -652,7 +641,7 @@
                         onchange={() => toggleUnit(unit.id)}
                       />
                       <span class="custom-check" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></svg>
+                        <Check aria-hidden="true" />
                       </span>
                       <span class="media-placeholder item-placeholder" role="img" aria-label="Плейсхолдер фотографии">
                         <span class="placeholder-glyph" aria-hidden="true"></span>
@@ -667,7 +656,7 @@
                         <span class="unit-caption">{unit.id} · хранится с {unit.storedSince}</span>
                         {#if unit.lockReason}
                           <span class="locked-note">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5Z"></path></svg>
+                            <Lock aria-hidden="true" />
                             {unit.lockReason}
                           </span>
                         {/if}
@@ -683,7 +672,7 @@
 
               {#if selectedIds.length === selectableUnits.length && selectableUnits.length > 1}
                 <div class="warning-banner">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16.5v.01M12 3 2.8 20h18.4Z"></path></svg>
+                  <TriangleAlert aria-hidden="true" />
                   <p>После завершения возврата у вас не останется доступных вещей на хранении.</p>
                 </div>
               {/if}
@@ -695,7 +684,7 @@
               <div class="panel-actions">
                 <button class="primary-button" type="button" onclick={goToMethod}>
                   <span>Продолжить</span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                  <ArrowRight aria-hidden="true" />
                 </button>
               </div>
 
@@ -706,7 +695,7 @@
                 </div>
                 <button class="primary-button compact-button" type="button" onclick={goToMethod}>
                   <span>Продолжить</span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                  <ArrowRight aria-hidden="true" />
                 </button>
               </div>
 
@@ -720,7 +709,7 @@
                 <article class="method-card" class:selected={method === 'courier'}>
                   <button class="method-select" type="button" onclick={() => chooseMethod('courier')}>
                     <span class="method-icon">
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v10H3ZM14 10h4l3 3v4h-7ZM6 17a2 2 0 1 0 4 0M16 17a2 2 0 1 0 4 0"></path></svg>
+                      <Truck aria-hidden="true" />
                     </span>
                     <span>
                       <strong>Доставка курьером</strong>
@@ -737,7 +726,7 @@
                 <article class="method-card" class:selected={method === 'pickup'}>
                   <button class="method-select" type="button" onclick={() => chooseMethod('pickup')}>
                     <span class="method-icon">
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10 12 4l8 6v10H4ZM8 20v-6h8v6"></path></svg>
+                      <Warehouse aria-hidden="true" />
                     </span>
                     <span>
                       <strong>Заберу со склада</strong>
@@ -759,7 +748,7 @@
               <div class="panel-actions">
                 <button class="primary-button" type="button" onclick={goToSchedule}>
                   <span>Продолжить</span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                  <ArrowRight aria-hidden="true" />
                 </button>
               </div>
 
@@ -864,7 +853,7 @@
                 <div class="pickup-layout">
                   <div class="warehouse-card">
                     <span class="method-icon large">
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10 12 4l8 6v10H4ZM8 20v-6h8v6"></path></svg>
+                      <Warehouse aria-hidden="true" />
                     </span>
                     <div>
                       <h2>{pickupWarehouse.title}</h2>
@@ -897,7 +886,7 @@
                   </div>
 
                   <div class="info-banner">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16.5v.01M12 3 2.8 20h18.4Z"></path></svg>
+                    <TriangleAlert aria-hidden="true" />
                     <p>Для получения понадобится документ и номер заявки.</p>
                   </div>
                 </div>
@@ -914,7 +903,7 @@
                     <span>Рассчитываем</span>
                   {:else}
                     <span>Продолжить</span>
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                    <ArrowRight aria-hidden="true" />
                   {/if}
                 </button>
               </div>
@@ -969,7 +958,7 @@
                     <div class="future-line"><span>После завершения возврата</span><strong>{formatMoney(futureMonthly)}/мес.</strong></div>
                   </div>
                   <div class="info-banner compact-info">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16.5v.01M12 3 2.8 20h18.4Z"></path></svg>
+                    <TriangleAlert aria-hidden="true" />
                     <p>Стоимость хранения изменится после фактической передачи вещей.</p>
                   </div>
                 </article>
@@ -994,7 +983,7 @@
                     <span>Создаём заявку</span>
                   {:else}
                     <span>{demoMode ? 'Оформить возврат (демо)' : deliveryPrice > 0 ? 'Оплатить ' + formatMoney(deliveryPrice) : 'Подтвердить возврат'}</span>
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                    <ArrowRight aria-hidden="true" />
                   {/if}
                 </button>
               </div>
@@ -1016,12 +1005,12 @@
         onclick={(event) => event.stopPropagation()}
         onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (infoModal = '')}>×</button>
+        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (infoModal = '')}><X aria-hidden="true" /></button>
         {#if infoModal !== 'terms'}<span class="method-icon large">
           {#if infoModal === 'courier'}
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v10H3ZM14 10h4l3 3v4h-7ZM6 17a2 2 0 1 0 4 0M16 17a2 2 0 1 0 4 0"></path></svg>
+            <Truck aria-hidden="true" />
           {:else}
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10 12 4l8 6v10H4ZM8 20v-6h8v6"></path></svg>
+            <Warehouse aria-hidden="true" />
           {/if}
         </span>{/if}
         <h2 id="method-modal-title">{infoModal === 'terms' ? 'Условия возврата и доставки' : infoModal === 'courier' ? 'Доставка курьером' : 'Получение со склада'}</h2>
@@ -1058,7 +1047,7 @@
         onclick={(event) => event.stopPropagation()}
         onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (itemPreview = null)}>×</button>
+        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (itemPreview = null)}><X aria-hidden="true" /></button>
         <div class="media-placeholder modal-placeholder" role="img" aria-label="Плейсхолдер фотографии">
           <span class="placeholder-glyph" aria-hidden="true"></span>
           <span class="placeholder-label">Фото</span>
@@ -1090,7 +1079,7 @@
         onclick={(event) => event.stopPropagation()}
         onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (exitConfirm = false)}>×</button>
+        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (exitConfirm = false)}><X aria-hidden="true" /></button>
         <h2 id="exit-modal-title">Прервать оформление?</h2>
         <p>Вы можете сохранить выбранные вещи и продолжить позже.</p>
         <div class="modal-actions">
@@ -1124,7 +1113,7 @@
 
   :global(body) {
     margin: 0;
-    font-family: "Open Sans", sans-serif;
+    font-family: 'Open Sans', sans-serif;
   }
 
   :global(button),
@@ -1132,7 +1121,7 @@
   :global(select),
   :global(textarea) {
     font: inherit;
-    font-family: "Open Sans", sans-serif;
+    font-family: 'Open Sans', sans-serif;
   }
 
   :global(button) {
@@ -1160,7 +1149,7 @@
     overflow-x: hidden;
     background: var(--color-base-100);
     color: var(--color-base-content);
-    font-family: "Open Sans", sans-serif;
+    font-family: 'Open Sans', sans-serif;
     font-size: var(--type-body);
     line-height: 1.5;
     transition: background-color 200ms ease, color 200ms ease;
@@ -1276,36 +1265,6 @@
     cursor: pointer;
   }
 
-  .brand-mark {
-    position: relative;
-    width: 1.9rem;
-    height: 1.9rem;
-    display: inline-grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 0.18rem;
-    transform: rotate(-8deg);
-  }
-
-  .brand-mark span {
-    display: block;
-    border-radius: 0.18rem;
-    background: var(--color-primary);
-  }
-
-  .brand-mark span:nth-child(3) {
-    grid-column: 1 / 3;
-  }
-
-  .brand-mark span:nth-child(2) {
-    background: var(--color-secondary);
-  }
-
-  .brand-name {
-    font-weight: 800;
-    letter-spacing: 0.13em;
-  }
-
   .header-actions {
     gap: 0.65rem;
   }
@@ -1346,8 +1305,8 @@
     transform: scale(0.96);
   }
 
-  .theme-toggle svg,
-  .back-button svg {
+  .theme-toggle :global(svg),
+  .back-button :global(svg) {
     width: 1.2rem;
     height: 1.2rem;
     fill: none;
@@ -1490,7 +1449,7 @@
     box-shadow: 0 0 0 3px var(--primary-faint);
   }
 
-  .search-field svg {
+  .search-field :global(svg) {
     width: 1.1rem;
     flex: 0 0 auto;
     fill: none;
@@ -1647,7 +1606,7 @@
     color: var(--color-primary-content);
   }
 
-  .custom-check svg {
+  .custom-check :global(svg) {
     width: 1rem;
     fill: none;
     stroke: currentColor;
@@ -1660,7 +1619,7 @@
     background: var(--color-primary);
   }
 
-  .storage-card.selected .custom-check svg {
+  .storage-card.selected .custom-check :global(svg) {
     opacity: 1;
   }
 
@@ -1776,7 +1735,7 @@
     font-weight: 700;
   }
 
-  .locked-note svg {
+  .locked-note :global(svg) {
     width: 0.9rem;
     fill: none;
     stroke: currentColor;
@@ -1804,8 +1763,8 @@
     background: var(--primary-faint);
   }
 
-  .warning-banner svg,
-  .info-banner svg {
+  .warning-banner :global(svg),
+  .info-banner :global(svg) {
     width: 1.15rem;
     flex: 0 0 auto;
     margin-top: 0.12rem;
@@ -1872,7 +1831,7 @@
     box-shadow: none;
   }
 
-  .primary-button svg {
+  .primary-button :global(svg) {
     width: 1.25rem;
     height: 1.25rem;
     flex: 0 0 auto;
@@ -1980,7 +1939,7 @@
     height: 3.6rem;
   }
 
-  .method-icon svg {
+  .method-icon :global(svg) {
     width: 1.55rem;
     fill: none;
     stroke: var(--color-base-content);
@@ -2414,7 +2373,7 @@
     color: var(--color-success-content);
   }
 
-  .success-icon svg {
+  .success-icon :global(svg) {
     width: 2.1rem;
     fill: none;
     stroke: currentColor;
@@ -2785,10 +2744,6 @@
       padding: 0 1rem;
     }
 
-    .brand-name {
-      font-size: 0.9rem;
-    }
-
     .close-button {
       display: none;
     }
@@ -2965,9 +2920,6 @@
   .whm-app button,
   .whm-app input,
   .whm-app textarea,
-  .brand-name {
-    font-size: var(--type-body);
-  }
 
   .whm-app .form-progress,
   .whm-app .placeholder-label,
@@ -3005,7 +2957,6 @@
     }
   }
 
-  .brand-mark { display: inline-flex !important; align-items: center; justify-content: center; transform: none !important; font-size: 1.5rem; line-height: 1; }
-  .brand-mark.large { font-size: 2.4rem; }
-  .brand-mark.tiny { font-size: 1rem; }
+
+
 </style>

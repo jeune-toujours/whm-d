@@ -1,4 +1,5 @@
 <script>
+  import { ArrowRight, ChevronRight, CircleHelp, Moon, RefreshCw, Search, Sun, TriangleAlert, User, Warehouse } from '@lucide/svelte';
   import { tick } from 'svelte';
 
   /*
@@ -217,14 +218,8 @@
 </script>
 
 <svelte:head>
-  <title>WHM — Мои вещи</title>
+  <title>Мои вещи · Клиентский интерфейс</title>
   <meta name="description" content="Дашборд клиента: вещи на хранении, статусы и стоимость" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
-    rel="stylesheet"
-  />
 </svelte:head>
 
 <div class="whm-app" data-theme={theme}>
@@ -232,14 +227,13 @@
   <div class="ambient ambient-two"></div>
 
   <header class="app-header">
-    <div class="brand" aria-label="WHM">
-      <span class="brand-mark" aria-hidden="true"><img src="/bee.svg" alt="" /></span>
-      <span class="brand-name">WHM</span>
+    <div class="brand" aria-label="Клиентский интерфейс">
+      <span class="system-label">Клиентский интерфейс</span>
     </div>
 
     <div class="header-actions">
       <button class="icon-button" type="button" aria-label="Поддержка" onclick={onOpenSupport}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19v-2M12 17a3 3 0 0 0 1.6-5.6c-.9-.6-1.6-1-1.6-2M12 7h.01"></path><circle cx="12" cy="12" r="9"></circle></svg>
+        <CircleHelp aria-hidden="true" />
       </button>
       <button
         class="icon-button"
@@ -248,18 +242,13 @@
         onclick={toggleTheme}
       >
         {#if isDark}
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="3.4"></circle>
-            <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"></path>
-          </svg>
+          <Sun aria-hidden="true" />
         {:else}
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20.5 15.1A8.4 8.4 0 0 1 8.9 3.5 8.6 8.6 0 1 0 20.5 15.1Z"></path>
-          </svg>
+          <Moon aria-hidden="true" />
         {/if}
       </button>
       <button class="icon-button" type="button" aria-label="Профиль и биллинг" onclick={onOpenProfile}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>
+        <User aria-hidden="true" />
       </button>
     </div>
   </header>
@@ -272,7 +261,7 @@
 
     {#if loadError}
       <div class="error-banner" role="alert">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16.5v.01M12 3 2.8 20h18.4Z"></path></svg>
+        <TriangleAlert aria-hidden="true" />
         <span>Не удалось загрузить данные.</span>
         <button class="link-button" type="button" onclick={fetchDashboard}>Повторить</button>
       </div>
@@ -288,13 +277,13 @@
     {:else if !hasUnits && !loadError}
       <section class="empty-state">
         <div class="empty-illustration" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 10 12 4l8 6v10H4ZM8 20v-6h8v6"></path></svg>
+          <Warehouse aria-hidden="true" />
         </div>
         <h2>У вас пока нет вещей на хранении</h2>
         <p>Сдайте вещи на хранение — мы заберём их и разместим на складе.</p>
         <button class="primary-button" type="button" onclick={onGoToHandover}>
           <span>Сдать вещи</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          <ArrowRight aria-hidden="true" />
         </button>
       </section>
     {:else}
@@ -317,9 +306,7 @@
           disabled={refreshing}
           onclick={refresh}
         >
-          <svg class:spinning={refreshing} viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6"></path>
-          </svg>
+          <RefreshCw class={refreshing ? 'spinning' : ''} aria-hidden="true" />
         </button>
       </section>
 
@@ -330,7 +317,7 @@
               <span class="active-order-type">{order.type === 'return' ? 'Возврат' : 'Сдача'}</span>
               <span class="active-order-stage">{order.stage}</span>
               <span class="active-order-next">{order.nextEventLabel}</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+              <ChevronRight aria-hidden="true" />
             </button>
           {/each}
           {#if overflowActiveOrdersCount > 0}
@@ -344,7 +331,7 @@
       <div class="action-row">
         <button class="primary-button" type="button" onclick={onGoToHandover}>
           <span>Сдать вещи</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          <ArrowRight aria-hidden="true" />
         </button>
         <button
           class="secondary-button"
@@ -360,7 +347,7 @@
       {#if showSearchControls}
         <div class="filter-row">
           <label class="search-field">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <Search aria-hidden="true" />
             <input
               type="search"
               placeholder="Поиск по названию или номеру"
@@ -423,13 +410,13 @@
 
   :global(body) {
     margin: 0;
-    font-family: "Open Sans", sans-serif;
+    font-family: 'Open Sans', sans-serif;
   }
 
   :global(button),
   :global(input) {
     font: inherit;
-    font-family: "Open Sans", sans-serif;
+    font-family: 'Open Sans', sans-serif;
   }
 
   :global(button) {
@@ -457,7 +444,7 @@
     overflow-x: hidden;
     background: var(--color-base-100);
     color: var(--color-base-content);
-    font-family: "Open Sans", sans-serif;
+    font-family: 'Open Sans', sans-serif;
     font-size: var(--type-body);
     line-height: 1.5;
     transition: background-color 200ms ease, color 200ms ease;
@@ -535,36 +522,6 @@
     gap: 0.7rem;
   }
 
-  .brand-mark {
-    position: relative;
-    width: 1.9rem;
-    height: 1.9rem;
-    display: inline-grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 0.18rem;
-    transform: rotate(-8deg);
-  }
-
-  .brand-mark span {
-    display: block;
-    border-radius: 0.18rem;
-    background: var(--color-primary);
-  }
-
-  .brand-mark span:nth-child(3) {
-    grid-column: 1 / 3;
-  }
-
-  .brand-mark span:nth-child(2) {
-    background: var(--color-secondary);
-  }
-
-  .brand-name {
-    font-weight: 800;
-    letter-spacing: 0.13em;
-  }
-
   .header-actions {
     display: flex;
     align-items: center;
@@ -591,7 +548,7 @@
     background: var(--color-base-200);
   }
 
-  .icon-button svg {
+  .icon-button :global(svg) {
     width: 1.2rem;
     height: 1.2rem;
     fill: none;
@@ -634,7 +591,7 @@
     color: var(--color-base-content);
   }
 
-  .error-banner svg {
+  .error-banner :global(svg) {
     width: 1.15rem;
     flex: 0 0 auto;
     fill: none;
@@ -723,7 +680,7 @@
     cursor: not-allowed;
   }
 
-  .refresh-button svg {
+  .refresh-button :global(svg) {
     width: 1.1rem;
     fill: none;
     stroke: currentColor;
@@ -732,7 +689,7 @@
     stroke-linejoin: round;
   }
 
-  .refresh-button svg.spinning {
+  .refresh-button :global(svg.spinning) {
     animation: spin 900ms linear infinite;
   }
 
@@ -775,7 +732,7 @@
     font-size: var(--type-caption);
   }
 
-  .active-order-banner svg {
+  .active-order-banner :global(svg) {
     width: 1.1rem;
     fill: none;
     stroke: currentColor;
@@ -824,7 +781,7 @@
     transform: translateY(-1px);
   }
 
-  .primary-button svg {
+  .primary-button :global(svg) {
     width: 1.1rem;
     fill: none;
     stroke: currentColor;
@@ -866,7 +823,7 @@
     border-color: var(--color-primary);
   }
 
-  .search-field svg {
+  .search-field :global(svg) {
     width: 1.05rem;
     flex: 0 0 auto;
     fill: none;
@@ -1060,7 +1017,7 @@
     color: var(--color-base-content);
   }
 
-  .empty-illustration svg {
+  .empty-illustration :global(svg) {
     width: 1.7rem;
     fill: none;
     stroke: currentColor;
@@ -1144,7 +1101,6 @@
     }
   }
 
-  .brand-mark { display: inline-flex !important; align-items: center; justify-content: center; transform: none !important; font-size: 1.5rem; line-height: 1; }
-  .brand-mark.large { font-size: 2.4rem; }
-  .brand-mark.tiny { font-size: 1rem; }
+
+
 </style>

@@ -1,4 +1,5 @@
 <script>
+  import { Check, ChevronLeft, Monitor, Moon, Sun, TriangleAlert, Warehouse, X } from '@lucide/svelte';
   /*
    * WHM-12 — Поддержка клиента
    *
@@ -412,14 +413,8 @@
 </script>
 
 <svelte:head>
-  <title>WHM — Поддержка клиента</title>
+  <title>Поддержка клиента · Клиентский интерфейс</title>
   <meta name="description" content="Обращения по вещам на хранении и техническим проблемам" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
-    rel="stylesheet"
-  />
 </svelte:head>
 
 <div class="whm-app" data-theme={theme}>
@@ -428,11 +423,10 @@
 
   <header class="app-header">
     <button class="back-button" type="button" aria-label="Назад" onclick={goBack}>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+      <ChevronLeft aria-hidden="true" />
     </button>
-    <div class="brand" aria-label="WHM">
-      <span class="brand-mark" aria-hidden="true"><img src="/bee.svg" alt="" /></span>
-      <span class="brand-name">WHM</span>
+    <div class="brand" aria-label="Клиентский интерфейс">
+      <span class="system-label">Клиентский интерфейс</span>
     </div>
     <button
       class="icon-button"
@@ -441,12 +435,9 @@
       onclick={toggleTheme}
     >
       {#if isDark}
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="3.4"></circle>
-          <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"></path>
-        </svg>
+        <Sun aria-hidden="true" />
       {:else}
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.1A8.4 8.4 0 0 1 8.9 3.5 8.6 8.6 0 1 0 20.5 15.1Z"></path></svg>
+        <Moon aria-hidden="true" />
       {/if}
     </button>
   </header>
@@ -461,14 +452,14 @@
       <div class="type-grid">
         <button class="type-card" type="button" onclick={() => selectType('incident')}>
           <span class="type-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10 12 4l8 6v10H4ZM8 20v-6h8v6"></path></svg>
+            <Warehouse aria-hidden="true" />
           </span>
           <strong>Проблема с вещью на хранении</strong>
           <span class="type-caption">Порча, брак или ошибка при сдаче/возврате</span>
         </button>
         <button class="type-card" type="button" onclick={() => selectType('technical')}>
           <span class="type-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H4Z"></path><path d="M9 20h6M12 16v4"></path></svg>
+            <Monitor aria-hidden="true" />
           </span>
           <strong>Проблема с приложением</strong>
           <span class="type-caption">Баг, сбой или зависание в приложении</span>
@@ -507,7 +498,7 @@
             {#each incidentAttachments as file, index}
               <span class="attachment-chip">
                 {file.name}
-                <button type="button" aria-label="Удалить файл" onclick={() => removeIncidentFile(index)}>×</button>
+                <button type="button" aria-label="Удалить файл" onclick={() => removeIncidentFile(index)}><X aria-hidden="true" /></button>
               </span>
             {/each}
           </div>
@@ -551,7 +542,7 @@
             {#each technicalAttachments as file, index}
               <span class="attachment-chip">
                 {file.name}
-                <button type="button" aria-label="Удалить файл" onclick={() => removeTechnicalFile(index)}>×</button>
+                <button type="button" aria-label="Удалить файл" onclick={() => removeTechnicalFile(index)}><X aria-hidden="true" /></button>
               </span>
             {/each}
           </div>
@@ -574,7 +565,7 @@
     {:else if screen === 'confirmation'}
       <div class="confirmation-card">
         <div class="confirmation-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></svg>
+          <Check aria-hidden="true" />
         </div>
         <h1>Обращение отправлено</h1>
         <p>Номер обращения</p>
@@ -596,7 +587,7 @@
 
       {#if ticketsError}
         <div class="error-banner" role="alert">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16.5v.01M12 3 2.8 20h18.4Z"></path></svg>
+          <TriangleAlert aria-hidden="true" />
           <span>Не удалось загрузить обращения.</span>
           <button class="link-button" type="button" onclick={openList}>Повторить</button>
         </div>
@@ -673,8 +664,8 @@
 <style>
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(html) { min-width: 320px; background: var(--color-base-100, white); }
-  :global(body) { margin: 0; font-family: "Open Sans", sans-serif; }
-  :global(button), :global(input), :global(select), :global(textarea) { font: inherit; font-family: "Open Sans", sans-serif; }
+  :global(body) { margin: 0; font-family: 'Open Sans', sans-serif; }
+  :global(button), :global(input), :global(select), :global(textarea) { font: inherit; font-family: 'Open Sans', sans-serif; }
   :global(button) { -webkit-tap-highlight-color: transparent; }
 
   .whm-app {
@@ -697,7 +688,7 @@
     overflow-x: hidden;
     background: var(--color-base-100);
     color: var(--color-base-content);
-    font-family: "Open Sans", sans-serif;
+    font-family: 'Open Sans', sans-serif;
     font-size: var(--type-body);
     line-height: 1.5;
     transition: background-color 200ms ease, color 200ms ease;
@@ -753,11 +744,10 @@
   }
 
   .brand { display: flex; align-items: center; gap: 0.6rem; }
-  .brand-mark { position: relative; width: 1.7rem; height: 1.7rem; display: inline-grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 0.16rem; transform: rotate(-8deg); }
-  .brand-mark span { display: block; border-radius: 0.16rem; background: var(--color-primary); }
-  .brand-mark span:nth-child(3) { grid-column: 1 / 3; }
-  .brand-mark span:nth-child(2) { background: var(--color-secondary); }
-  .brand-name { font-weight: 800; letter-spacing: 0.12em; }
+
+
+
+
 
   .back-button, .icon-button {
     width: 2.6rem; height: 2.6rem; display: grid; place-items: center; flex: 0 0 auto;
@@ -768,7 +758,7 @@
   }
   .back-button:hover, .icon-button:hover { border-color: var(--color-primary); background: var(--color-base-200); }
   .back-button:active, .icon-button:active { transform: scale(0.96); }
-  .back-button svg, .icon-button svg { width: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .back-button :global(svg), .icon-button :global(svg) { width: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
   .page-shell { width: min(calc(100% - (var(--page-gutter) * 2)), var(--content-max)); margin: 0 auto 3rem; }
   .page-heading { margin-top: 1.25rem; }
@@ -786,7 +776,7 @@
     width: 2.6rem; height: 2.6rem; display: grid; place-items: center; border-radius: var(--radius-field);
     background: var(--primary-faint); color: var(--color-base-content);
   }
-  .type-icon svg { width: 1.3rem; fill: none; stroke: currentColor; stroke-width: 1.7; }
+  .type-icon :global(svg) { width: 1.3rem; fill: none; stroke: currentColor; stroke-width: 1.7; }
   .type-card strong { font-size: var(--type-heading); }
   .type-caption { color: var(--soft-content); font-size: var(--type-caption); }
 
@@ -850,7 +840,7 @@
     margin-top: 1.25rem; padding: 0.85rem 1rem; display: flex; align-items: center; gap: 0.65rem;
     border-radius: var(--radius-field); background: color-mix(in oklab, var(--color-error) 12%, var(--color-base-100));
   }
-  .error-banner svg { width: 1.1rem; fill: none; stroke: var(--color-error); stroke-width: 1.8; flex: 0 0 auto; }
+  .error-banner :global(svg) { width: 1.1rem; fill: none; stroke: var(--color-error); stroke-width: 1.8; flex: 0 0 auto; }
   .error-banner span { font-size: var(--type-caption); }
   .error-banner .link-button { margin-left: auto; }
 
@@ -862,7 +852,7 @@
     width: 3.5rem; height: 3.5rem; display: grid; place-items: center; border-radius: 50%;
     background: var(--color-success); color: white; margin-bottom: 0.5rem;
   }
-  .confirmation-icon svg { width: 1.7rem; fill: none; stroke: currentColor; stroke-width: 2.4; }
+  .confirmation-icon :global(svg) { width: 1.7rem; fill: none; stroke: currentColor; stroke-width: 2.4; }
   .confirmation-card h1 { margin: 0; font-size: var(--type-h1); }
   .confirmation-card p { margin: 0; color: var(--soft-content); font-size: var(--type-caption); }
   .ticket-id { font-size: var(--type-heading); font-weight: 800; }
@@ -920,7 +910,6 @@
     * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 
-  .brand-mark { display: inline-flex !important; align-items: center; justify-content: center; transform: none !important; font-size: 1.5rem; line-height: 1; }
-  .brand-mark.large { font-size: 2.4rem; }
-  .brand-mark.tiny { font-size: 1rem; }
+
+
 </style>

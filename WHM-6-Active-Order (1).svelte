@@ -1,5 +1,6 @@
 <!-- Playground: replace the entire contents of App.svelte with this file. -->
 <script>
+  import { ArrowRight, Check, ChevronLeft, ChevronRight, CircleHelp, Copy, Download, MapPin, Moon, Package, Phone, RefreshCw, ShoppingBag, Sun, TriangleAlert, Truck, Warehouse, X } from '@lucide/svelte';
   import { onMount } from 'svelte';
 
   /**
@@ -30,7 +31,7 @@
     assembling: { title: 'Собираем ваш заказ', caption: 'Готовим вещи к выдаче' },
     delivering: { title: 'Курьер в пути', caption: 'Вещи едут по указанному адресу' },
     pickup_ready: { title: 'Готово к выдаче', caption: 'Вещи ждут вас на складе' },
-    completed: { title: 'Заказ завершён', caption: 'Спасибо, что выбрали WHM' },
+    completed: { title: 'Заказ завершён', caption: 'Все действия по заказу выполнены' },
     cancelled: { title: 'Заказ отменён', caption: 'Заявка больше не активна' }
   };
 
@@ -44,7 +45,7 @@
     visitWindow: '16:00–18:00',
     address: 'Москва, ул. Большая Дмитровка, 12',
     addressHint: 'Подъезд 2, домофон 48',
-    warehouse: 'Склад WHM · Химки',
+    warehouse: 'Склад · Химки',
     warehouseAddress: 'Коммунальный проезд, 30',
     workingHours: 'Пн–Вс, 09:00–21:00',
     courier: { name: 'Алексей', vehicle: 'Белый фургон', plate: 'А 248 МР 799' },
@@ -266,11 +267,8 @@
 </script>
 
 <svelte:head>
-  <title>WHM — Активный заказ</title>
-  <meta name="description" content="Экран отслеживания активного заказа WHM" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet" />
+  <title>Активный заказ · Клиентский интерфейс</title>
+  <meta name="description" content="Экран отслеживания активного заказа" />
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -281,17 +279,16 @@
 
   <header class="topbar">
     <button class="round-button" type="button" aria-label="Назад" onclick={onBack}>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+      <ChevronLeft aria-hidden="true" />
     </button>
     <button class="brand" type="button" aria-label="На главный экран" onclick={onHome}>
-      <span class="brand-mark" aria-hidden="true"><img src="/bee.svg" alt="" /></span>
-      <span class="brand-name">WHM</span>
+      <span class="system-label">Клиентский интерфейс</span>
     </button>
     <button class="round-button" type="button" aria-label={dark ? 'Включить светлую тему' : 'Включить тёмную тему'} onclick={toggleTheme}>
       {#if dark}
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.4"></circle><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"></path></svg>
+        <Sun aria-hidden="true" />
       {:else}
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.1A8.4 8.4 0 0 1 8.9 3.5 8.6 8.6 0 1 0 20.5 15.1Z"></path></svg>
+        <Moon aria-hidden="true" />
       {/if}
     </button>
   </header>
@@ -301,10 +298,10 @@
         <div class="hero-head">
           <button class="order-chip" type="button" onclick={copyOrderId} aria-label="Скопировать номер заказа">
             {orderTypeName()} · № {currentOrder.id}
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="1.5"></rect><path d="M5 15V5a1.5 1.5 0 0 1 1.5-1.5H15"></path></svg>
+            <Copy aria-hidden="true" />
           </button>
           <button class="refresh" type="button" onclick={loadOrder} aria-label="Обновить статус">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15-3L3 10M4 5v5h5M4 13a8.1 8.1 0 0 0 15 3l2-2M20 19v-5h-5"></path></svg>
+            <RefreshCw aria-hidden="true" />
           </button>
         </div>
         {#if copyFeedback}<span class="copy-toast" role="status">{copyFeedback}</span>{/if}
@@ -312,13 +309,13 @@
         <div class="hero-content">
           <span class="hero-icon" aria-hidden="true">
             {#if currentOrder.status === 'completed'}
-              <svg viewBox="0 0 24 24"><path d="m5 12 4.2 4L19 6.5"></path></svg>
+              <Check aria-hidden="true" />
             {:else if currentOrder.status === 'cancelled'}
-              <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+              <X aria-hidden="true" />
             {:else if currentOrder.fulfillment === 'courier'}
-              <svg viewBox="0 0 24 24"><path d="M3 7h11v10H3ZM14 10h4l3 3v4h-7ZM6 17a2 2 0 1 0 4 0M16 17a2 2 0 1 0 4 0"></path></svg>
+              <Truck aria-hidden="true" />
             {:else}
-              <svg viewBox="0 0 24 24"><path d="M4 10 12 4l8 6v10H4ZM8 20v-6h8v6"></path></svg>
+              <Warehouse aria-hidden="true" />
             {/if}
           </span>
           <div>
@@ -339,7 +336,7 @@
 
       {#if stale}
         <div class="alert" role="alert">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4M12 16h.01"></path><path d="M10.3 4.6 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.6a2 2 0 0 0-3.4 0Z"></path></svg>
+          <TriangleAlert aria-hidden="true" />
           <span>{refreshError}</span>
           <button type="button" onclick={loadOrder}>Повторить</button>
         </div>
@@ -357,9 +354,9 @@
               <span class="rail" aria-hidden="true">
                 <i>
                   {#if state === 'done'}
-                    <svg viewBox="0 0 24 24"><path d="m5 12 4.2 4L19 6.5"></path></svg>
+                    <Check aria-hidden="true" />
                   {:else if state === 'cancelled-at'}
-                    <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+                    <X aria-hidden="true" />
                   {:else}
                     <b></b>
                   {/if}
@@ -401,17 +398,17 @@
                 <span class="avatar" aria-hidden="true">{currentOrder.courier.name.charAt(0)}</span>
                 <div><strong>{currentOrder.courier.name}, ваш курьер</strong><span>{currentOrder.courier.vehicle} · {currentOrder.courier.plate}</span></div>
                 <button class="call-button" type="button" onclick={contactCourier} aria-label="Связаться с курьером">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3l1.5 4-2 1.5a14.5 14.5 0 0 0 7 7L16 14l4 1.5v3a2 2 0 0 1-2.2 2A17 17 0 0 1 3.5 6.2 2 2 0 0 1 5 4Z"></path></svg>
+                  <Phone aria-hidden="true" />
                 </button>
               </div>
               <div class="address-line">
-                <span class="pin" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"></path><circle cx="12" cy="10" r="2.1"></circle></svg></span>
+                <span class="pin" aria-hidden="true"><MapPin aria-hidden="true" /></span>
                 <div><strong>{currentOrder.address}</strong><span>{currentOrder.addressHint}</span></div>
               </div>
             </div>
           {:else}
             <div class="visit-card warehouse-card">
-              <span class="warehouse-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10 12 4l8 6v10H4ZM8 20v-6h8v6"></path></svg></span>
+              <span class="warehouse-icon" aria-hidden="true"><Warehouse aria-hidden="true" /></span>
               <div>
                 <span class="label">{isStorageOrder ? 'Передайте вещи на склад' : 'Заберите вещи со склада'}</span>
                 <strong>{currentOrder.warehouse}</strong>
@@ -430,7 +427,7 @@
           <div class="section-heading"><h2 id="storage-title">Хранение после возврата</h2></div>
           <div class="storage-impact">
             <div><span>Сейчас</span><strong>{money(currentOrder.currentMonthlyStorage)} / мес.</strong></div>
-            <span class="storage-arrow" aria-hidden="true">→</span>
+            <span class="storage-arrow" aria-hidden="true"><ArrowRight /></span>
             <div><span>После передачи вещей</span><strong>{money(currentOrder.futureMonthlyStorage)} / мес.</strong></div>
           </div>
           <p class="storage-caption">Новая стоимость начнёт действовать после фактической передачи вещей.</p>
@@ -443,21 +440,21 @@
         </div>
 
         {#if currentOrder.items.length === 0}
-          <div class="empty-items"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 7 8-4 8 4v10l-8 4-8-4Z"></path></svg><p>Состав заказа пока не сформирован.</p></div>
+          <div class="empty-items"><Package aria-hidden="true" /><p>Состав заказа пока не сформирован.</p></div>
         {:else}
           <div class="item-list">
             {#each visibleItems as item}
               <button class="item" type="button" onclick={() => onItemOpen(item)}>
                 <span class="item-icon" aria-hidden="true">
                   {#if item.icon === 'bag'}
-                    <svg viewBox="0 0 24 24"><path d="M6 8h12l1 12H5ZM9 8V6a3 3 0 0 1 6 0v2"></path></svg>
+                    <ShoppingBag aria-hidden="true" />
                   {:else}
-                    <svg viewBox="0 0 24 24"><path d="m4 7 8-4 8 4v10l-8 4-8-4Z"></path><path d="m4 7 8 4 8-4M12 11v10"></path></svg>
+                    <Package aria-hidden="true" />
                   {/if}
                 </span>
                 <span class="item-copy"><strong>{item.name}</strong><small>{item.note}</small></span>
                 <span class="item-state">{item.status}</span>
-                <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                <ChevronRight class="chevron" aria-hidden="true" />
               </button>
             {/each}
           </div>
@@ -471,13 +468,13 @@
 
       {#if currentOrder.status === 'completed' && currentOrder.documentAvailable !== false}
         <button class="document-button" type="button" onclick={downloadDocument}>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path></svg>
+          <Download aria-hidden="true" />
           Скачать акт приёма-передачи
         </button>
       {/if}
 
       <section class="need-help">
-        <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"></path><path d="M9.7 9a2.4 2.4 0 1 1 4.1 1.7c-1 .9-1.8 1.4-1.8 2.8M12 16h.01"></path></svg></span>
+        <span aria-hidden="true"><CircleHelp aria-hidden="true" /></span>
         <div><strong>Нужна помощь с заказом?</strong><p>Поддержка уже видит детали вашей заявки.</p></div>
         <button type="button" onclick={support}>Написать</button>
       </section>
@@ -499,9 +496,9 @@
     <div class="modal-backdrop" role="presentation" onclick={closeCancel}></div>
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <button class="modal-close" type="button" aria-label="Закрыть" onclick={closeCancel}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+        <X aria-hidden="true" />
       </button>
-      <span class="modal-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v4M12 16h.01"></path><path d="M10.3 4.6 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.6a2 2 0 0 0-3.4 0Z"></path></svg></span>
+      <span class="modal-icon" aria-hidden="true"><TriangleAlert aria-hidden="true" /></span>
       <h2 id="modal-title">Отменить визит?</h2>
       <p>Заявка на сдачу будет отменена целиком. Позже вы сможете оформить новый заказ.</p>
       {#if cancelError}<p class="error" role="alert">{cancelError}</p>{/if}
@@ -516,7 +513,7 @@
 <style>
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(html) { min-width: 320px; }
-  :global(body) { margin: 0; font-family: "Open Sans", sans-serif; }
+  :global(body) { margin: 0; font-family: 'Open Sans', sans-serif; }
   :global(button) { font-family: inherit; }
 
   .whm-app {
@@ -539,27 +536,27 @@
   .topbar, .page-shell { width: min(calc(100% - var(--gutter) * 2), var(--max)); margin: 0 auto; }
   .topbar { height: 4.65rem; display: grid; grid-template-columns: 2.55rem 1fr 2.55rem; align-items: center; }
   .brand { justify-self: center; display: flex; align-items: center; gap: .55rem; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; }
-  .brand-mark { width: 1.55rem; height: 1.55rem; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: .14rem; transform: rotate(-8deg); }
-  .brand-mark span { display: block; background: var(--primary); border-radius: .14rem; }
-  .brand-mark span:nth-child(2) { background: var(--secondary); }
-  .brand-mark span:last-child { grid-column: span 2; }
-  .brand-name { font-size: .92rem; font-weight: 800; letter-spacing: .13em; }
+
+
+
+
+
   .round-button { width: 2.55rem; height: 2.55rem; display: grid; place-items: center; border: 1px solid var(--border); border-radius: .75rem; background: color-mix(in oklab, var(--panel) 86%, transparent); color: var(--ink); cursor: pointer; }
-  .round-button svg, .refresh svg, .hero-icon svg, .rail svg, .visit-card svg, .item-icon svg, .chevron, .alert svg, .need-help svg, .modal-icon svg, .modal-close svg, .document-button svg, .empty-items svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-  .round-button svg { width: 1.12rem; }
+  .round-button :global(svg), .refresh :global(svg), .hero-icon :global(svg), .rail :global(svg), .visit-card :global(svg), .item-icon :global(svg), .chevron, .alert :global(svg), .need-help :global(svg), .modal-icon :global(svg), .modal-close :global(svg), .document-button :global(svg), .empty-items :global(svg) { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .round-button :global(svg) { width: 1.12rem; }
 
   .page-shell { padding: 1.05rem 0 2.5rem; }
   .hero-panel { position: relative; padding: 1.15rem; border: 1px solid var(--border); border-radius: 1.15rem; background: linear-gradient(135deg, color-mix(in oklab, var(--panel) 94%, var(--primary)), var(--panel) 55%); box-shadow: 0 12px 34px color-mix(in oklab, #000 7%, transparent); }
   .hero-head { display: flex; justify-content: space-between; align-items: center; gap: .6rem; }
   .order-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .58rem; border: 0; border-radius: 99px; background: var(--soft); color: var(--ink); font-size: .7rem; font-weight: 800; cursor: pointer; }
-  .order-chip svg { width: .8rem; }
+  .order-chip :global(svg) { width: .8rem; }
   .copy-toast { position: absolute; top: -.4rem; right: 1.1rem; padding: .2rem .55rem; border-radius: 99px; background: var(--ink); color: var(--bg); font-size: .65rem; font-weight: 800; }
   .refresh { width: 2rem; height: 2rem; display: grid; place-items: center; padding: 0; border: 0; border-radius: .55rem; background: transparent; color: var(--muted); cursor: pointer; }
   .refresh:hover { background: var(--soft); color: var(--ink); }
-  .refresh svg { width: 1rem; }
+  .refresh :global(svg) { width: 1rem; }
   .hero-content { display: grid; grid-template-columns: 3rem 1fr; gap: .85rem; align-items: start; margin-top: 1.15rem; }
   .hero-icon { width: 3rem; height: 3rem; display: grid; place-items: center; border-radius: .9rem; background: var(--primary); color: #161616; box-shadow: 0 7px 18px color-mix(in oklab, var(--primary) 28%, transparent); }
-  .hero-icon svg { width: 1.45rem; }
+  .hero-icon :global(svg) { width: 1.45rem; }
   .hero-panel h1 { margin: 0; font-size: clamp(1.55rem, 5.8vw, 2rem); line-height: 1.12; letter-spacing: -.025em; font-weight: 830; }
   .hero-description { margin: .4rem 0 0; color: var(--muted); font-size: .84rem; line-height: 1.42; }
   .progress-block { margin-top: 1.25rem; padding-top: .85rem; border-top: 1px solid var(--border); }
@@ -569,7 +566,7 @@
   .progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width .3s ease; }
 
   .alert { display: flex; align-items: flex-start; gap: .5rem; margin-top: .85rem; padding: .75rem; border: 1px solid color-mix(in oklab, var(--error) 36%, transparent); border-radius: .75rem; color: var(--error); font-size: .75rem; line-height: 1.35; }
-  .alert svg { width: 1rem; min-width: 1rem; }
+  .alert :global(svg) { width: 1rem; min-width: 1rem; }
   .alert button { margin-left: auto; padding: 0; border: 0; background: none; color: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; }
 
   .section { margin-top: 1.65rem; }
@@ -591,7 +588,7 @@
   .done .rail i { border-color: var(--primary); background: var(--primary); color: #171717; }
   .cancelled-at .rail i { border-color: var(--error); background: var(--error); color: #fff; }
   .skipped { opacity: .55; }
-  .rail svg { width: .68rem; stroke-width: 2.4; }
+  .rail :global(svg) { width: .68rem; stroke-width: 2.4; }
   .current .rail i { box-shadow: 0 0 0 4px var(--soft); }
   .step-copy { display: grid; align-content: start; gap: .1rem; padding-top: .02rem; }
   .step-copy strong { color: currentColor; font-size: .83rem; }
@@ -613,10 +610,10 @@
   .courier-line span, .address-line span, .warehouse-card span { color: var(--muted); font-size: .72rem; }
   .avatar { width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border-radius: 50%; background: var(--primary); color: #161616; font-size: .8rem; font-weight: 840; }
   .call-button { width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border: 0; border-radius: .65rem; background: var(--soft); color: var(--ink); cursor: pointer; }
-  .call-button svg { width: 1rem; }
+  .call-button :global(svg) { width: 1rem; }
   .address-line { grid-template-columns: 2.25rem 1fr; margin-top: .9rem; padding-top: .9rem; border-top: 1px solid var(--border); }
   .pin, .warehouse-icon { width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border-radius: .65rem; background: var(--soft); }
-  .pin svg, .warehouse-icon svg { width: 1.05rem; }
+  .pin :global(svg), .warehouse-icon :global(svg) { width: 1.05rem; }
   .warehouse-card { display: grid; grid-template-columns: 2.5rem 1fr; gap: .8rem; align-items: start; }
   .warehouse-icon { width: 2.5rem; height: 2.5rem; }
   .warehouse-card small { margin-top: .4rem; color: var(--ink); font-size: .7rem; font-weight: 750; }
@@ -631,7 +628,7 @@
   .storage-caption { margin: .55rem 0 0; color: var(--muted); font-size: .7rem; line-height: 1.4; }
 
   .empty-items { display: grid; place-items: center; gap: .5rem; padding: 2.2rem 1rem; border: 1px dashed var(--border); border-radius: 1rem; color: var(--faint); text-align: center; }
-  .empty-items svg { width: 2rem; }
+  .empty-items :global(svg) { width: 2rem; }
   .empty-items p { margin: 0; font-size: .78rem; }
 
   .item-list { border: 1px solid var(--border); border-radius: 1rem; background: var(--panel); overflow: hidden; }
@@ -639,7 +636,7 @@
   .item:last-child { border-bottom: 0; }
   .item:hover { background: var(--soft); }
   .item-icon { width: 2.35rem; height: 2.35rem; display: grid; place-items: center; border-radius: .65rem; background: var(--soft); }
-  .item-icon svg { width: 1.05rem; }
+  .item-icon :global(svg) { width: 1.05rem; }
   .item-copy { display: grid; gap: .08rem; min-width: 0; }
   .item-copy strong { font-size: .81rem; }
   .item-copy small { color: var(--muted); font-size: .7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -648,11 +645,11 @@
   .show-all { display: block; width: 100%; margin-top: .65rem; padding: .25rem; border: 0; background: transparent; color: var(--ink); font-weight: 780; font-size: .78rem; text-decoration: underline; text-underline-offset: .18em; cursor: pointer; }
 
   .document-button { display: flex; align-items: center; justify-content: center; gap: .55rem; width: 100%; min-height: 3rem; margin-top: 1.1rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--panel); color: var(--ink); font-weight: 780; font-size: .82rem; cursor: pointer; }
-  .document-button svg { width: 1.05rem; }
+  .document-button :global(svg) { width: 1.05rem; }
 
   .need-help { display: grid; grid-template-columns: 2.35rem 1fr auto; gap: .7rem; align-items: center; margin-top: 1.65rem; padding: .85rem; border: 1px solid var(--border); border-radius: 1rem; background: linear-gradient(110deg, var(--soft), var(--panel)); }
   .need-help > span { width: 2.35rem; height: 2.35rem; display: grid; place-items: center; border-radius: .68rem; background: var(--primary); color: #171717; }
-  .need-help svg { width: 1.1rem; }
+  .need-help :global(svg) { width: 1.1rem; }
   .need-help div { display: grid; gap: .1rem; }
   .need-help strong { font-size: .78rem; }
   .need-help p { margin: 0; color: var(--muted); font-size: .68rem; line-height: 1.3; }
@@ -669,9 +666,9 @@
   .modal-backdrop { position: fixed; z-index: 20; inset: 0; background: color-mix(in oklab, #000 50%, transparent); backdrop-filter: blur(3px); }
   .modal { position: fixed; z-index: 21; left: 50%; bottom: max(1rem, env(safe-area-inset-bottom)); width: min(calc(100% - 2rem), 30rem); transform: translateX(-50%); padding: 1.4rem; border: 1px solid var(--border); border-radius: 1.15rem; background: var(--panel); box-shadow: 0 20px 60px color-mix(in oklab, #000 30%, transparent); text-align: center; }
   .modal-close { position: absolute; top: .7rem; right: .7rem; width: 2rem; height: 2rem; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--soft); color: var(--muted); cursor: pointer; }
-  .modal-close svg { width: .85rem; }
+  .modal-close :global(svg) { width: .85rem; }
   .modal-icon { width: 2.8rem; height: 2.8rem; margin: 0 auto .7rem; display: grid; place-items: center; border-radius: 50%; background: color-mix(in oklab, var(--error) 15%, var(--panel)); color: var(--error); }
-  .modal-icon svg { width: 1.35rem; }
+  .modal-icon :global(svg) { width: 1.35rem; }
   .modal h2 { margin: 0; font-size: 1.15rem; }
   .modal p { margin: .55rem 0 0; color: var(--muted); font-size: .82rem; line-height: 1.45; }
   .modal .error { color: var(--error); font-weight: 700; }
@@ -684,7 +681,6 @@
   @media (max-width: 390px) { .item { grid-template-columns: 2.2rem minmax(0, 1fr) .9rem; } .item-state { display: none; } .storage-impact { grid-template-columns: 1fr; } .storage-impact > div:last-child { text-align: left; } .storage-arrow { transform: rotate(90deg); justify-self: start; } }
   @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
-  .brand-mark { display: inline-flex !important; align-items: center; justify-content: center; transform: none !important; font-size: 1.5rem; line-height: 1; }
-  .brand-mark.large { font-size: 2.4rem; }
-  .brand-mark.tiny { font-size: 1rem; }
+
+
 </style>

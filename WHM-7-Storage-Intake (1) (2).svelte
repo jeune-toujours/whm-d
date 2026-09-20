@@ -1,4 +1,5 @@
 <script>
+  import { Archive, ArrowRight, Check, ChevronLeft, ChevronRight, CircleHelp, Copy, MapPin, Minus, Moon, Plus, Search, Sun, User, Warehouse, X } from '@lucide/svelte';
   import { onMount } from 'svelte';
 
   /*
@@ -156,7 +157,7 @@
   ];
 
   const warehouse = {
-    name: 'Склад WHM — Север',
+    name: 'Склад — Север',
     address: 'Москва, Складочная улица, 1с18',
     hours: 'Пн–Вс, 09:00–20:00'
   };
@@ -710,7 +711,7 @@
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
       'BEGIN:VEVENT',
-      'SUMMARY:Сдать вещи на склад WHM',
+      'SUMMARY:Сдать вещи на склад',
       'LOCATION:' + warehouse.address,
       'DESCRIPTION:Номер заявки будет доступен после подтверждения.',
       'END:VEVENT',
@@ -787,12 +788,6 @@
 </script>
 
 <svelte:head>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet"
-  />
 </svelte:head>
 
 <div class="whm-app" data-theme={theme}>
@@ -808,9 +803,7 @@
         aria-label="Закрыть уведомление"
         onclick={() => (toast = null)}
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18"></path>
-        </svg>
+        <X aria-hidden="true" />
       </button>
     </div>
   {/if}
@@ -818,9 +811,8 @@
   {#if view === 'home'}
     <section class="home-screen" aria-labelledby="home-title">
       <header class="home-topbar">
-        <a class="brand" href="#home" aria-label="WHM — главная">
-          <span class="brand-mark" aria-hidden="true"><img src="/bee.svg" alt="" /></span>
-          <span>WHM</span>
+        <a class="brand" href="#home" aria-label="Клиентский интерфейс — главная">
+          <span class="system-label">Клиентский интерфейс</span>
         </a>
         <div class="topbar-actions">
           <button
@@ -831,14 +823,9 @@
             onclick={toggleTheme}
           >
             {#if isDark}
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="4"></circle>
-                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
-              </svg>
+              <Sun aria-hidden="true" />
             {:else}
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21 15.2A9 9 0 1 1 8.8 3a7 7 0 0 0 12.2 12.2z"></path>
-              </svg>
+              <Moon aria-hidden="true" />
             {/if}
           </button>
           <button type="button" class="avatar-button" aria-label="Открыть профиль">
@@ -849,7 +836,8 @@
 
       <main class="home-content">
         <section class="home-hero">
-          <div class="hero-media media-placeholder" aria-label="Курьер WHM забирает вещи">
+          <div class="hero-media media-placeholder" aria-label="Плейсхолдер изображения курьерской доставки">
+            <span class="placeholder-caption">Место для изображения</span>
             <div class="hero-copy">
               <h1 id="home-title">Ваши вещи всегда под рукой</h1>
               <p>
@@ -874,9 +862,7 @@
         <section class="home-actions" aria-label="Действия с вещами">
           <button type="button" class="primary-button home-primary" onclick={startFlow}>
             <span>Сдать вещи</span>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 12h14M13 6l6 6-6 6"></path>
-            </svg>
+            <ArrowRight aria-hidden="true" />
           </button>
           <button type="button" class="secondary-button home-secondary" disabled>
             Вернуть вещи
@@ -898,22 +884,15 @@
 
       <nav class="bottom-navigation" aria-label="Основная навигация">
         <button type="button" class="nav-item active" aria-current="page">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 11.5L12 4l9 7.5V21h-6v-6H9v6H3z"></path>
-          </svg>
+          <Warehouse aria-hidden="true" />
           <span>Главная</span>
         </button>
         <button type="button" class="nav-item">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 6h16v14H4zM8 3h8v3H8z"></path>
-          </svg>
+          <Archive aria-hidden="true" />
           <span>Мои вещи</span>
         </button>
         <button type="button" class="nav-item">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="8" r="4"></circle>
-            <path d="M4 21a8 8 0 0 1 16 0"></path>
-          </svg>
+          <User aria-hidden="true" />
           <span>Профиль</span>
         </button>
       </nav>
@@ -923,9 +902,7 @@
       <div class="success-card">
         <div class="success-media media-placeholder" aria-label="Заявка оформлена">
           <span class="success-check" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M5 12.5l4.5 4.5L19 7.5"></path>
-            </svg>
+            <Check aria-hidden="true" />
           </span>
         </div>
         <div class="success-copy">
@@ -966,9 +943,7 @@
               aria-label="Назад"
               onclick={goBack}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M19 12H5M11 6l-6 6 6 6"></path>
-              </svg>
+              <ChevronLeft aria-hidden="true" />
             </button>
           {:else}
             <span class="header-spacer"></span>
@@ -995,14 +970,9 @@
             onclick={toggleTheme}
           >
             {#if isDark}
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="4"></circle>
-                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2"></path>
-              </svg>
+              <Sun aria-hidden="true" />
             {:else}
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21 15.2A9 9 0 1 1 8.8 3a7 7 0 0 0 12.2 12.2z"></path>
-              </svg>
+              <Moon aria-hidden="true" />
             {/if}
           </button>
           <button
@@ -1011,9 +981,7 @@
             aria-label="Закрыть оформление"
             onclick={requestExit}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18"></path>
-            </svg>
+            <X aria-hidden="true" />
           </button>
         </div>
       </header>
@@ -1126,9 +1094,7 @@
                           disabled={(quantities[item.id] || 0) === 0}
                           onclick={() => changeQuantity(item.id, -1)}
                         >
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M5 12h14"></path>
-                          </svg>
+                          <Minus aria-hidden="true" />
                         </button>
                         <output aria-live="polite">{quantities[item.id] || 0}</output>
                         <button
@@ -1136,9 +1102,7 @@
                           aria-label={'Увеличить количество ' + item.title}
                           onclick={() => changeQuantity(item.id, 1)}
                         >
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M12 5v14M5 12h14"></path>
-                          </svg>
+                          <Plus aria-hidden="true" />
                         </button>
                       </div>
                     </article>
@@ -1163,9 +1127,7 @@
                           disabled={(quantities[item.id] || 0) === 0}
                           onclick={() => changeQuantity(item.id, -1)}
                         >
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M5 12h14"></path>
-                          </svg>
+                          <Minus aria-hidden="true" />
                         </button>
                         <output>{quantities[item.id] || 0}</output>
                         <button
@@ -1173,9 +1135,7 @@
                           aria-label={'Увеличить количество ' + item.title}
                           onclick={() => changeQuantity(item.id, 1)}
                         >
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M12 5v14M5 12h14"></path>
-                          </svg>
+                          <Plus aria-hidden="true" />
                         </button>
                       </div>
                     </article>
@@ -1196,9 +1156,7 @@
                         aria-label={'Удалить негабаритный предмет ' + (index + 1)}
                         onclick={() => removeOversizeItem(item.id)}
                       >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M6 6l12 12M18 6L6 18"></path>
-                        </svg>
+                        <X aria-hidden="true" />
                       </button>
                     </article>
                   {/each}
@@ -1212,17 +1170,12 @@
                       <h2>Другое — негабарит</h2>
                       <p>Рассчитаем стоимость вручную</p>
                     </div>
-                    <svg class="row-arrow" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M9 6l6 6-6 6"></path>
-                    </svg>
+                    <ChevronRight class="row-arrow" aria-hidden="true" />
                   </button>
                 </div>
                 {#if oversizeItems.length > 0}
                   <div class="info-note oversize-note">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <circle cx="12" cy="12" r="9"></circle>
-                      <path d="M12 10v6M12 7h.01"></path>
-                    </svg>
+                    <CircleHelp aria-hidden="true" />
                     <p>
                       Негабаритные предметы рассчитаем отдельно. Менеджер свяжется с вами
                       после оформления заявки.
@@ -1343,10 +1296,7 @@
                 </section>
 
                 <div class="info-note">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <path d="M12 10v6M12 7h.01"></path>
-                  </svg>
+                  <CircleHelp aria-hidden="true" />
                   <p>Страхование необязательно. Его можно не подключать и продолжить оформление.</p>
                 </div>
               </div>
@@ -1475,10 +1425,7 @@
               {/if}
 
               <div class="info-note">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9"></circle>
-                  <path d="M12 10v6M12 7h.01"></path>
-                </svg>
+                <CircleHelp aria-hidden="true" />
                 <p>Бесплатная отмена за 2 часа до визита курьера.</p>
               </div>
 
@@ -1524,10 +1471,7 @@
                 <label class="field-label" for="address-search">Новый адрес</label>
                 <div class="autocomplete">
                   <div class="input-with-icon" class:error={Boolean(addressError)}>
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <circle cx="11" cy="11" r="7"></circle>
-                      <path d="M16 16l5 5"></path>
-                    </svg>
+                    <Search aria-hidden="true" />
                     <input
                       id="address-search"
                       type="search"
@@ -1547,10 +1491,7 @@
                           aria-selected={selectedAddress === item.value}
                           onclick={() => selectAddress(item)}
                         >
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M12 21s6-5.3 6-11a6 6 0 1 0-12 0c0 5.7 6 11 6 11z"></path>
-                            <circle cx="12" cy="10" r="2"></circle>
-                          </svg>
+                          <MapPin aria-hidden="true" />
                           {item.value}
                         </button>
                       {/each}
@@ -1643,10 +1584,7 @@
                 <span class="media-label">Схема адреса · демо</span>
                 {#if selectedAddress}
                   <span class="map-pin" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M12 21s6-5.3 6-11a6 6 0 1 0-12 0c0 5.7 6 11 6 11z"></path>
-                      <circle cx="12" cy="10" r="2"></circle>
-                    </svg>
+                    <MapPin aria-hidden="true" />
                   </span>
                 {/if}
               </div>
@@ -1672,10 +1610,7 @@
               <div class="warehouse-map media-placeholder" aria-label="Схема склада в демо-контуре">
                 <span class="media-label">Схема склада · демо</span>
                 <span class="map-pin" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 21s6-5.3 6-11a6 6 0 1 0-12 0c0 5.7 6 11 6 11z"></path>
-                    <circle cx="12" cy="10" r="2"></circle>
-                  </svg>
+                  <MapPin aria-hidden="true" />
                 </span>
               </div>
 
@@ -1691,10 +1626,7 @@
                   aria-label="Скопировать адрес"
                   onclick={copyWarehouseAddress}
                 >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="8" y="8" width="12" height="12" rx="2"></rect>
-                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
-                  </svg>
+                  <Copy aria-hidden="true" />
                 </button>
               </article>
 
@@ -1708,10 +1640,7 @@
               </div>
 
               <div class="info-note">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9"></circle>
-                  <path d="M12 10v6M12 7h.01"></path>
-                </svg>
+                <CircleHelp aria-hidden="true" />
                 <p>QR-код заявки придёт на email после подтверждения.</p>
               </div>
 
@@ -1858,7 +1787,7 @@
                     <h2>Оплата</h2>
                     <p>
                       После нажатия кнопки откроется защищённая платёжная форма эквайринга.
-                      WHM не хранит данные банковской карты.
+                      Сервис не хранит данные банковской карты.
                     </p>
                   </div>
                 </section>
@@ -1867,9 +1796,7 @@
               <label class="terms-card" class:checked={acceptedTerms}>
                 <input type="checkbox" bind:checked={acceptedTerms} />
                 <span class="custom-checkbox" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M5 12.5l4.5 4.5L19 7.5"></path>
-                  </svg>
+                  <Check aria-hidden="true" />
                 </span>
                 <span>
                   Согласен с
@@ -1918,9 +1845,7 @@
             aria-label="Закрыть"
             onclick={() => (serviceInfoOpen = '')}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18"></path>
-            </svg>
+            <X aria-hidden="true" />
           </button>
         </div>
         <ol class="process-list">
@@ -1932,10 +1857,7 @@
           {/each}
         </ol>
         <div class="info-note">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"></circle>
-            <path d="M12 10v6M12 7h.01"></path>
-          </svg>
+          <CircleHelp aria-hidden="true" />
           <p>{serviceDetails[serviceInfoOpen].note}</p>
         </div>
         <button
@@ -1973,9 +1895,7 @@
             aria-label="Закрыть"
             onclick={() => (sizeGuideOpen = false)}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18"></path>
-            </svg>
+            <X aria-hidden="true" />
           </button>
         </div>
         <div class="guide-grid">
@@ -2017,9 +1937,7 @@
             aria-label="Закрыть"
             onclick={() => (oversizeOpen = false)}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18"></path>
-            </svg>
+            <X aria-hidden="true" />
           </button>
         </div>
         <label>
@@ -2262,7 +2180,7 @@
     font-size: var(--type-caption);
   }
 
-  svg {
+  :global(svg) {
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
@@ -2306,17 +2224,6 @@
     text-decoration: none;
   }
 
-  .brand-mark {
-    display: grid;
-    width: 2.5rem;
-    height: 2.5rem;
-    place-items: center;
-    border-radius: 50%;
-    background: var(--color-primary);
-    color: var(--color-primary-content);
-    font-weight: 800;
-  }
-
   .topbar-actions {
     display: flex;
     align-items: center;
@@ -2338,7 +2245,7 @@
     cursor: pointer;
   }
 
-  .icon-button svg {
+  .icon-button :global(svg) {
     width: 1.25rem;
     height: 1.25rem;
   }
@@ -2474,7 +2381,7 @@
     padding-inline: 1.25rem;
   }
 
-  .home-primary svg {
+  .home-primary :global(svg) {
     width: 1.4rem;
     height: 1.4rem;
   }
@@ -2538,7 +2445,7 @@
     cursor: pointer;
   }
 
-  .nav-item svg {
+  .nav-item :global(svg) {
     width: 1.35rem;
     height: 1.35rem;
   }
@@ -2889,7 +2796,7 @@
     cursor: pointer;
   }
 
-  .stepper button svg {
+  .stepper button :global(svg) {
     width: 1.2rem;
     height: 1.2rem;
   }
@@ -2968,7 +2875,7 @@
     cursor: pointer;
   }
 
-  .remove-item-button svg {
+  .remove-item-button :global(svg) {
     width: 1.1rem;
     height: 1.1rem;
   }
@@ -2977,7 +2884,7 @@
     margin-top: 0.15rem;
   }
 
-  .row-arrow {
+  :global(.row-arrow) {
     width: 1.25rem;
     height: 1.25rem;
   }
@@ -3276,7 +3183,7 @@
     color: var(--soft-content);
   }
 
-  .info-note svg {
+  .info-note :global(svg) {
     width: 1.25rem;
     height: 1.25rem;
   }
@@ -3444,7 +3351,7 @@
     border-color: var(--color-error);
   }
 
-  .input-with-icon svg {
+  .input-with-icon :global(svg) {
     width: 1.2rem;
     height: 1.2rem;
     margin-left: 0.8rem;
@@ -3493,7 +3400,7 @@
     background: var(--color-base-200);
   }
 
-  .suggestions svg {
+  .suggestions :global(svg) {
     width: 1.15rem;
     height: 1.15rem;
   }
@@ -3537,7 +3444,7 @@
     box-shadow: 0 0.75rem 1.5rem color-mix(in oklab, var(--color-base-content) 18%, transparent);
   }
 
-  .map-pin svg {
+  .map-pin :global(svg) {
     width: 1.7rem;
     height: 1.7rem;
   }
@@ -3697,7 +3604,7 @@
     border-radius: 0.3rem;
   }
 
-  .custom-checkbox svg {
+  .custom-checkbox :global(svg) {
     width: 1rem;
     height: 1rem;
     opacity: 0;
@@ -3709,7 +3616,7 @@
     color: var(--color-primary-content);
   }
 
-  .terms-card.checked .custom-checkbox svg {
+  .terms-card.checked .custom-checkbox :global(svg) {
     opacity: 1;
   }
 
@@ -3762,7 +3669,7 @@
     color: var(--color-success-content);
   }
 
-  .success-check svg {
+  .success-check :global(svg) {
     width: 2.8rem;
     height: 2.8rem;
     stroke-width: 2.5;
@@ -3834,7 +3741,7 @@
     cursor: pointer;
   }
 
-  .toast-close svg {
+  .toast-close :global(svg) {
     width: 1.15rem;
     height: 1.15rem;
   }
@@ -4149,15 +4056,25 @@
     }
   }
 
-  .hero-media.media-placeholder { background: #f9edc6 url('/courier.svg') right center / 56% auto no-repeat; }
-  .service-stack .service-card:nth-child(1) .service-media.media-placeholder { background: #faefd0 url('/courier.svg') center / auto 100% no-repeat; }
-  .service-stack .service-card:nth-child(2) .service-media.media-placeholder { background: #f8edcf url('/boxes.svg') center / auto 100% no-repeat; }
-  .item-media.media-placeholder, .guide-media.media-placeholder, .compact-media.media-placeholder { background: #f8edcf url('/box.svg') center / auto 80% no-repeat; }
-  .success-media.media-placeholder { background: #fff3c9; }
-  .service-media .media-label, .item-media .media-label, .guide-media .media-label { display: none; }
-  .map-placeholder.media-placeholder, .warehouse-map.media-placeholder {
-    background: repeating-linear-gradient(32deg, transparent 0 33px, #d0d4bf 34px 38px, transparent 39px 90px),
-      repeating-linear-gradient(122deg, #f0f2e9 0 42px, #e4e9dc 43px 47px, #f0f2e9 48px 105px);
+  .hero-media.media-placeholder,
+  .service-media.media-placeholder,
+  .item-media.media-placeholder,
+  .guide-media.media-placeholder,
+  .compact-media.media-placeholder,
+  .success-media.media-placeholder {
+    background: var(--color-base-200);
+    border: 1px dashed var(--color-base-300);
   }
-  .brand-mark { display: inline-flex !important; align-items: center; justify-content: center; transform: none !important; font-size: 1.5rem; line-height: 1; }
+  .placeholder-caption,
+  .service-media .media-label,
+  .item-media .media-label,
+  .guide-media .media-label {
+    display: block;
+    color: var(--soft-content);
+    font-size: var(--type-caption);
+    font-weight: 600;
+  }
+  .compact-media.media-placeholder:empty::after { content: 'Плейсхолдер'; color: var(--soft-content); font-size: 0.68rem; }
+  .map-placeholder.media-placeholder, .warehouse-map.media-placeholder { background: var(--color-base-200); border: 1px dashed var(--color-base-300); }
+
 </style>

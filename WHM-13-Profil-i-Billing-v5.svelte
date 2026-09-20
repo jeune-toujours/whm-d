@@ -1,4 +1,5 @@
 <script>
+  import { ChevronLeft, Moon, Sun, TriangleAlert, X } from '@lucide/svelte';
   /*
    * WHM-13 — Профиль и Биллинг
    *
@@ -510,20 +511,14 @@
 
   let isDark = $derived(theme === 'halloween');
   let currentPlan = $derived(demoPlans.find((plan) => plan.id === planId));
-  let fullName = $derived(`${firstName} ${lastName}`.trim() || 'Клиент WHM');
+  let fullName = $derived(`${firstName} ${lastName}`.trim() || 'Клиент');
   let editFormattedPhone = $derived(formatPhoneDigits(editPhoneDigits));
   let maskedPendingPhone = $derived(formatPhoneDigits(pendingPhoneDigits));
 </script>
 
 <svelte:head>
-  <title>WHM — Профиль и биллинг</title>
-  <meta name="description" content="Личные данные, подписка и оплата хранения WHM" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
-    rel="stylesheet"
-  />
+  <title>Профиль и биллинг · Клиентский интерфейс</title>
+  <meta name="description" content="Личные данные, подписка и оплата хранения" />
 </svelte:head>
 
 <div class="whm-app" data-theme={theme}>
@@ -532,11 +527,10 @@
 
   <header class="app-header">
     <button class="back-button" type="button" aria-label="Назад" onclick={onGoBack}>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+      <ChevronLeft aria-hidden="true" />
     </button>
-    <div class="brand" aria-label="WHM">
-      <span class="brand-mark" aria-hidden="true"><img src="/bee.svg" alt="" /></span>
-      <span class="brand-name">WHM</span>
+    <div class="brand" aria-label="Клиентский интерфейс">
+      <span class="system-label">Клиентский интерфейс</span>
     </div>
     <button
       class="icon-button"
@@ -545,12 +539,9 @@
       onclick={toggleTheme}
     >
       {#if isDark}
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="3.4"></circle>
-          <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"></path>
-        </svg>
+        <Sun aria-hidden="true" />
       {:else}
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.1A8.4 8.4 0 0 1 8.9 3.5 8.6 8.6 0 1 0 20.5 15.1Z"></path></svg>
+        <Moon aria-hidden="true" />
       {/if}
     </button>
   </header>
@@ -563,7 +554,7 @@
 
     {#if loadError}
       <div class="error-banner" role="alert">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16.5v.01M12 3 2.8 20h18.4Z"></path></svg>
+        <TriangleAlert aria-hidden="true" />
         <span>Не удалось загрузить профиль.</span>
         <button class="link-button" type="button" onclick={fetchProfile}>Повторить</button>
       </div>
@@ -703,7 +694,7 @@
         onclick={(event) => event.stopPropagation()}
         onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={closeEdit}>×</button>
+        <button class="modal-close" type="button" aria-label="Закрыть" onclick={closeEdit}><X aria-hidden="true" /></button>
 
         {#if editStep === 'form'}
           <h2 id="edit-modal-title">Изменить личные данные</h2>
@@ -779,7 +770,7 @@
         onclick={(event) => event.stopPropagation()}
         onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={closePlanModal}>×</button>
+        <button class="modal-close" type="button" aria-label="Закрыть" onclick={closePlanModal}><X aria-hidden="true" /></button>
         <h2 id="plan-modal-title">Выберите тариф</h2>
         <div class="plan-list">
           {#each demoPlans as plan}
@@ -826,9 +817,9 @@
         onclick={(event) => event.stopPropagation()}
         onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" disabled={paymentBusy} onclick={closePaymentModal}>×</button>
+        <button class="modal-close" type="button" aria-label="Закрыть" disabled={paymentBusy} onclick={closePaymentModal}><X aria-hidden="true" /></button>
         <h2 id="payment-modal-title">Способ оплаты</h2>
-        <p>В рабочей версии привязка карты откроется в защищённом интерфейсе платёжного провайдера. WHM получит только маскированный способ оплаты.</p>
+        <p>В рабочей версии привязка карты откроется в защищённом интерфейсе платёжного провайдера. Приложение получит только маскированный способ оплаты.</p>
         <p class="inline-note">В демо-контуре можно посмотреть успешный результат без ввода реквизитов и списания денег.</p>
 
         {#if cardError}
@@ -856,7 +847,7 @@
         onclick={(event) => event.stopPropagation()}
         onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (logoutConfirmOpen = false)}>×</button>
+        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (logoutConfirmOpen = false)}><X aria-hidden="true" /></button>
         <h2 id="logout-modal-title">Выйти из аккаунта?</h2>
         <p>Вы сможете войти снова по номеру телефона.</p>
         <div class="modal-actions">
@@ -878,7 +869,7 @@
         onclick={(event) => event.stopPropagation()}
         onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (deleteConfirmOpen = false)}>×</button>
+        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (deleteConfirmOpen = false)}><X aria-hidden="true" /></button>
         <h2 id="delete-modal-title">Удалить аккаунт без возможности восстановления?</h2>
         <p>Это действие необратимо. Личные данные и история будут удалены согласно регламенту.</p>
         <div class="modal-actions">
@@ -895,8 +886,8 @@
 <style>
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(html) { min-width: 320px; background: var(--color-base-100, white); }
-  :global(body) { margin: 0; font-family: "Open Sans", sans-serif; }
-  :global(button), :global(input) { font: inherit; font-family: "Open Sans", sans-serif; }
+  :global(body) { margin: 0; font-family: 'Open Sans', sans-serif; }
+  :global(button), :global(input) { font: inherit; font-family: 'Open Sans', sans-serif; }
   :global(button) { -webkit-tap-highlight-color: transparent; }
 
   .whm-app {
@@ -919,7 +910,7 @@
     overflow-x: hidden;
     background: var(--color-base-100);
     color: var(--color-base-content);
-    font-family: "Open Sans", sans-serif;
+    font-family: 'Open Sans', sans-serif;
     font-size: var(--type-body);
     line-height: 1.5;
     transition: background-color 200ms ease, color 200ms ease;
@@ -973,11 +964,10 @@
   }
 
   .brand { display: flex; align-items: center; gap: 0.6rem; }
-  .brand-mark { position: relative; width: 1.7rem; height: 1.7rem; display: inline-grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 0.16rem; transform: rotate(-8deg); }
-  .brand-mark span { display: block; border-radius: 0.16rem; background: var(--color-primary); }
-  .brand-mark span:nth-child(3) { grid-column: 1 / 3; }
-  .brand-mark span:nth-child(2) { background: var(--color-secondary); }
-  .brand-name { font-weight: 800; letter-spacing: 0.12em; }
+
+
+
+
 
   .back-button, .icon-button {
     width: 2.6rem; height: 2.6rem; display: grid; place-items: center; flex: 0 0 auto;
@@ -988,7 +978,7 @@
   }
   .back-button:hover, .icon-button:hover { border-color: var(--color-primary); background: var(--color-base-200); }
   .back-button:active, .icon-button:active { transform: scale(0.96); }
-  .back-button svg, .icon-button svg { width: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .back-button :global(svg), .icon-button :global(svg) { width: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
   .page-shell { width: min(calc(100% - (var(--page-gutter) * 2)), var(--content-max)); margin: 0 auto 3rem; }
   .page-heading { margin-top: 1.25rem; }
@@ -999,7 +989,7 @@
     margin-top: 1.25rem; padding: 0.85rem 1rem; display: flex; align-items: center; gap: 0.65rem;
     border-radius: var(--radius-field); background: color-mix(in oklab, var(--color-error) 12%, var(--color-base-100));
   }
-  .error-banner svg { width: 1.1rem; fill: none; stroke: var(--color-error); stroke-width: 1.8; flex: 0 0 auto; }
+  .error-banner :global(svg) { width: 1.1rem; fill: none; stroke: var(--color-error); stroke-width: 1.8; flex: 0 0 auto; }
   .error-banner span { font-size: var(--type-caption); }
 
   .link-button {
@@ -1159,7 +1149,6 @@
     * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 
-  .brand-mark { display: inline-flex !important; align-items: center; justify-content: center; transform: none !important; font-size: 1.5rem; line-height: 1; }
-  .brand-mark.large { font-size: 2.4rem; }
-  .brand-mark.tiny { font-size: 1rem; }
+
+
 </style>

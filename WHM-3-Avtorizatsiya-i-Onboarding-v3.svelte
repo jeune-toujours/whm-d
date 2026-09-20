@@ -1,4 +1,5 @@
 <script>
+  import { ChevronLeft, Mic, Monitor, Moon, Sun, Truck, Warehouse } from '@lucide/svelte';
   /*
    * WHM-3 — Авторизация и Онбординг
    *
@@ -374,14 +375,8 @@
 </script>
 
 <svelte:head>
-  <title>WHM — Вход и регистрация</title>
-  <meta name="description" content="Авторизация и онбординг клиента WHM" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
-    rel="stylesheet"
-  />
+  <title>Вход и регистрация · Клиентский интерфейс</title>
+  <meta name="description" content="Авторизация и онбординг клиента" />
 </svelte:head>
 
 <div class="whm-app" data-theme={theme}>
@@ -396,12 +391,9 @@
       onclick={toggleTheme}
     >
       {#if isDark}
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="3.4"></circle>
-          <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"></path>
-        </svg>
+        <Sun aria-hidden="true" />
       {:else}
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.1A8.4 8.4 0 0 1 8.9 3.5 8.6 8.6 0 1 0 20.5 15.1Z"></path></svg>
+        <Moon aria-hidden="true" />
       {/if}
     </button>
   {/if}
@@ -409,8 +401,7 @@
   <main class="page-shell">
     {#if screen === 'splash'}
       <div class="splash">
-        <span class="brand-mark large" aria-hidden="true"><img src="/bee.svg" alt="" /></span>
-        <strong class="brand-name">WHM</strong>
+        <strong class="system-label">Клиентский интерфейс</strong>
         <span class="tagline">Хранение вещей — просто и удобно</span>
         <span class="splash-spinner" aria-hidden="true"></span>
       </div>
@@ -418,7 +409,7 @@
     {:else if screen === 'welcome'}
       <div class="welcome">
         <div class="hero-glyph" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 10 12 4l8 6v10H4ZM8 20v-6h8v6"></path></svg>
+          <Warehouse aria-hidden="true" />
         </div>
         <h1>Хранение личных вещей — просто и удобно</h1>
         <div class="welcome-actions">
@@ -434,7 +425,7 @@
 
     {:else if screen === 'phone'}
       <button class="back-button" type="button" aria-label="Назад" onclick={() => (screen = 'welcome')}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+        <ChevronLeft aria-hidden="true" />
       </button>
       <div class="page-heading">
         <h1>Введите ваш номер телефона</h1>
@@ -478,7 +469,7 @@
 
     {:else if screen === 'otp'}
       <button class="back-button" type="button" aria-label="Назад" onclick={changePhoneNumber}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+        <ChevronLeft aria-hidden="true" />
       </button>
       <div class="page-heading">
         <h1>Введите код из SMS</h1>
@@ -544,11 +535,11 @@
       <div class="onboarding-slide">
         <div class="slide-glyph" aria-hidden="true">
           {#if onboardingSlides[slideIndex].glyph === 'courier'}
-            <svg viewBox="0 0 24 24"><path d="M3 7h11v10H3ZM14 10h4l3 3v4h-7ZM6 17a2 2 0 1 0 4 0M16 17a2 2 0 1 0 4 0"></path></svg>
+            <Truck aria-hidden="true" />
           {:else if onboardingSlides[slideIndex].glyph === 'warehouse'}
-            <svg viewBox="0 0 24 24"><path d="M4 10 12 4l8 6v10H4ZM8 20v-6h8v6"></path></svg>
+            <Warehouse aria-hidden="true" />
           {:else}
-            <svg viewBox="0 0 24 24"><path d="M4 5h16v11H4Z"></path><path d="M9 20h6M12 16v4"></path></svg>
+            <Monitor aria-hidden="true" />
           {/if}
         </div>
         <h1>{onboardingSlides[slideIndex].title}</h1>
@@ -574,7 +565,7 @@
     {:else if screen === 'biometric'}
       <div class="welcome">
         <div class="hero-glyph" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 0-4 4v2a4 4 0 0 0 8 0V7a4 4 0 0 0-4-4Z"></path><path d="M6 11v2a6 6 0 0 0 12 0v-2"></path><path d="M12 17v3"></path></svg>
+          <Mic aria-hidden="true" />
         </div>
         <h1>Разблокируйте приложение</h1>
         <p class="field-caption">Используйте Face ID или Touch ID, чтобы продолжить.</p>
@@ -597,8 +588,8 @@
 <style>
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(html) { min-width: 320px; background: var(--color-base-100, white); }
-  :global(body) { margin: 0; font-family: "Open Sans", sans-serif; }
-  :global(button), :global(input) { font: inherit; font-family: "Open Sans", sans-serif; }
+  :global(body) { margin: 0; font-family: 'Open Sans', sans-serif; }
+  :global(button), :global(input) { font: inherit; font-family: 'Open Sans', sans-serif; }
   :global(button) { -webkit-tap-highlight-color: transparent; }
 
   .whm-app {
@@ -618,7 +609,7 @@
     overflow-x: hidden;
     background: var(--color-base-100);
     color: var(--color-base-content);
-    font-family: "Open Sans", sans-serif;
+    font-family: 'Open Sans', sans-serif;
     font-size: var(--type-body);
     line-height: 1.5;
     transition: background-color 200ms ease, color 200ms ease;
@@ -661,7 +652,7 @@
     background: color-mix(in oklab, var(--color-base-100) 88%, transparent);
     color: var(--color-base-content); cursor: pointer;
   }
-  .theme-toggle svg { width: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .theme-toggle :global(svg) { width: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
   .page-shell {
     width: min(calc(100% - (var(--page-gutter) * 2)), var(--content-max));
@@ -677,17 +668,17 @@
     border: var(--border) solid var(--soft-border); border-radius: var(--radius-field);
     background: var(--color-base-100); color: var(--color-base-content); cursor: pointer;
   }
-  .back-button svg { width: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .back-button :global(svg) { width: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
   .splash {
     flex: 1; display: grid; place-items: center; justify-items: center; gap: 0.75rem; text-align: center;
   }
-  .brand-mark { position: relative; width: 1.9rem; height: 1.9rem; display: inline-grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 0.18rem; transform: rotate(-8deg); }
-  .brand-mark.large { width: 3.2rem; height: 3.2rem; gap: 0.3rem; }
-  .brand-mark span { display: block; border-radius: 0.18rem; background: var(--color-primary); }
-  .brand-mark span:nth-child(3) { grid-column: 1 / 3; }
-  .brand-mark span:nth-child(2) { background: var(--color-secondary); }
-  .brand-name { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.16em; }
+
+
+
+
+
+
   .tagline { color: var(--soft-content); font-size: var(--type-caption); }
   .splash-spinner {
     width: 1.6rem; height: 1.6rem; margin-top: 0.5rem; border: 3px solid color-mix(in oklab, var(--color-primary) 30%, transparent);
@@ -699,7 +690,7 @@
     width: 4.5rem; height: 4.5rem; display: grid; place-items: center; border-radius: 50%;
     background: var(--primary-faint); color: var(--color-base-content);
   }
-  .hero-glyph svg { width: 2.1rem; fill: none; stroke: currentColor; stroke-width: 1.6; }
+  .hero-glyph :global(svg) { width: 2.1rem; fill: none; stroke: currentColor; stroke-width: 1.6; }
   .welcome h1 { margin: 0; font-size: var(--type-h1); font-weight: 810; letter-spacing: -0.02em; text-wrap: balance; }
   .welcome-actions { width: 100%; margin-top: 0.5rem; display: grid; gap: 0.75rem; }
   .legal-links { margin-top: auto; padding-top: 1.5rem; color: var(--faint-content); font-size: var(--type-caption); display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap; }
@@ -778,7 +769,7 @@
     width: 5rem; height: 5rem; display: grid; place-items: center; border-radius: 50%;
     background: var(--primary-faint); color: var(--color-base-content);
   }
-  .slide-glyph svg { width: 2.3rem; fill: none; stroke: currentColor; stroke-width: 1.6; }
+  .slide-glyph :global(svg) { width: 2.3rem; fill: none; stroke: currentColor; stroke-width: 1.6; }
   .onboarding-slide h1 { margin: 0; font-size: var(--type-h1); font-weight: 800; }
   .onboarding-slide p { margin: 0; max-width: 24rem; color: var(--soft-content); }
 
@@ -798,7 +789,6 @@
     * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 
-  .brand-mark { display: inline-flex !important; align-items: center; justify-content: center; transform: none !important; font-size: 1.5rem; line-height: 1; }
-  .brand-mark.large { font-size: 2.4rem; }
-  .brand-mark.tiny { font-size: 1rem; }
+
+
 </style>

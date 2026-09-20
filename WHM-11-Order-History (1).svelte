@@ -1,4 +1,5 @@
 <script>
+  import { ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, FileText, ListFilter, Moon, Package, Search, SearchX, Sun, TriangleAlert, Truck, X } from '@lucide/svelte';
   import { tick } from 'svelte';
 
   /*
@@ -184,7 +185,7 @@
       completedTimestamp: 1783167480000,
       method: 'pickup',
       methodLabel: 'Самостоятельное получение',
-      address: 'Склад WHM — Север, Сигнальный проезд, 16',
+      address: 'Склад — Север, Сигнальный проезд, 16',
       plannedAt: '4 июля, 11:00–13:00',
       actualAt: '4 июля 2026, 12:18',
       trips: 1,
@@ -569,16 +570,10 @@
 </script>
 
 <svelte:head>
-  <title>WHM — История заказов</title>
+  <title>История заказов · Клиентский интерфейс</title>
   <meta
     name="description"
-    content="История сдачи, хранения и возврата вещей в WHM"
-  />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
-    rel="stylesheet"
+    content="История сдачи, хранения и возврата вещей"
   />
 </svelte:head>
 
@@ -588,8 +583,7 @@
 
   <header class="app-header">
     <button class="brand" type="button" aria-label="На главный экран" onclick={onBack}>
-      <span class="brand-mark" aria-hidden="true"><img src="/bee.svg" alt="" /></span>
-      <span class="brand-name">WHM</span>
+      <span class="system-label">Клиентский интерфейс</span>
     </button>
 
     <div class="header-actions">
@@ -601,14 +595,9 @@
         onclick={toggleTheme}
       >
         {#if isDark}
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="3.4"></circle>
-            <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"></path>
-          </svg>
+          <Sun aria-hidden="true" />
         {:else}
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20.5 15.1A8.4 8.4 0 0 1 8.9 3.5 8.6 8.6 0 1 0 20.5 15.1Z"></path>
-          </svg>
+          <Moon aria-hidden="true" />
         {/if}
       </button>
       <button class="profile-button" type="button" aria-label="Профиль">АМ</button>
@@ -620,7 +609,7 @@
       <section class="detail-view screen-enter" aria-labelledby="detail-title">
         <div class="detail-topbar">
           <button class="back-button" type="button" aria-label="Назад к истории" onclick={closeOrder}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+            <ChevronLeft aria-hidden="true" />
           </button>
           <span>История заказов</span>
         </div>
@@ -632,13 +621,7 @@
               <h1 id="detail-title">{selectedOrder.number}</h1>
             </div>
             <span class:cancelled={selectedOrder.status === 'cancelled'} class="status-pill">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                {#if selectedOrder.status === 'completed'}
-                  <path d="m5 12 4 4L19 6"></path>
-                {:else}
-                  <path d="M7 7l10 10M17 7 7 17"></path>
-                {/if}
-              </svg>
+              <X aria-hidden="true" />
               {selectedOrder.status === 'completed' ? 'Завершён' : 'Отменён'}
             </span>
           </div>
@@ -649,7 +632,7 @@
           </div>
           {#if selectedOrder.cancellationReason}
             <div class="warning-banner">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16.5v.01M12 3 2.8 20h18.4Z"></path></svg>
+              <TriangleAlert aria-hidden="true" />
               <p>{selectedOrder.cancellationReason}</p>
             </div>
           {/if}
@@ -666,7 +649,7 @@
             {#each selectedOrder.timeline as entry, index}
               <li class:last={index === selectedOrder.timeline.length - 1}>
                 <span class="timeline-dot" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"></path></svg>
+                  <Check aria-hidden="true" />
                 </span>
                 <div><strong>{entry.label}</strong><span>{entry.date}</span></div>
               </li>
@@ -693,7 +676,7 @@
             {#each (detailItemsExpanded ? selectedOrder.items : selectedOrder.items.slice(0, 5)) as item}
               <button class="detail-item" type="button" onclick={() => openItem(item, selectedOrder)}>
                 <span class="item-image" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d={item.type === 'box' ? 'M4 7.5 12 3l8 4.5v9L12 21l-8-4.5Z M4 7.5l8 4.5 8-4.5M12 12v9' : 'M7 17a3 3 0 1 0 0 .01M17 17a3 3 0 1 0 0 .01M7 17l3-7h4l3 7M9 7h4l2 3'}></path></svg>
+                  <Package aria-hidden="true" />
                 </span>
                 <span class="item-main">
                   <span class="item-title-row"><strong>{item.title}</strong><small>{item.id}</small></span>
@@ -702,7 +685,7 @@
                     {itemStatusLabel(item)}
                   </span>
                 </span>
-                <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+                <ChevronRight class="chevron" aria-hidden="true" />
               </button>
             {/each}
           </div>
@@ -712,7 +695,7 @@
               onTrack('history_items_toggled', { orderId: selectedOrder.id, expanded: detailItemsExpanded });
             }}>
               {detailItemsExpanded ? 'Свернуть' : `Показать ещё ${selectedOrder.items.length - 5}`}
-              <svg class:rotated={detailItemsExpanded} viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+              <ChevronDown class={detailItemsExpanded ? 'rotated' : ''} aria-hidden="true" />
             </button>
           {/if}
         </article>
@@ -729,11 +712,7 @@
               {#each selectedOrder.services as service}
                 <div class="service-row">
                   <span class="service-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      {#if service.id === 'photo'}<path d="M4 7h4l1.5-2h5L16 7h4v12H4Z M12 10a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"></path>
-                      {:else if service.id === 'insurance'}<path d="M12 3 5 6v5c0 4.7 2.8 8.1 7 10 4.2-1.9 7-5.3 7-10V6Z M9 12l2 2 4-4"></path>
-                      {:else}<path d="M6 3h9l3 3v15H6Z M9 10h6M9 14h6M9 18h4"></path>{/if}
-                    </svg>
+                    <FileText aria-hidden="true" />
                   </span>
                   <span class="service-copy">
                     <strong>{service.title}</strong>
@@ -784,7 +763,7 @@
                   {/each}
                   <button class="finance-expand" type="button" onclick={() => (periodsExpanded = !periodsExpanded)}>
                     {periodsExpanded ? 'Скрыть расчётные периоды' : 'Показать расчётные периоды'}
-                    <svg class:rotated={periodsExpanded} viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                    <ChevronDown class={periodsExpanded ? 'rotated' : ''} aria-hidden="true" />
                   </button>
                 {/if}
               </div>
@@ -813,7 +792,7 @@
           </div>
           {#if selectedOrder.financial.receiptAvailable}
             <button class="secondary-button receipt-button" type="button" onclick={() => openReceipt(selectedOrder)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z M9 8h6M9 12h6"></path></svg>
+              <FileText aria-hidden="true" />
               Открыть чек
             </button>
           {/if}
@@ -832,13 +811,13 @@
                 {@const related = orders.find((order) => order.id === relatedId)}
                 <button class="related-order" type="button" onclick={() => openRelated(relatedId)}>
                   <span class="related-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M8 12h8M12 8l4 4-4 4M4 5h16v14H4Z"></path></svg>
+                    <ArrowRight aria-hidden="true" />
                   </span>
                   <span>
                     <strong>{related?.number ?? 'Связанный заказ'}</strong>
                     <small>{related ? `${orderTypeLabel(related)} · ${related.items.length} ${pluralUnits(related.items.length)}` : 'Открыть заказ'}</small>
                   </span>
-                  <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+                  <ChevronRight class="chevron" aria-hidden="true" />
                 </button>
               {/each}
             </div>
@@ -871,13 +850,13 @@
               <span>{activeOrder.number} · {activeOrder.statusLabel}</span>
             </span>
             <span class="active-time">{activeOrder.updatedAt}</span>
-            <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+            <ChevronRight class="chevron" aria-hidden="true" />
           </button>
         {/if}
 
         <div class="search-and-sort">
           <label class="search-field">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg>
+            <Search aria-hidden="true" />
             <input
               type="search"
               value={searchQuery}
@@ -887,7 +866,7 @@
             />
             {#if searchQuery}
               <button type="button" aria-label="Очистить поиск" onclick={() => (searchQuery = '')}>
-                <svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"></path></svg>
+                <X aria-hidden="true" />
               </button>
             {/if}
           </label>
@@ -897,7 +876,7 @@
               <option value="newest">Сначала новые</option>
               <option value="oldest">Сначала старые</option>
             </select>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>
+            <ChevronDown aria-hidden="true" />
           </label>
         </div>
 
@@ -921,7 +900,7 @@
             {/each}
           </div>
           <button class:active={advancedFilterCount > 0} class="filter-button" type="button" onclick={openFilterSheet}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+            <ListFilter aria-hidden="true" />
             Фильтры
             {#if advancedFilterCount > 0}<span>{advancedFilterCount}</span>{/if}
           </button>
@@ -951,7 +930,7 @@
         {:else if errorMessage}
           <div class="state-card">
             <span class="state-icon error" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M12 8v5M12 16.5v.01M12 3 2.8 20h18.4Z"></path></svg>
+              <TriangleAlert aria-hidden="true" />
             </span>
             <h2>Не удалось загрузить историю</h2>
             <p>{errorMessage}</p>
@@ -960,7 +939,7 @@
         {:else if orders.length === 0}
           <div class="state-card">
             <span class="state-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z M9 8h6M9 12h6"></path></svg>
+              <FileText aria-hidden="true" />
             </span>
             <h2>Здесь появятся завершённые заказы</h2>
             <p>После сдачи или возврата вещей вы сможете посмотреть состав, даты и оплату.</p>
@@ -969,7 +948,7 @@
         {:else if filteredOrders.length === 0}
           <div class="state-card compact-state">
             <span class="state-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4M8.5 8.5l5 5M13.5 8.5l-5 5"></path></svg>
+              <SearchX aria-hidden="true" />
             </span>
             <h2>Заказы не найдены</h2>
             <p>Измените запрос или сбросьте выбранные фильтры.</p>
@@ -997,22 +976,14 @@
                       <div class="order-card-head">
                         <div>
                           <span class:intake={order.type === 'intake'} class="type-badge">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              {#if order.type === 'intake'}
-                                <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5Z M4 7.5l8 4.5 8-4.5M12 12v9"></path>
-                              {:else}
-                                <path d="M5 12h12M13 8l4 4-4 4M5 5v14"></path>
-                              {/if}
-                            </svg>
+                            <Package aria-hidden="true" />
                             {orderTypeLabel(order)}
                           </span>
                           <h3>{order.number}</h3>
                           <p>{dateLabel(order)}</p>
                         </div>
                         <span class:cancelled={order.status === 'cancelled'} class="status-pill small">
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            {#if order.status === 'completed'}<path d="m5 12 4 4L19 6"></path>{:else}<path d="M7 7l10 10M17 7 7 17"></path>{/if}
-                          </svg>
+                          <X aria-hidden="true" />
                           {order.status === 'completed' ? 'Завершён' : 'Отменён'}
                         </span>
                       </div>
@@ -1038,7 +1009,7 @@
                         {#if order.items.length > 5}
                           <button class="show-more-inline" type="button" onclick={(event) => toggleCardItems(order.id, event)}>
                             {expandedCardIds.includes(order.id) ? 'Свернуть' : `Показать ещё ${order.items.length - 5}`}
-                            <svg class:rotated={expandedCardIds.includes(order.id)} viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                            <ChevronDown class={expandedCardIds.includes(order.id) ? 'rotated' : ''} aria-hidden="true" />
                           </button>
                         {/if}
                       </div>
@@ -1059,9 +1030,9 @@
                           </div>
                         {/if}
                         <div class="method-row">
-                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={order.method === 'courier' ? 'M3 7h11v9H3Z M14 10h4l3 3v3h-7Z M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z' : 'M4 10 12 4l8 6v10H4Z M9 20v-6h6v6'}></path></svg>
+                          <Truck aria-hidden="true" />
                           <span>{order.methodLabel}</span>
-                          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+                          <ChevronRight class="chevron" aria-hidden="true" />
                         </div>
                       </div>
                     </div>
@@ -1082,7 +1053,7 @@
         <div class="modal-head">
           <div><h2 id="filter-title">Фильтры</h2><p>Уточните историю заказов</p></div>
           <button class="icon-button" type="button" aria-label="Закрыть" onclick={() => (filterSheetOpen = false)}>
-            <svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"></path></svg>
+            <X aria-hidden="true" />
           </button>
         </div>
 
@@ -1133,11 +1104,11 @@
         <div class="modal-head">
           <div><h2 id="item-preview-title">{itemPreview.item.title}</h2><p>{itemPreview.item.id}</p></div>
           <button class="icon-button" type="button" aria-label="Закрыть" onclick={() => (itemPreview = null)}>
-            <svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"></path></svg>
+            <X aria-hidden="true" />
           </button>
         </div>
         <div class="large-placeholder" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5Z M4 7.5l8 4.5 8-4.5M12 12v9"></path></svg>
+          <Package aria-hidden="true" />
         </div>
         <span class:archived={itemPreview.item.archived} class="preview-badge">
           {itemPreview.item.archived ? 'Архивная карточка' : 'Сейчас на хранении'}
@@ -1151,7 +1122,7 @@
           <div><dt>Тариф на момент заказа</dt><dd>{formatMoney(itemPreview.item.monthlyPrice)}/мес.</dd></div>
         </dl>
         <div class="info-banner">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16.5v.01M12 3 2.8 20h18.4Z"></path></svg>
+          <TriangleAlert aria-hidden="true" />
           <p>{itemPreview.item.archived ? 'Карточка доступна только для просмотра. Данные сохранены на момент возврата.' : 'Это актуальная карточка вещи на хранении.'}</p>
         </div>
         <button class="primary-button full" type="button" onclick={() => (itemPreview = null)}>Понятно</button>
@@ -1164,10 +1135,10 @@
       <div class="preview-modal receipt-modal" role="dialog" aria-modal="true" aria-labelledby="receipt-title">
         <div class="modal-head">
           <div><h2 id="receipt-title">Чек по заказу</h2><p>{receiptPreview.number}</p></div>
-          <button class="icon-button" type="button" aria-label="Закрыть" onclick={() => (receiptPreview = null)}><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"></path></svg></button>
+          <button class="icon-button" type="button" aria-label="Закрыть" onclick={() => (receiptPreview = null)}><X aria-hidden="true" /></button>
         </div>
         <div class="receipt-paper">
-          <div class="receipt-brand"><span class="brand-mark tiny" aria-hidden="true"><img src="/bee.svg" alt="" /></span><strong>WHM</strong></div>
+          <div class="receipt-brand"><strong>Демо-чек клиентского сервиса</strong></div>
           <p>Электронный кассовый чек</p>
           <div><span>Заказ</span><strong>{receiptPreview.number}</strong></div>
           <div><span>Дата</span><strong>{receiptPreview.completedAt}</strong></div>
@@ -1185,10 +1156,10 @@
       <div class="preview-modal" role="dialog" aria-modal="true" aria-labelledby="document-title">
         <div class="modal-head">
           <div><h2 id="document-title">{documentPreview.service.title}</h2><p>{documentPreview.order.number}</p></div>
-          <button class="icon-button" type="button" aria-label="Закрыть" onclick={() => (documentPreview = null)}><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"></path></svg></button>
+          <button class="icon-button" type="button" aria-label="Закрыть" onclick={() => (documentPreview = null)}><X aria-hidden="true" /></button>
         </div>
         <div class="document-placeholder" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6Z M9 10h6M9 14h6M9 18h4"></path></svg>
+          <FileText aria-hidden="true" />
         </div>
         <p class="preview-description">
           {documentPreview.service.document
@@ -1202,7 +1173,7 @@
 
   {#if toastMessage}
     <div class="toast" role="status" aria-live="polite">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg>
+      <Check aria-hidden="true" />
       {toastMessage}
     </div>
   {/if}
@@ -1211,8 +1182,8 @@
 <style>
   :global(*) { box-sizing: border-box; }
   :global(html) { min-width: 320px; background: var(--color-base-100, white); }
-  :global(body) { margin: 0; font-family: "Open Sans", sans-serif; }
-  :global(button), :global(input), :global(select), :global(textarea) { font: inherit; font-family: "Open Sans", sans-serif; }
+  :global(body) { margin: 0; font-family: 'Open Sans', sans-serif; }
+  :global(button), :global(input), :global(select), :global(textarea) { font: inherit; font-family: 'Open Sans', sans-serif; }
   :global(button) { -webkit-tap-highlight-color: transparent; }
 
   .whm-app {
@@ -1236,7 +1207,7 @@
     overflow-x: hidden;
     background: var(--color-base-100);
     color: var(--color-base-content);
-    font-family: "Open Sans", sans-serif;
+    font-family: 'Open Sans', sans-serif;
     font-size: var(--type-body);
     line-height: 1.5;
     transition: background-color 200ms ease, color 200ms ease;
@@ -1287,7 +1258,7 @@
   h1, h2, h3, p { margin: 0; }
   button, input, select { color: inherit; }
   button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid color-mix(in oklab, var(--color-primary) 62%, transparent); outline-offset: 2px; }
-  svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  :global(svg) { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
   .ambient { position: fixed; z-index: -1; border-radius: 999px; pointer-events: none; opacity: 0.62; }
   .ambient-one { top: -17rem; right: -13rem; width: 38rem; height: 38rem; background: radial-gradient(circle, var(--primary-soft), transparent 68%); }
@@ -1313,12 +1284,12 @@
   }
 
   .brand { gap: 0.7rem; padding: 0; border: 0; background: transparent; cursor: pointer; }
-  .brand-mark { position: relative; width: 1.9rem; height: 1.9rem; display: inline-grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 0.18rem; transform: rotate(-8deg); flex: 0 0 auto; }
-  .brand-mark span { display: block; border-radius: 0.18rem; background: var(--color-primary); }
-  .brand-mark span:nth-child(3) { grid-column: 1 / 3; }
-  .brand-mark span:nth-child(2) { background: var(--color-secondary); }
-  .brand-mark.tiny { width: 1.35rem; height: 1.35rem; gap: 0.12rem; }
-  .brand-name { font-weight: 800; letter-spacing: 0.13em; }
+
+
+
+
+
+
   .header-actions { gap: 0.65rem; }
 
   .theme-toggle, .profile-button, .back-button, .icon-button {
@@ -1336,7 +1307,7 @@
   }
   .theme-toggle:hover, .profile-button:hover, .back-button:hover, .icon-button:hover { border-color: var(--color-primary); background: var(--color-base-200); }
   .theme-toggle:active, .profile-button:active, .back-button:active, .icon-button:active { transform: scale(0.96); }
-  .theme-toggle svg, .back-button svg, .icon-button svg { width: 1.2rem; height: 1.2rem; }
+  .theme-toggle :global(svg), .back-button :global(svg), .icon-button :global(svg) { width: 1.2rem; height: 1.2rem; }
   .profile-button { border-radius: 999px; background: var(--primary-soft); border-color: transparent; font-size: 0.72rem; font-weight: 800; }
 
   .history-shell { width: min(calc(100% - (var(--page-gutter) * 2)), var(--content-max)); min-height: calc(100dvh - var(--header-height)); margin: 0 auto; padding-bottom: 4rem; }
@@ -1361,19 +1332,19 @@
   .active-copy strong { font-size: 0.95rem; }
   .active-copy span, .active-time { color: var(--soft-content); font-size: 0.82rem; }
   .active-time { white-space: nowrap; }
-  .chevron { width: 1.1rem; height: 1.1rem; flex: 0 0 auto; }
+  :global(.chevron) { width: 1.1rem; height: 1.1rem; flex: 0 0 auto; }
 
   .search-and-sort { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.75rem; margin-top: 1.25rem; }
   .search-field { min-height: 3.5rem; padding: 0 0.95rem; gap: 0.65rem; border: var(--border) solid var(--soft-border); border-radius: var(--radius-field); background: color-mix(in oklab, var(--color-base-100) 92%, transparent); }
   .search-field:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--primary-faint); }
-  .search-field > svg { width: 1.25rem; height: 1.25rem; color: var(--faint-content); }
+  .search-field > :global(svg) { width: 1.25rem; height: 1.25rem; color: var(--faint-content); }
   .search-field input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; }
   .search-field input::placeholder { color: var(--faint-content); }
   .search-field button { width: 2rem; height: 2rem; display: grid; place-items: center; padding: 0; border: 0; background: transparent; cursor: pointer; color: var(--soft-content); }
-  .search-field button svg { width: 1rem; height: 1rem; }
+  .search-field button :global(svg) { width: 1rem; height: 1rem; }
   .sort-field { position: relative; min-width: 11.5rem; }
   .sort-field select { width: 100%; min-height: 3.5rem; appearance: none; padding: 0 2.7rem 0 1rem; border: var(--border) solid var(--soft-border); border-radius: var(--radius-field); background: color-mix(in oklab, var(--color-base-100) 92%, transparent); cursor: pointer; }
-  .sort-field > svg { position: absolute; right: 0.85rem; width: 1rem; height: 1rem; pointer-events: none; }
+  .sort-field > :global(svg) { position: absolute; right: 0.85rem; width: 1rem; height: 1rem; pointer-events: none; }
 
   .filter-bar { justify-content: space-between; gap: 1rem; margin-top: 0.8rem; }
   .type-filters { gap: 0.4rem; padding: 0.3rem; border: var(--border) solid var(--soft-border); border-radius: var(--radius-field); background: var(--color-base-200); }
@@ -1381,7 +1352,7 @@
   .type-filters button.active { background: var(--color-base-100); color: var(--color-base-content); box-shadow: 0 2px 10px color-mix(in oklab, var(--color-base-content) 8%, transparent); }
   .filter-button { min-height: 3.25rem; padding: 0.45rem 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem; border: var(--border) solid var(--soft-border); border-radius: var(--radius-field); background: transparent; cursor: pointer; font-weight: 700; }
   .filter-button.active { border-color: var(--color-primary); background: var(--primary-faint); }
-  .filter-button > svg { width: 1.1rem; height: 1.1rem; }
+  .filter-button > :global(svg) { width: 1.1rem; height: 1.1rem; }
   .filter-button > span { min-width: 1.35rem; height: 1.35rem; display: grid; place-items: center; border-radius: 999px; background: var(--color-primary); color: #171717; font-size: 0.72rem; }
   .active-filter-chips { display: flex; gap: 0.45rem; align-items: center; overflow-x: auto; padding: 0.7rem 0 0.15rem; scrollbar-width: none; }
   .active-filter-chips::-webkit-scrollbar { display: none; }
@@ -1401,10 +1372,10 @@
   .order-card-head p { margin-top: 0.16rem; color: var(--soft-content); font-size: 0.86rem; }
   .type-badge { width: max-content; gap: 0.38rem; padding: 0.3rem 0.58rem; border-radius: 999px; background: color-mix(in oklab, var(--color-secondary) 15%, var(--color-base-100)); font-size: 0.76rem; font-weight: 800; }
   .type-badge.intake { background: var(--primary-faint); }
-  .type-badge svg { width: 0.95rem; height: 0.95rem; }
+  .type-badge :global(svg) { width: 0.95rem; height: 0.95rem; }
   .status-pill { width: max-content; gap: 0.38rem; padding: 0.42rem 0.65rem; border-radius: 999px; background: color-mix(in oklab, var(--color-success) 20%, var(--color-base-100)); color: color-mix(in oklab, var(--color-success-content) 82%, var(--color-base-content)); font-size: 0.78rem; font-weight: 800; }
   .status-pill.cancelled { background: color-mix(in oklab, var(--color-error) 14%, var(--color-base-100)); color: color-mix(in oklab, var(--color-error) 72%, var(--color-base-content)); }
-  .status-pill svg { width: 0.95rem; height: 0.95rem; stroke-width: 2.2; }
+  .status-pill :global(svg) { width: 0.95rem; height: 0.95rem; stroke-width: 2.2; }
   .status-pill.small { flex: 0 0 auto; }
 
   .cycle-summary { margin-top: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; background: var(--primary-faint); }
@@ -1420,8 +1391,8 @@
   .mini-status.returned { background: var(--color-base-200); }
   .mini-status.cancelled { background: color-mix(in oklab, var(--color-error) 12%, transparent); }
   .show-more-inline { width: max-content; gap: 0.35rem; margin-top: 0.65rem; padding: 0.3rem 0; border: 0; background: transparent; cursor: pointer; font-size: 0.82rem; font-weight: 700; }
-  .show-more-inline svg, .expand-button svg, .finance-expand svg { width: 1rem; height: 1rem; transition: transform 180ms ease; }
-  svg.rotated { transform: rotate(180deg); }
+  .show-more-inline :global(svg), .expand-button :global(svg), .finance-expand :global(svg) { width: 1rem; height: 1rem; transition: transform 180ms ease; }
+  :global(svg.rotated) { transform: rotate(180deg); }
 
   .card-footer { margin-top: 1rem; display: grid; gap: 0.75rem; }
   .payment-summary { display: flex; flex-wrap: wrap; gap: 0.5rem 1.15rem; }
@@ -1430,8 +1401,8 @@
   .service-tags { display: flex; gap: 0.38rem; overflow: hidden; }
   .service-tags span { padding: 0.28rem 0.52rem; border-radius: 999px; background: var(--color-base-200); color: var(--soft-content); font-size: 0.7rem; white-space: nowrap; }
   .method-row { gap: 0.45rem; color: var(--soft-content); font-size: 0.82rem; }
-  .method-row > svg:first-child { width: 1.1rem; height: 1.1rem; }
-  .method-row .chevron { margin-left: auto; color: var(--color-base-content); }
+  .method-row > :global(svg:first-child) { width: 1.1rem; height: 1.1rem; }
+  .method-row :global(.chevron) { margin-left: auto; color: var(--color-base-content); }
 
   .skeleton-list { margin-top: 2rem; display: grid; gap: 0.9rem; }
   .skeleton-card { padding: 1.3rem; display: grid; gap: 0.75rem; border: var(--border) solid var(--soft-border); border-radius: var(--radius-box); }
@@ -1445,7 +1416,7 @@
   .state-card.compact-state { min-height: 19rem; }
   .state-icon { width: 4rem; height: 4rem; display: grid; place-items: center; border-radius: 999px; background: var(--primary-soft); }
   .state-icon.error { background: color-mix(in oklab, var(--color-error) 16%, var(--color-base-100)); }
-  .state-icon svg { width: 1.8rem; height: 1.8rem; }
+  .state-icon :global(svg) { width: 1.8rem; height: 1.8rem; }
   .state-card h2 { margin-top: 1rem; font-size: var(--type-heading); }
   .state-card p { margin-top: 0.55rem; max-width: 31rem; color: var(--soft-content); }
   .state-card button { margin-top: 1.2rem; }
@@ -1460,7 +1431,7 @@
   .hero-facts span, .info-grid dt, .preview-grid dt { display: block; color: var(--faint-content); font-size: var(--type-caption); }
   .hero-facts strong { display: block; margin-top: 0.3rem; font-size: 0.85rem; }
   .warning-banner, .info-banner { margin-top: 1rem; padding: 0.85rem 1rem; display: flex; align-items: flex-start; gap: 0.65rem; border-radius: 0.75rem; background: color-mix(in oklab, var(--color-warning) 18%, var(--color-base-100)); }
-  .warning-banner svg, .info-banner svg { width: 1.2rem; height: 1.2rem; flex: 0 0 auto; margin-top: 0.1rem; }
+  .warning-banner :global(svg), .info-banner :global(svg) { width: 1.2rem; height: 1.2rem; flex: 0 0 auto; margin-top: 0.1rem; }
   .warning-banner p, .info-banner p { font-size: 0.85rem; }
 
   .detail-section { margin-top: 0.9rem; padding: clamp(1.1rem, 3vw, 1.65rem); }
@@ -1473,7 +1444,7 @@
   .timeline li { position: relative; min-height: 3.6rem; display: grid; grid-template-columns: auto 1fr; gap: 0.8rem; }
   .timeline li:not(.last)::before { content: ''; position: absolute; top: 1.65rem; bottom: 0; left: 0.72rem; width: 1px; background: color-mix(in oklab, var(--color-success) 50%, var(--soft-border)); }
   .timeline-dot { position: relative; z-index: 1; width: 1.5rem; height: 1.5rem; display: grid; place-items: center; border-radius: 999px; background: var(--color-success); color: var(--color-success-content); }
-  .timeline-dot svg { width: 0.85rem; height: 0.85rem; stroke-width: 2.4; }
+  .timeline-dot :global(svg) { width: 0.85rem; height: 0.85rem; stroke-width: 2.4; }
   .timeline li div { display: grid; align-content: start; }
   .timeline li strong { font-size: 0.88rem; }
   .timeline li span:last-child { color: var(--soft-content); font-size: 0.75rem; }
@@ -1482,7 +1453,7 @@
   .detail-item { width: 100%; min-height: 5rem; padding: 0.75rem 0; display: grid; grid-template-columns: auto 1fr auto; gap: 0.85rem; align-items: center; border: 0; border-bottom: var(--border) solid var(--muted-border); background: transparent; text-align: left; cursor: pointer; }
   .detail-item:hover .item-title-row strong { text-decoration: underline; text-underline-offset: 0.2rem; }
   .item-image { width: 3.2rem; height: 3.2rem; display: grid; place-items: center; border-radius: 0.65rem; background: linear-gradient(135deg, var(--color-base-200), var(--color-base-300)); color: var(--faint-content); }
-  .item-image svg { width: 1.45rem; height: 1.45rem; }
+  .item-image :global(svg) { width: 1.45rem; height: 1.45rem; }
   .item-main { min-width: 0; display: grid; }
   .item-title-row { display: flex; align-items: baseline; gap: 0.55rem; }
   .item-title-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1497,7 +1468,7 @@
   .service-row { min-height: 4.5rem; display: grid; grid-template-columns: auto 1fr auto auto; gap: 0.75rem; align-items: center; border-bottom: var(--border) solid var(--muted-border); }
   .service-row:last-child { border-bottom: 0; }
   .service-icon { width: 2.45rem; height: 2.45rem; display: grid; place-items: center; border-radius: 0.6rem; background: var(--primary-faint); }
-  .service-icon svg { width: 1.2rem; height: 1.2rem; }
+  .service-icon :global(svg) { width: 1.2rem; height: 1.2rem; }
   .service-copy { min-width: 0; display: grid; }
   .service-copy strong { font-size: 0.88rem; }
   .service-copy span { color: var(--soft-content); font-size: 0.72rem; }
@@ -1521,13 +1492,13 @@
   .finance-total span { font-weight: 700; }
   .finance-total strong { font-size: 1.4rem; }
   .receipt-button { margin-top: 1rem; }
-  .receipt-button svg { width: 1.1rem; height: 1.1rem; }
+  .receipt-button :global(svg) { width: 1.1rem; height: 1.1rem; }
 
   .related-list { margin-top: 1rem; display: grid; gap: 0.55rem; }
   .related-order { width: 100%; min-height: 4.2rem; padding: 0.7rem; display: grid; grid-template-columns: auto 1fr auto; gap: 0.7rem; align-items: center; border: var(--border) solid var(--muted-border); border-radius: 0.7rem; background: var(--color-base-200); text-align: left; cursor: pointer; }
   .related-order:hover { border-color: var(--color-primary); }
   .related-icon { width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: 0.6rem; background: var(--color-base-100); }
-  .related-icon svg { width: 1.15rem; height: 1.15rem; }
+  .related-icon :global(svg) { width: 1.15rem; height: 1.15rem; }
   .related-order > span:nth-child(2) { min-width: 0; display: grid; }
   .related-order small { color: var(--soft-content); }
   .detail-actions { display: grid; gap: 0.5rem; padding: 1rem 0 0; }
@@ -1570,13 +1541,13 @@
   .sheet-actions > * { flex: 1; }
 
   .large-placeholder { height: 13rem; margin-top: 1rem; display: grid; place-items: center; border-radius: 0.85rem; background: linear-gradient(135deg, var(--color-base-200), var(--color-base-300)); color: var(--faint-content); }
-  .large-placeholder svg { width: 4rem; height: 4rem; }
+  .large-placeholder :global(svg) { width: 4rem; height: 4rem; }
   .preview-badge { width: max-content; margin-top: 0.9rem; padding: 0.35rem 0.6rem; border-radius: 999px; background: color-mix(in oklab, var(--color-success) 18%, var(--color-base-100)); font-size: 0.75rem; font-weight: 800; }
   .preview-badge.archived { background: var(--color-base-200); color: var(--soft-content); }
   .preview-description { margin-top: 0.75rem; color: var(--soft-content); }
   .preview-grid { margin-bottom: 1rem; }
   .document-placeholder { height: 15rem; margin-top: 1rem; display: grid; place-items: center; border: var(--border) dashed var(--soft-border); border-radius: 0.85rem; background: var(--color-base-200); color: var(--faint-content); }
-  .document-placeholder svg { width: 3rem; height: 3rem; }
+  .document-placeholder :global(svg) { width: 3rem; height: 3rem; }
 
   .receipt-paper { margin: 1rem auto; padding: 1.2rem; display: grid; gap: 0.65rem; border: var(--border) solid var(--soft-border); border-radius: 0.3rem; background: color-mix(in oklab, var(--color-base-100) 95%, white); color: var(--color-base-content); box-shadow: 0 12px 30px color-mix(in oklab, black 10%, transparent); }
   .receipt-brand { gap: 0.5rem; }
@@ -1586,7 +1557,7 @@
   .receipt-paper small { padding-top: 0.7rem; border-top: 1px dashed var(--soft-border); color: var(--soft-content); }
 
   .toast { position: fixed; z-index: 120; left: 50%; bottom: 1.25rem; transform: translateX(-50%); width: max-content; max-width: calc(100% - 2rem); min-height: 3.2rem; padding: 0.7rem 1rem; display: flex; align-items: center; gap: 0.6rem; border: var(--border) solid var(--soft-border); border-radius: 999px; background: var(--color-base-content); color: var(--color-base-100); box-shadow: 0 16px 44px rgba(0,0,0,.28); font-size: 0.85rem; animation: toast-in 220ms ease; }
-  .toast svg { width: 1.1rem; height: 1.1rem; stroke-width: 2.3; }
+  .toast :global(svg) { width: 1.1rem; height: 1.1rem; stroke-width: 2.3; }
   @keyframes toast-in { from { transform: translate(-50%, .6rem); opacity: 0; } }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
@@ -1605,11 +1576,11 @@
     .type-filters button { min-width: 0; padding-inline: 0.45rem; }
     .filter-button { flex: 0 0 auto; padding-inline: 0.75rem; }
     .filter-button { font-size: 0; gap: 0.35rem; }
-    .filter-button svg, .filter-button span { font-size: 0.72rem; }
+    .filter-button :global(svg), .filter-button span { font-size: 0.72rem; }
     .order-card { padding: 1rem; }
     .order-card-head { align-items: flex-start; }
     .status-pill.small { padding: 0.4rem; font-size: 0; }
-    .status-pill.small svg { margin: 0; }
+    .status-pill.small :global(svg) { margin: 0; }
     .cycle-summary { gap: 0.25rem; padding: 0.65rem 0.35rem; }
     .card-item-line { grid-template-columns: auto minmax(0,1fr); padding-block: 0.25rem; }
     .mini-status { grid-column: 2; width: max-content; margin-top: -0.25rem; }
@@ -1649,7 +1620,6 @@
     *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
 
-  .brand-mark { display: inline-flex !important; align-items: center; justify-content: center; transform: none !important; font-size: 1.5rem; line-height: 1; }
-  .brand-mark.large { font-size: 2.4rem; }
-  .brand-mark.tiny { font-size: 1rem; }
+
+
 </style>

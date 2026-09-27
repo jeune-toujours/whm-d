@@ -6,3 +6,19 @@ button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
 .system-label { color: inherit; font-size: 0.82rem; font-weight: 700; letter-spacing: 0; }
 :focus-visible { outline: 3px solid #b78200; outline-offset: 3px; }
+
+/* WHM-7: service selection cards only; delivery cards use buttons, not articles. */
+.whm-app .service-stack > article.service-card { position: relative; }
+.whm-app .service-stack > article.service-card .status-badge {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 1;
+  white-space: nowrap;
+}
+.whm-app .service-stack > article.service-card .service-card-copy {
+  justify-content: flex-start;
+}
+.whm-app .service-stack > article.service-card .card-actions {
+  margin-top: auto;
+}

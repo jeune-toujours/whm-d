@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
 const base = process.env.WHM_BASE_URL || 'http://localhost:4174', backend = process.env.WHM_API_BASE || base;
 let adminEmail = process.env.WHM_ADMIN_EMAIL, adminPassword = process.env.WHM_ADMIN_PASSWORD;
 if (process.env.WHM_ADMIN_SECRET_SSH === '1') {
@@ -15,6 +17,7 @@ const errors = [], marker = `Browser ${Date.now()}`, phone = `999000${1000 + Mat
 const image = { name:'verification.png', mimeType:'image/png', buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQ1sAAAAASUVORK5CYII=', 'base64') };
 try {
   const page = await browser.newPage({ viewport:{ width:1280,height:900 } }); page.on('pageerror', e => errors.push(e.message));
+  async function capture(name) { if (process.env.WHM_SCREENSHOT_DIR) { await mkdir(process.env.WHM_SCREENSHOT_DIR,{recursive:true}); await page.screenshot({path:join(process.env.WHM_SCREENSHOT_DIR,`${name}.png`),fullPage:true}); } }
   page.on('response', r => { if (r.status() >= 400) console.error(`HTTP ${r.status()} ${new URL(r.url()).pathname}`); });
   await page.goto(`${base}/#/signin`);
   await page.getByRole('button',{ name:'Начать хранение',exact:true }).click();
@@ -26,14 +29,16 @@ try {
   await page.getByLabel('Имя',{ exact:true }).fill('Тестовый'); await page.getByLabel('Фамилия',{ exact:true }).fill('Проверка');
   await page.getByRole('button',{ name:'Продолжить',exact:true }).click(); await page.getByRole('button',{ name:'Пропустить',exact:true }).click(); await page.waitForURL('**/#/home');
   await page.goto(`${base}/#/intake`);
-  await page.getByRole('button',{name:/Я упакую сам/}).click();
+  await page.locator('.service-card').filter({hasText:'Я упакую сам'}).getByRole('button',{name:'Выбрать',exact:true}).click();
+  await capture('intake-items-desktop');
   await page.getByRole('button',{name:/Увеличить количество/}).first().click();
   await page.getByRole('button',{name:'Продолжить',exact:true}).click();
   await page.getByRole('button',{name:'Пропустить',exact:true}).click();
   await page.getByRole('button',{name:'Пропустить',exact:true}).click();
   await page.getByRole('button',{name:/Я привезу сам/}).click();
   await page.getByRole('button',{name:'Перейти к проверке',exact:true}).click();
-  await page.getByRole('checkbox').check();
+  await capture('intake-review-desktop');
+  await page.locator('.terms-card .custom-checkbox').click();
   await page.getByRole('button',{name:'Оплатить',exact:true}).click();
   await page.getByRole('dialog',{name:'Симулятор оплаты'}).waitFor();
   await page.getByRole('button',{name:'Симулировать отказ',exact:true}).click();

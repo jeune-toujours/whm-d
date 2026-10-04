@@ -41,7 +41,7 @@ export const authEndpoints = [
         return new DomainError(400, 'INVALID_OTP', 'Неверный код.') // Commit failed-attempt count.
       }
       await req.payload.update({ collection: 'otp-challenges', id: challenge.id, req, overrideAccess: true, data: { consumed: true } })
-      let user = (await req.payload.find({ collection: 'users', req, overrideAccess: true, depth: 0, limit: 1, where: { phone: { equals: phone } } })).docs[0]
+      let user = (await req.payload.find({ collection: 'users', req, overrideAccess: true, showHiddenFields: true, depth: 0, limit: 1, where: { phone: { equals: phone } } })).docs[0]
       if (user && (user.role !== 'client' || user.active === false)) return new DomainError(403, 'CLIENT_LOGIN_DENIED', 'Вход для этого аккаунта недоступен.')
       if (!user) user = await req.payload.create({ collection: 'users', req, overrideAccess: true, context: { otpRegistration: true }, data: { email: `${randomUUID()}@client.whm.invalid`, password: randomBytes(48).toString('base64url'), phone, role: 'client', active: true } })
       const collectionConfig = cookieConfig(req)

@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { normalizePhone, assertTransition, DomainError } from '../src/domain'
-import { owned, admin, staff, self } from '../src/access'
+import { owned, officeOwned, admin, staff, self } from '../src/access'
 import type { PayloadRequest } from 'payload'
 test('phone normalization rejects non-Russian, truncated and non-string input', () => {
   assert.equal(normalizePhone('8 (999) 123-45-67'), '+79991234567')
@@ -23,4 +23,5 @@ test('anonymous and disabled accounts cannot read; clients are always constraine
   assert.equal(await admin(args({ id: 'a', role: 'client' })), false)
   assert.equal(await staff(args({ id: 'a', role: 'warehouse' })), true)
   assert.equal(await admin(args({ id: 'a', role: 'admin', active: false })), false)
+  assert.equal(await officeOwned(args({ id: 'w', role: 'warehouse' })), false, 'Warehouse role cannot read financial or support data')
 })

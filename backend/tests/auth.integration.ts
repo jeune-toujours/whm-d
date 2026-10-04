@@ -9,9 +9,9 @@ const base = process.env.APP_URL || 'http://localhost:3000'
 const phone = process.env.STAGING_TEST_PHONE!
 const code = process.env.STAGING_TEST_OTP!
 async function call(path: string, options: { method?: string; body?: unknown; cookie?: string; origin?: string } = {}) {
-  return fetch(`${base}/api${path}`, { method: options.method || 'GET', headers: { 'Content-Type': 'application/json', Origin: options.origin || base, ...(options.cookie ? { Cookie: options.cookie } : {}) }, body: options.body !== undefined ? JSON.stringify(options.body) : undefined })
+  return fetch(`${base}/api${path}`, { method: options.method || 'GET', headers: { 'Content-Type': 'application/json', Origin: options.origin || base, ...(options.cookie ? { Cookie: options.cookie } : {}) }, body: options.body !== undefined ? JSON.stringify(options.body) : undefined, signal: AbortSignal.timeout(15_000) })
 }
-test('real OTP, sessions, ownership, native CRUD guards and logout against migrated PostgreSQL', async () => {
+test('real OTP, sessions, ownership, native CRUD guards and logout against migrated PostgreSQL', { timeout: 120_000 }, async () => {
   const payload = await getPayload({ config })
   try {
     assert.equal((await call('/v1/items')).status, 401)

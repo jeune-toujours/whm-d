@@ -20,4 +20,5 @@ export const self: Access = ({ req }) => {
   const user = userOf(req)
   return user && user.active !== false ? { id: { equals: user.id } } : false
 }
+export const officeOwned: Access = args => hasRole(args.req, ['warehouse']) ? false : owned(args)
 export const never: Access = () => false

@@ -61,6 +61,6 @@ ssh -F C:/Users/pashr/.ssh/config whm
 
 ## Текущее состояние
 
-Первый frontend релиз на `main` выполнен владельцем. Staging frontend уже развёрнут из `develop`. Создан отдельный staging backend; PostgreSQL Selectel проверен через TLS, S3 доступен. Статус конкретного backend deployment проверять через `scripts/coolify.py status staging` и `/api/ready`; эта документация не заменяет проверку завершённого релиза. Клиент пока работает в demo до реализации API-сценариев.
+Первый frontend релиз на `main` выполнен владельцем. Staging frontend уже развёрнут из `develop`. Создан отдельный staging backend; PostgreSQL Selectel проверен через TLS, S3 доступен. Статус конкретного backend deployment проверять через `scripts/coolify.py status staging` и `/api/ready`; эта документация не заменяет проверку завершённого релиза. Клиент staging работает с WHM API. Архивные клиентские сценарии и границы симуляции описаны в [сверке](archive-alignment.md). Исторический demo доступен только в отдельной сборке `VITE_DEMO_MODE=true`.
 
 [Coolify GitHub App](https://coolify.io/docs/applications/sources/github/overview), [routing](https://coolify.io/docs/core/networking/domains), [deployment API](https://coolify.io/docs/api/endpoints/deployments/deploy-by-tag-or-uuid).

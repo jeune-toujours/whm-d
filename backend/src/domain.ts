@@ -1,3 +1,5 @@
+import { APIError } from 'payload'
+
 export const intakeStages = ['created', 'received', 'placed', 'completed', 'cancelled'] as const
 export const returnStages = ['created', 'picking', 'ready', 'completed', 'cancelled'] as const
 export class DomainError extends APIError {
@@ -21,4 +23,3 @@ export function text(value: unknown, max = 200): string {
   return typeof value === 'string' ? value.trim().slice(0, max) : ''
 }
 export const relationID = (value: unknown): string => typeof value === 'object' && value !== null && 'id' in value ? String(value.id) : String(value ?? '')
-import { APIError } from 'payload'

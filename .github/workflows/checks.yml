@@ -55,7 +55,6 @@ jobs:
       APP_URL: http://localhost:3000
       CLIENT_URL: http://localhost:4174
       STAGING_TEST_PHONE: '+79990000001'
-      STAGING_TEST_OTP: '482915'
       S3_ENDPOINT: http://127.0.0.1:9000
       S3_REGION: ru-1
       S3_BUCKET: ci-only-private-bucket
@@ -90,7 +89,7 @@ jobs:
         run: docker build --build-arg SOURCE_COMMIT="$GITHUB_SHA" -t whm-backend:ci .
       - name: Container readiness and authorization against PostgreSQL
         run: |
-          docker run -d --name whm-api --network host -e DATABASE_URL -e PAYLOAD_SECRET -e APP_ENV -e APP_URL -e CLIENT_URL -e SIMULATE_INTEGRATIONS -e SEED_STAGING -e STAGING_TEST_PHONE -e STAGING_TEST_OTP -e S3_ENDPOINT -e S3_REGION -e S3_BUCKET -e S3_ACCESS_KEY_ID -e S3_SECRET_ACCESS_KEY whm-backend:ci
+          docker run -d --name whm-api --network host -e DATABASE_URL -e PAYLOAD_SECRET -e APP_ENV -e APP_URL -e CLIENT_URL -e SIMULATE_INTEGRATIONS -e SEED_STAGING -e STAGING_TEST_PHONE -e S3_ENDPOINT -e S3_REGION -e S3_BUCKET -e S3_ACCESS_KEY_ID -e S3_SECRET_ACCESS_KEY whm-backend:ci
           for attempt in $(seq 1 90); do test "$(docker inspect --format='{{.State.Health.Status}}' whm-api)" = healthy && break; sleep 1; done
           test "$(docker inspect --format='{{.State.Health.Status}}' whm-api)" = healthy
           npm run test:integration

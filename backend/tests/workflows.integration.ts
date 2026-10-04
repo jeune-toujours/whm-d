@@ -93,6 +93,29 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal((await request(`/v1/support/${tid}/reply`,a,{ text:'Сотрудник отвечает клиенту' })).status,200)
     const dashboard = await request('/v1/dashboard',c); assert.equal(dashboard.status,200); assert.equal(dashboard.data.tickets.find((t:any) => t.id === tid).messages.length,2)
     assert.ok((await payload.count({ collection:'audit-log',overrideAccess:true,where:{ entityID:{ equals:back.id } } })).totalDocs > 0)
+    const plan = await payload.create({ collection:'tariffs', overrideAccess:true, data:{ code:`plan-${suffix}`,name:'Test subscription',kind:'subscription',itemType:'box',testOnly:true,active:true,itemLimit:1,monthlyPrice:900 } })
+    const planPayment = await request('/v1/payments',c,{ tariffID:plan.id },`${suffix}-plan`)
+    assert.equal(planPayment.status,200)
+    assert.equal((await request('/v1/payments',c,{ tariffID:plan.id },`${suffix}-plan`)).data.payment.id,planPayment.data.payment.id)
+    assert.equal((await request(`/v1/payments/${planPayment.data.payment.id}/simulate`,c,{ result:'paid' })).status,200)
+    assert.equal((await request('/v1/dashboard',c)).data.profile.planId,plan.id)
+    assert.equal((await request('/v1/subscription/pause',c,{})).status,409,'Active inventory prevents pause')
+    const emptyPlanPayment = await request('/v1/payments',o,{ tariffID:plan.id },`${suffix}-empty-plan`)
+    assert.equal((await request(`/v1/payments/${emptyPlanPayment.data.payment.id}/simulate`,o,{ result:'paid' })).status,200)
+    assert.equal((await request('/v1/subscription/pause',o,{})).status,200)
+    assert.equal((await request('/v1/dashboard',o)).data.profile.subscriptionStatus,'paused')
+    assert.equal((await request('/v1/payment-method/simulate',c,{})).status,200)
+    assert.equal((await request('/v1/dashboard',c)).data.profile.paymentMethod.last4,'4242')
+    const changedPhone = `+7999000${String(1000 + Math.floor(Math.random()*8000))}`
+    const phoneChange = await request('/v1/profile/phone/request',o,{ phone:changedPhone })
+    assert.equal(phoneChange.status,200)
+    const phoneCode = phoneChange.data.simulationCode
+    assert.equal((await request('/auth/verify-otp','',{ phone:changedPhone,code:phoneCode })).status,400,'A phone-change challenge cannot log in')
+    assert.equal((await request('/v1/profile/phone/confirm',c,{ phone:changedPhone,code:phoneCode })).status,400,'A challenge is bound to its account')
+    assert.equal((await request('/v1/profile/phone/confirm',o,{ phone:changedPhone,code:phoneCode })).status,200)
+    assert.equal((await request('/me',o)).data.user.phone,changedPhone)
+    assert.equal((await request('/v1/profile/phone/confirm',o,{ phone:changedPhone,code:phoneCode })).status,400,'Phone-change code cannot be replayed')
+    assert.equal((await request('/v1/profile/phone/request',c,{ phone:changedPhone })).status,409)
     // Cancellation refunds a simulated payment once and releases the expected items.
     const cancelled = (await request('/v1/intake',c,{ ...orderData,items:[{ tariffID:tariff.id,quantity:1 }] },`${suffix}-cancel`)).data.order
     const cp = (await request('/v1/payments',c,{ orderID:cancelled.id })).data.payment

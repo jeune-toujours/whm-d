@@ -15,6 +15,7 @@ const errors = [], marker = `Browser ${Date.now()}`, phone = `999000${1000 + Mat
 const image = { name:'verification.png', mimeType:'image/png', buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQ1sAAAAASUVORK5CYII=', 'base64') };
 try {
   const page = await browser.newPage({ viewport:{ width:1280,height:900 } }); page.on('pageerror', e => errors.push(e.message));
+  page.on('response', r => { if (r.status() >= 400) console.error(`HTTP ${r.status()} ${new URL(r.url()).pathname}`); });
   await page.goto(`${base}/#/signin`);
   await page.getByRole('button',{ name:'Начать хранение',exact:true }).click();
   await page.getByLabel('Номер телефона').fill(phone);
@@ -37,7 +38,7 @@ try {
   await panel.goto(`${backend}/admin/warehouse/receive`);
   const intake = panel.locator('.whm-order').filter({ hasText:order.number });
   await intake.getByLabel('Скан вещи').fill(`SCAN-${Date.now()}`); const barcode = await intake.getByLabel('Скан вещи').inputValue();
-  await intake.getByLabel('Пломба (обязательно)').fill(`SEAL-${Date.now()}`); await intake.getByLabel('Опись').fill('Тестовая опись\nПроверка браузером');
+  await intake.getByLabel(/^Пломба/).fill(`SEAL-${Date.now()}`); await intake.getByLabel('Опись').fill('Тестовая опись\nПроверка браузером');
   await intake.getByLabel('Фото или видео',{ exact:true }).setInputFiles(image); await intake.getByRole('button',{ name:'Принять',exact:true }).click(); await intake.waitFor({ state:'detached' });
   await panel.goto(`${backend}/admin/warehouse/place`);
   const place = panel.locator('.whm-order').filter({ hasText:order.number }); await place.getByLabel('Скан вещи').fill(barcode);

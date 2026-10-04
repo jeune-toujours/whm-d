@@ -30,6 +30,7 @@
     storing: { title: 'Размещаем на хранение', caption: 'Скоро вещи появятся в приложении' },
     assembling: { title: 'Собираем ваш заказ', caption: 'Готовим вещи к выдаче' },
     delivering: { title: 'Курьер в пути', caption: 'Вещи едут по указанному адресу' },
+    delivery_ready: { title: 'Подготовлено к доставке', caption: 'Ожидаем передачу курьеру' },
     pickup_ready: { title: 'Готово к выдаче', caption: 'Вещи ждут вас на складе' },
     completed: { title: 'Заказ завершён', caption: 'Все действия по заказу выполнены' },
     cancelled: { title: 'Заказ отменён', caption: 'Заявка больше не активна' }
@@ -68,6 +69,7 @@
 
   let {
     initialTheme = 'bumblebee',
+    live = false,
     order = defaultOrder,
     autoRefreshMs = 45_000,
     onRefresh = async () => { await delay(650); return {}; },
@@ -83,7 +85,7 @@
   } = $props();
 
   let theme = $state(initialTheme);
-  let currentOrder = $state(mergeOrder(defaultOrder, order));
+  let currentOrder = $state(mergeOrder(live ? { courier: {}, history: [], items: [] } : defaultOrder, order));
   let stale = $state(false);
   let refreshError = $state('');
   let expandedItems = $state(false);
@@ -126,7 +128,7 @@
       const update = await onRefresh(currentOrder.id);
       const previousStatus = currentOrder.status;
       currentOrder = mergeOrder(currentOrder, update);
-      if (update?.status && update.status !== previousStatus && !currentOrder.history.some((entry) => entry.status === update.status)) {
+      if (!live && update?.status && update.status !== previousStatus && !currentOrder.history.some((entry) => entry.status === update.status)) {
         currentOrder = { ...currentOrder, history: [...currentOrder.history, { status: update.status, at: new Date().toISOString() }] };
       }
       stale = false;
@@ -143,7 +145,7 @@
   function stepsFor(data) {
     if (data.type === 'return') {
       return data.fulfillment === 'courier'
-        ? ['created', 'assembling', 'delivering', 'completed']
+        ? ['created', 'assembling', ...(live ? ['delivery_ready'] : []), 'delivering', 'completed']
         : ['created', 'assembling', 'pickup_ready', 'completed'];
     }
     return data.fulfillment === 'courier'

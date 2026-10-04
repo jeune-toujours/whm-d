@@ -21,4 +21,11 @@ export const self: Access = ({ req }) => {
   return user && user.active !== false ? { id: { equals: user.id } } : false
 }
 export const officeOwned: Access = args => hasRole(args.req, ['warehouse']) ? false : owned(args)
+export const supportOwned: Access = ({ req }) => {
+  if (hasRole(req, ['admin', 'manager'])) return { type: { equals: 'incident' } }
+  if (hasRole(req, ['warehouse'])) return false
+  return owned({ req })
+}
+export const supportOffice: Access = ({ req }) => hasRole(req, ['admin', 'manager']) ? { type: { equals: 'incident' } } : false
+export const supportMessages: Access = ({ req }) => hasRole(req, ['admin', 'manager']) ? { 'ticket.type': { equals: 'incident' } } : officeOwned({ req })
 export const never: Access = () => false

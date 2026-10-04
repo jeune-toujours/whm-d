@@ -76,6 +76,7 @@
     in_progress: 'В работе',
     answered: 'Получен ответ',
     resolved: 'Решено',
+    answered: 'Получен ответ',
     rejected: 'Отклонено'
   };
 
@@ -159,6 +160,7 @@
   let submitting = $state(false);
 
   let lastTicketId = $state('');
+  let submissionKey = $state(crypto.randomUUID());
   let lastExpectedResponse = $state('');
   let lastTicketType = $state('');
 
@@ -176,6 +178,7 @@
     }
   });
   let replyMessage = $state('');
+  let replyKey = $state(crypto.randomUUID());
   let replyBusy = $state(false);
   let replyError = $state('');
 
@@ -273,7 +276,9 @@
     try {
       const trimmedDescription = incidentDescription.trim();
       const result = await onSubmitIncident({
-        orderId: selectedOrderId,
+        operationKey: submissionKey,
+        orderId: initialContext?.orderId || selectedOrderId,
+        unitId: initialContext?.unitId || contextOptions.find(o=>o.orderId === selectedOrderId)?.unitId,
         description: trimmedDescription,
         attachments: incidentAttachments
       });
@@ -291,6 +296,7 @@
         relatedOrderId: selectedOrderId,
         messages: [{ author: 'client', text: trimmedDescription, date: 'Только что' }]
       });
+      submissionKey = crypto.randomUUID();
       lastTicketId = ticketId;
       lastExpectedResponse = result?.expectedResponse || '';
       lastTicketType = 'incident';
@@ -315,6 +321,7 @@
     try {
       const trimmedDescription = technicalDescription.trim();
       const result = await onSubmitTechnical({
+        operationKey: submissionKey,
         section: technicalSection,
         description: trimmedDescription,
         attachments: technicalAttachments
@@ -332,6 +339,7 @@
         updatedAt: 'Только что',
         messages: [{ author: 'client', text: trimmedDescription, date: 'Только что' }]
       });
+      submissionKey = crypto.randomUUID();
       lastTicketId = ticketId;
       lastExpectedResponse = result?.expectedResponse || '';
       lastTicketType = 'technical';
@@ -376,7 +384,7 @@
     replyBusy = true;
     replyError = '';
     try {
-      const result = await onReplyTicket(selectedTicket.id, replyMessage.trim());
+      const result = await onReplyTicket(selectedTicket.id, replyMessage.trim(), replyKey);
       if (result?.ok === false) {
         replyError = result.message || 'Не удалось отправить сообщение.';
         return;
@@ -386,6 +394,7 @@
         { author: 'client', text: replyMessage.trim(), date: 'Сейчас' }
       ];
       replyMessage = '';
+      replyKey = crypto.randomUUID();
     } catch (error) {
       replyError = 'Нет соединения. Попробуйте ещё раз.';
     } finally {
@@ -403,7 +412,8 @@
 
   function resetToSelect() {
     ticketType = '';
-    selectedOrderId = '';
+    submissionKey = crypto.randomUUID();
+    selectedOrderId = initialContext?.orderId || '';
     incidentDescription = '';
     incidentAttachments = [];
     incidentAttempted = false;
@@ -494,7 +504,7 @@
 
         <label class="text-field" class:invalid={missingOrder}>
           <span>Заказ или вещь</span>
-          <select bind:value={selectedOrderId} disabled={contextOptionsLoading}>
+          <select bind:value={selectedOrderId} disabled={contextOptionsLoading || Boolean(initialContext?.orderId || initialContext?.unitId)}>
             <option value="">{contextOptionsLoading ? 'Загружаем список…' : 'Выберите заказ или вещь'}</option>
             {#each contextOptions as option}
               <option value={option.orderId}>{option.title} · {option.caption}</option>
@@ -640,7 +650,7 @@
       {#if live && selectedTicket.attachments?.length}<div class="inline-note">Вложения: {#each selectedTicket.attachments as file}<a href={file.url} target="_blank" rel="noopener">{file.filename}</a> {/each}</div>{/if}
       <div class="page-heading">
         <h1>{selectedTicket.shortDescription}</h1>
-        <p>Обращение #{selectedTicket.id} · {ticketStatusLabel[selectedTicket.status] ?? selectedTicket.status}</p>
+        <p>Обращение #{selectedTicket.id} · {selectedTicket.type === 'technical' && selectedTicket.status === 'submitted' ? 'Отправлено' : ticketStatusLabel[selectedTicket.status] ?? selectedTicket.status}</p>
       </div>
 
       {#if selectedTicket.relatedOrderId}
@@ -659,6 +669,7 @@
         {/each}
       </div>
 
+      {#if selectedTicket.closeReason}<p class="inline-note">{selectedTicket.closeReason}</p>{/if}
       {#if canReplyToTicket}
         <label class="text-field">
           <span>Ваше сообщение</span>

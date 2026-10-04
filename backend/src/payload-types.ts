@@ -125,6 +125,7 @@ export interface Config {
   jobs: {
     tasks: {
       'send-otp': TaskSendOtp;
+      'developer-email': TaskDeveloperEmail;
       inline: {
         input: unknown;
         output: unknown;
@@ -204,6 +205,8 @@ export interface StorageItem {
   cell?: (string | null) | Cell;
   monthlyPrice: number;
   startedAt?: string | null;
+  returnedAt?: string | null;
+  blockReason?: string | null;
   media?: (string | Media)[] | null;
   updatedAt: string;
   createdAt: string;
@@ -242,6 +245,7 @@ export interface Warehouse {
 export interface Media {
   id: string;
   owner: string | User;
+  supportType?: ('incident' | 'technical') | null;
   purpose: 'intake' | 'return' | 'signature' | 'document' | 'support';
   prefix?: string | null;
   _objectKey?: string | null;
@@ -278,6 +282,18 @@ export interface Order {
   idempotencyKey: string;
   requestHash?: string | null;
   payment?: (string | null) | Payment;
+  details?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  closedAt?: string | null;
+  historySearch?: string | null;
+  hasServices?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -295,6 +311,15 @@ export interface Payment {
   idempotencyKey?: string | null;
   order?: (string | null) | Order;
   tariff?: (string | null) | Tariff;
+  checkout?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   receiptURL?: string | null;
   paidAt?: string | null;
   updatedAt: string;
@@ -354,8 +379,19 @@ export interface SupportTicket {
   id: string;
   owner: string | User;
   type: 'technical' | 'incident';
+  details?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  idempotencyKey?: string | null;
   subject: string;
-  status: 'submitted' | 'in_progress' | 'resolved';
+  status: 'submitted' | 'in_progress' | 'resolved' | 'rejected' | 'answered';
+  closeReason?: string | null;
   order?: (string | null) | Order;
   item?: (string | null) | StorageItem;
   attachments?: (string | Media)[] | null;
@@ -373,6 +409,7 @@ export interface SupportMessage {
   author: string | User;
   authorRole: 'client' | 'support';
   text: string;
+  idempotencyKey?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -489,7 +526,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'send-otp';
+        taskSlug: 'inline' | 'send-otp' | 'developer-email';
         taskID: string;
         input?:
           | {
@@ -522,7 +559,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'send-otp') | null;
+  taskSlug?: ('inline' | 'send-otp' | 'developer-email') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -687,6 +724,8 @@ export interface StorageItemsSelect<T extends boolean = true> {
   cell?: T;
   monthlyPrice?: T;
   startedAt?: T;
+  returnedAt?: T;
+  blockReason?: T;
   media?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -711,6 +750,10 @@ export interface OrdersSelect<T extends boolean = true> {
   idempotencyKey?: T;
   requestHash?: T;
   payment?: T;
+  details?: T;
+  closedAt?: T;
+  historySearch?: T;
+  hasServices?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -795,6 +838,7 @@ export interface PaymentsSelect<T extends boolean = true> {
   idempotencyKey?: T;
   order?: T;
   tariff?: T;
+  checkout?: T;
   receiptURL?: T;
   paidAt?: T;
   updatedAt?: T;
@@ -807,8 +851,11 @@ export interface PaymentsSelect<T extends boolean = true> {
 export interface SupportTicketsSelect<T extends boolean = true> {
   owner?: T;
   type?: T;
+  details?: T;
+  idempotencyKey?: T;
   subject?: T;
   status?: T;
+  closeReason?: T;
   order?: T;
   item?: T;
   attachments?: T;
@@ -825,6 +872,7 @@ export interface SupportMessagesSelect<T extends boolean = true> {
   author?: T;
   authorRole?: T;
   text?: T;
+  idempotencyKey?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -875,6 +923,7 @@ export interface OtpChallengesSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   owner?: T;
+  supportType?: T;
   purpose?: T;
   prefix?: T;
   _objectKey?: T;
@@ -979,6 +1028,19 @@ export interface TaskSendOtp {
   input: {
     challengeID: string;
     phone: string;
+  };
+  output: {
+    sent: boolean;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskDeveloper-email".
+ */
+export interface TaskDeveloperEmail {
+  input: {
+    ticketID: string;
+    messageID?: string | null;
   };
   output: {
     sent: boolean;

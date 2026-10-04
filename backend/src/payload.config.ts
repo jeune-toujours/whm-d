@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { collections } from './collections'
 import { endpoints } from './endpoints'
-import { sendOTP } from './jobs'
+import { sendOTP, developerEmail } from './jobs'
 
 const building = process.env.WHM_BUILD === '1'
 const secret = process.env.PAYLOAD_SECRET || (building ? 'build-only-not-valid-for-runtime-00000000' : '')
@@ -39,7 +39,7 @@ export default buildConfig({
     collections: { media: { prefix: process.env.S3_PREFIX || 'whm', signedDownloads: { expiresIn: 300 } } },
     config: { endpoint: process.env.S3_ENDPOINT, region: process.env.S3_REGION, forcePathStyle: true, credentials: { accessKeyId: process.env.S3_ACCESS_KEY_ID || '', secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '' } },
   })],
-  jobs: { access: { run: ({ req }) => req.user?.role === 'admin', queue: ({ req }) => req.user?.role === 'admin', cancel: ({ req }) => req.user?.role === 'admin' }, jobsCollectionOverrides: ({ defaultJobsCollection }) => ({ ...defaultJobsCollection, access: { ...defaultJobsCollection.access, read: ({ req }) => req.user?.role === 'admin' } }), tasks: [sendOTP], autoRun: [{ cron: '* * * * * *', queue: 'default', limit: 20 }] },
+  jobs: { access: { run: ({ req }) => req.user?.role === 'admin', queue: ({ req }) => req.user?.role === 'admin', cancel: ({ req }) => req.user?.role === 'admin' }, jobsCollectionOverrides: ({ defaultJobsCollection }) => ({ ...defaultJobsCollection, access: { ...defaultJobsCollection.access, read: ({ req }) => req.user?.role === 'admin' } }), tasks: [sendOTP, developerEmail], autoRun: [{ cron: '* * * * * *', queue: 'default', limit: 20 }] },
   typescript: { outputFile: path.resolve(sourceDir, 'payload-types.ts') },
   email: () => ({ name: 'whm-disabled-email', defaultFromAddress: 'unconfigured@whm.invalid', defaultFromName: 'WHM', sendEmail: async () => { throw new Error('Email provider is not configured') } }),
   onInit: async () => {

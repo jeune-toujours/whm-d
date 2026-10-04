@@ -1,6 +1,6 @@
 <script>
   import { ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, FileText, ListFilter, Moon, Package, Search, SearchX, Sun, TriangleAlert, Truck, X } from '@lucide/svelte';
-  import { tick } from 'svelte';
+  import { tick, onMount } from 'svelte';
 
   /*
    * WHM-11 — История хранения и заказов
@@ -298,7 +298,9 @@
   };
 
   let {
-    orders = demoOrders,
+    live = false, initialOrderId = '', viewKey = '', onLoadPage = null, onLoadDetail = null, onSelectOrder = () => {},
+    financialView = false, onLoadPayments = null, onPaymentReceipt = () => {}, onPaymentRetry = () => {}, onShowOrders = () => {}, onShowPayments = () => {},
+    orders = live ? [] : demoOrders,
     activeOrder = demoActiveOrder,
     initialTheme = 'bumblebee',
     loading = false,
@@ -310,11 +312,19 @@
     onOpenDocument = null,
     onOpenSupport = null,
     onOpenRelatedOrder = null,
-    onRetry = () => {},
+    onRetry = () => { if(live) { if(selectedOrderId) void openOrder({id:selectedOrderId});else void moreHistory(); } },
     onTrack = () => {}
   } = $props();
 
-  let initialized = $state(false);
+  let initialized = $state(false), pageCursor = $state(null), detailCache = $state({}), requestSequence = 0, historyMounted = $state(false);
+  let paymentFilter = $state('all'), paymentRows = $state([]), nextPaymentPage = $state(null), paymentLoading = $state(false), paymentError = $state('');
+  $effect(() => { if (live && financialView) { const status = paymentFilter; void loadPayments(status); } });
+  async function loadPayments(status = paymentFilter, append = false) {
+    paymentLoading = true; paymentError = '';
+    try { const r = await onLoadPayments({status,page:append?nextPaymentPage:1}); if(status!==paymentFilter)return; paymentRows = append ? [...paymentRows,...r.payments] : r.payments; nextPaymentPage=r.nextPage; }
+    catch { paymentError='Не удалось загрузить платежи. Повторите попытку.'; }
+    finally { paymentLoading=false; }
+  }
   let theme = $state('bumblebee');
   let searchQuery = $state('');
   let typeFilter = $state('all');
@@ -344,8 +354,26 @@
     initialized = true;
   });
 
+  onMount(() => {
+    if (live && viewKey) { try { const v=JSON.parse(sessionStorage.getItem(viewKey)||'{}');searchQuery=v.searchQuery||'';typeFilter=v.typeFilter||'all';statusFilter=v.statusFilter||'all';periodFilter=v.periodFilter||'all';methodFilter=v.methodFilter||'all';servicesOnly=Boolean(v.servicesOnly);sortOrder=v.sortOrder||'newest';listScrollY=v.listScrollY||0; } catch {} }
+    historyMounted=true;
+  });
+  $effect(() => {
+    if (!live || !historyMounted || financialView) return;
+    const params={ search:searchQuery,type:typeFilter,status:statusFilter,period:periodFilter,method:methodFilter,services:servicesOnly,sort:sortOrder };
+    if (viewKey) sessionStorage.setItem(viewKey,JSON.stringify({searchQuery,typeFilter,statusFilter,periodFilter,methodFilter,servicesOnly,sortOrder,listScrollY}));
+    const timer=setTimeout(()=>loadPage(params),200);return ()=>clearTimeout(timer);
+  });
+  $effect(() => { if (live && initialOrderId && initialOrderId!==selectedOrderId) void openOrder({id:initialOrderId}); });
+  async function loadPage(params,append=false) {
+    const sequence=++requestSequence;loading=true;errorMessage='';
+    try { const r=await onLoadPage({...params,cursor:append?pageCursor:null});if(sequence!==requestSequence)return;orders=append?[...new Map([...orders,...r.orders].map(o=>[o.id,o])).values()]:r.orders;pageCursor=r.nextCursor; }
+    catch { if(sequence===requestSequence) errorMessage='Не удалось загрузить историю. Повторите попытку.'; }
+    finally { if(sequence===requestSequence) loading=false; }
+  }
+  function moreHistory() { return loadPage({search:searchQuery,type:typeFilter,status:statusFilter,period:periodFilter,method:methodFilter,services:servicesOnly,sort:sortOrder},true); }
   let isDark = $derived(theme === 'halloween');
-  let selectedOrder = $derived(orders.find((order) => order.id === selectedOrderId) ?? null);
+  let selectedOrder = $derived(detailCache[selectedOrderId] || orders.find((order) => order.id === selectedOrderId) || null);
   let advancedFilterCount = $derived(
     Number(statusFilter !== 'all') +
       Number(periodFilter !== 'all') +
@@ -490,6 +518,7 @@
       listScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
     }
     selectedOrderId = order.id;
+    if (live) { errorMessage='';try { detailCache[order.id]=await onLoadDetail(order.id); } catch { errorMessage='Не удалось загрузить заказ. Повторите попытку.';return; } onSelectOrder(order.id); }
     detailItemsExpanded = false;
     periodsExpanded = false;
     onTrack('history_order_opened', { orderId: order.id, type: order.type });
@@ -499,6 +528,7 @@
 
   async function closeOrder() {
     selectedOrderId = '';
+    if (live) onSelectOrder('');
     itemPreview = null;
     receiptPreview = null;
     documentPreview = null;
@@ -532,6 +562,7 @@
   }
 
   function openService(service, order) {
+    if (live && service.material) { const item=order.items.find(i=>i.available); if(item) openItem(item,order);else showToast('Материалы недоступны');return; }
     onTrack('history_service_opened', { orderId: order.id, serviceId: service.id });
     if (service.document && typeof onOpenDocument === 'function') onOpenDocument(service, order);
     else documentPreview = { service, order };
@@ -547,6 +578,7 @@
   }
 
   function openRelated(orderId) {
+    if (live) { void openOrder({id:orderId});return; }
     const localOrder = orders.find((order) => order.id === orderId);
     if (localOrder) {
       openOrder(localOrder);
@@ -605,8 +637,30 @@
   </header>
 
   <main class="history-shell">
-    {#if selectedOrder}
+    {#if live && financialView}
+      <section class="list-view screen-enter" aria-labelledby="payments-title">
+        <div class="page-heading"><div><h1 id="payments-title">История платежей</h1><p>Тестовые оплаты и возвраты. Реальных списаний нет.</p></div></div>
+        <button class="text-button" type="button" onclick={onShowOrders}>История заказов</button>
+        <div class="payment-filters" aria-label="Фильтр платежей">
+          {#each [['all','Все'],['paid','Оплачено'],['refunded','Возврат'],['pending','Ожидает оплаты'],['failed','Ошибка']] as filter}
+            <button class="secondary-button" aria-pressed={paymentFilter===filter[0]} type="button" onclick={()=>paymentFilter=filter[0]}>{filter[1]}</button>
+          {/each}
+        </div>
+        {#if paymentError}<p role="alert">{paymentError}</p><button class="secondary-button" onclick={()=>loadPayments()}>Повторить</button>{/if}
+        {#each paymentRows as payment (payment.id)}
+          <article class="detail-card">
+            <h2>{payment.title}</h2><p>{new Date(payment.date).toLocaleDateString('ru-RU')} · {payment.orderNumber}</p>
+            <div class="finance-line"><span>{({paid:'Оплачено',refunded:'Возврат',pending:'Ожидает оплаты',failed:'Ошибка'})[payment.status]}</span><strong>{formatMoney(payment.amount)}</strong></div>
+            {#if payment.hasReceipt}<button class="text-button" onclick={()=>onPaymentReceipt(payment)}>Тестовая квитанция</button>{/if}
+            {#if ['pending','failed'].includes(payment.status)}<button class="secondary-button" onclick={()=>onPaymentRetry(payment)}>Продолжить оплату</button>{/if}
+          </article>
+        {:else}{#if !paymentLoading && !paymentError}<p>Платежей пока нет.</p>{/if}{/each}
+        {#if paymentLoading}<p role="status">Загружаем платежи…</p>{:else if nextPaymentPage}<button class="secondary-button" onclick={()=>loadPayments(paymentFilter,true)}>Загрузить ещё</button>{/if}
+        <p>Квитанции тестовые, не являются фискальными чеками.</p>
+      </section>
+    {:else if selectedOrder}
       <section class="detail-view screen-enter" aria-labelledby="detail-title">
+        {#if live && !selectedOrder.snapshotAvailable}<p class="inline-note">Для этого раннего тестового заказа снимок не сохранялся. Некоторые сведения восстановлены из текущих данных.</p>{/if}
         <div class="detail-topbar">
           <button class="back-button" type="button" aria-label="Назад к истории" onclick={closeOrder}>
             <ChevronLeft aria-hidden="true" />
@@ -679,7 +733,7 @@
                   <Package aria-hidden="true" />
                 </span>
                 <span class="item-main">
-                  <span class="item-title-row"><strong>{item.title}</strong><small>{item.id}</small></span>
+                  <span class="item-title-row"><strong>{item.title}</strong><small>{item.internalID || item.id}</small></span>
                   <span class="item-description">{item.description}</span>
                   <span class:returned={item.currentStatus === 'returned'} class:cancelled={item.currentStatus === 'cancelled'} class="item-status">
                     {itemStatusLabel(item)}
@@ -756,7 +810,7 @@
           <div class="finance-groups">
             {#if selectedOrder.financial.storage > 0}
               <div class="finance-group">
-                <div class="finance-line strong-line"><span>Хранение за период</span><strong>{formatMoney(selectedOrder.financial.storage)}</strong></div>
+                <div class="finance-line strong-line"><span>{live ? 'Тестовая оплата первого месяца хранения' : 'Хранение за период'}</span><strong>{formatMoney(selectedOrder.financial.storage)}</strong></div>
                 {#if selectedOrder.financial.periods?.length}
                   {#each (periodsExpanded ? selectedOrder.financial.periods : []) as period}
                     <div class="finance-line sub-line"><span>{period.label}</span><span>{formatMoney(period.amount)}</span></div>
@@ -790,10 +844,10 @@
             <span>Итого оплачено</span>
             <strong>{selectedOrder.financial.paid > 0 ? formatMoney(selectedOrder.financial.paid) : 'Без оплаты'}</strong>
           </div>
-          {#if selectedOrder.financial.receiptAvailable}
+          {#if selectedOrder.financial.receiptAvailable || selectedOrder.financial.simulationReceipt}
             <button class="secondary-button receipt-button" type="button" onclick={() => openReceipt(selectedOrder)}>
               <FileText aria-hidden="true" />
-              Открыть чек
+              {live ? "Тестовая квитанция" : "Открыть документ оплаты"}
             </button>
           {/if}
         </article>
@@ -808,14 +862,14 @@
             </div>
             <div class="related-list">
               {#each [...new Set([...(selectedOrder.sourceOrderId ? [selectedOrder.sourceOrderId] : []), ...selectedOrder.relatedOrderIds])] as relatedId}
-                {@const related = orders.find((order) => order.id === relatedId)}
+                {@const related = orders.find((order) => order.id === relatedId) || selectedOrder.relatedOrders?.find(o=>o.id===relatedId)}
                 <button class="related-order" type="button" onclick={() => openRelated(relatedId)}>
                   <span class="related-icon" aria-hidden="true">
                     <ArrowRight aria-hidden="true" />
                   </span>
                   <span>
                     <strong>{related?.number ?? 'Связанный заказ'}</strong>
-                    <small>{related ? `${orderTypeLabel(related)} · ${related.items.length} ${pluralUnits(related.items.length)}` : 'Открыть заказ'}</small>
+                    <small>{related ? `${orderTypeLabel(related)} · ${(related.items?.length || related.count || 0)} ${pluralUnits(related.items.length)}` : 'Открыть заказ'}</small>
                   </span>
                   <ChevronRight class="chevron" aria-hidden="true" />
                 </button>
@@ -837,6 +891,7 @@
           <div>
             <p class="page-kicker">Ваши заказы</p>
             <h1 id="history-title">История заказов</h1>
+            {#if live}<button class="text-button" type="button" onclick={onShowPayments}>Все платежи</button>{/if}
             <p>Сдача, хранение, возвраты и оплата в одном месте.</p>
           </div>
           <div class="order-count"><strong>{orders.length}</strong><span>всего</span></div>
@@ -1000,7 +1055,7 @@
                         {#each cardItems(order) as item}
                           <div class="card-item-line">
                             <span class="mini-placeholder" aria-hidden="true"></span>
-                            <span><strong>{item.title}</strong><small>{item.id}</small></span>
+                            <span><strong>{item.title}</strong><small>{item.internalID || item.id}</small></span>
                             <span class:returned={item.currentStatus === 'returned'} class:cancelled={item.currentStatus === 'cancelled'} class="mini-status">
                               {item.currentStatus === 'stored' ? 'Хранится' : item.currentStatus === 'returned' ? 'Возвращено' : 'Отменено'}
                             </span>
@@ -1044,6 +1099,7 @@
         {/if}
       </section>
     {/if}
+    {#if live && pageCursor && !selectedOrderId}<button class="secondary-button" type="button" disabled={loading} onclick={moreHistory}>Загрузить ещё</button>{/if}
   </main>
 
   {#if filterSheetOpen}
@@ -1616,6 +1672,9 @@
     .sheet-actions { display: grid; }
   }
 
+  .payment-filters { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0; }
+  .payment-filters button { min-width:0; }
+  .payment-filters button[aria-pressed="true"] { background:var(--primary);color:#171717; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }

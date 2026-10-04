@@ -1,6 +1,6 @@
 <script>
   import { ArrowRight, ChevronRight, CircleHelp, Moon, RefreshCw, Search, Sun, TriangleAlert, User, Warehouse } from '@lucide/svelte';
-  import { tick } from 'svelte';
+  import { tick, onMount } from 'svelte';
 
   /*
    * WHM-4 — Главный экран: Мои вещи
@@ -97,7 +97,7 @@
 
   let {
     initialTheme = 'bumblebee',
-    userName = '',
+    userName = '', liveDashboard = null,
     onLoadDashboard = defaultLoadDashboard,
     onOpenItem = null,
     onGoToHandover = () => {},
@@ -118,7 +118,7 @@
 
   let units = $state([]);
   let activeOrders = $state([]);
-  let nextChargeDate = $state('');
+  let nextChargeDate = $state(''), billedMonthly = $state(null);
 
   let activeFilter = $state('all');
   let searchQuery = $state('');
@@ -130,9 +130,8 @@
     initialized = true;
   });
 
-  $effect(() => {
-    fetchDashboard();
-  });
+  onMount(() => { if (!liveDashboard) void fetchDashboard(); });
+  $effect(() => { if (liveDashboard) { units=liveDashboard.units;activeOrders=liveDashboard.activeOrders;nextChargeDate=liveDashboard.nextChargeDate;billedMonthly=liveDashboard.monthlyPrice;loading=false; } });
 
   async function fetchDashboard() {
     loading = true;
@@ -198,7 +197,7 @@
   let isDark = $derived(theme === 'halloween');
   let hasUnits = $derived(units.length > 0);
   let currentMonthly = $derived(
-    units.filter((unit) => unit.status === 'stored').reduce((sum, unit) => sum + unit.monthlyPrice, 0)
+    billedMonthly ?? units.filter((unit) => unit.status === 'stored').reduce((sum, unit) => sum + unit.monthlyPrice, 0)
   );
   let showSearchControls = $derived(units.length > 8);
   let visibleActiveOrders = $derived(activeOrders.slice(0, 3));
@@ -210,7 +209,7 @@
       const matchesQuery =
         !query ||
         unit.title.toLowerCase().includes(query) ||
-        unit.id.toLowerCase().includes(query);
+        (unit.internalID || unit.id).toLowerCase().includes(query);
       return matchesFilter && matchesQuery;
     })
   );
@@ -279,7 +278,8 @@
         <div class="empty-illustration" aria-hidden="true">
           <Warehouse aria-hidden="true" />
         </div>
-        <h2>У вас пока нет вещей на хранении</h2>
+        <h2>{currentMonthly > 0 ? 'Вещи участвуют в активной заявке' : 'У вас пока нет вещей на хранении'}</h2>
+        {#if currentMonthly > 0}<p>Хранение сейчас: {formatMoney(currentMonthly)}/мес. Стоимость изменится после передачи вещей.</p>{/if}
         <p>Сдайте вещи на хранение — мы заберём их и разместим на складе.</p>
         <button class="primary-button" type="button" onclick={onGoToHandover}>
           <span>Сдать вещи</span>

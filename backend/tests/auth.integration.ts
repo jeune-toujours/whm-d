@@ -48,6 +48,14 @@ test('real OTP, sessions, ownership, native CRUD guards and logout against migra
     assert.equal((await call('/me', { cookie })).status, 401, 'Logout revokes server session, not just cookie')
     const before = await payload.find({ collection: 'otp-challenges', overrideAccess: true, sort: '-createdAt', limit: 1 })
     assert.equal(before.docs[0].attempts, 1, 'Failed OTP attempt survives the transaction')
+    const lockedPhone='+7999000'+String(1000+Math.floor(Math.random()*8000));
+    const lockedResponse=await call('/auth/request-otp',{method:'POST',body:{phone:lockedPhone}});
+    assert.equal(lockedResponse.status,200);
+    const lockedCode=(await lockedResponse.json()).simulationCode;
+    const wrong=lockedCode === '000000' ? '999999' : '000000';
+    for(let i=0;i<3;i++) assert.equal((await call('/auth/verify-otp',{method:'POST',body:{phone:lockedPhone,code:wrong}})).status,400);
+    assert.equal((await call('/auth/verify-otp',{method:'POST',body:{phone:lockedPhone,code:lockedCode}})).status,429,'Three wrong attempts lock verification');
+    assert.equal((await call('/auth/request-otp',{method:'POST',body:{phone:lockedPhone}})).status,429,'Locked phone cannot bypass by requesting a new code');
     // Disabled accounts cannot keep using an existing Payload session.
     const req = await createLocalReq({ user: { ...other, collection: 'users' } }, payload)
     const collectionConfig = payload.collections.users.config

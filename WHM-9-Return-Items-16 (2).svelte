@@ -81,7 +81,7 @@
     }
   ];
 
-  const availableDates = Array.from({ length: 5 }, (_, index) => {
+  const demoAvailableDates = Array.from({ length: 5 }, (_, index) => {
     const date = new Date();
     date.setHours(12, 0, 0, 0);
     date.setDate(date.getDate() + index + 2);
@@ -92,7 +92,7 @@
     };
   });
 
-  const timeSlots = ['09:00–11:00', '11:00–13:00', '13:00–15:00', '15:00–17:00', '17:00–19:00'];
+  const demoTimeSlots = ['09:00–11:00', '11:00–13:00', '13:00–15:00', '15:00–17:00', '17:00–19:00'];
 
   const steps = [
     { id: 'select', label: 'Вещи' },
@@ -101,13 +101,13 @@
     { id: 'review', label: 'Проверка' }
   ];
 
-  const pickupWarehouse = {
+  const demoPickupWarehouse = {
     title: 'Склад — Север',
     address: 'Москва, Сигнальный проезд, 16',
     hours: 'Ежедневно, 09:00–20:00'
   };
 
-  const savedAddress = 'Москва, ул. Большая Дмитровка, 21';
+  const demoSavedAddress = 'Москва, ул. Большая Дмитровка, 21';
 
   const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
@@ -122,6 +122,7 @@
   }
 
   let {
+    live = false, config = null, savedAddress = demoSavedAddress, savedPhone = '', currentMonthlyPrice = null, draftKey = '',
     storageUnits = demoStorageUnits,
     initialSelectedIds = [],
     initialTheme = 'bumblebee',
@@ -133,9 +134,12 @@
     onComplete = () => {},
     onNavigateToOrder = () => {},
     onNavigateHome = null,
-    onExit = () => {}
+    onExit = () => {},
+    onSupport = () => {}
   } = $props();
 
+  let availableDates = $derived(live ? config.dates : demoAvailableDates), timeSlots = $derived(live ? config.slots : demoTimeSlots), pickupWarehouse = $derived(live ? config.warehouses[0] : demoPickupWarehouse);
+  let operationKey = $state(crypto.randomUUID()), createdOrderID = $state('');
   let screen = $state('select');
   let theme = $state('bumblebee');
   let activeFilter = $state('all');
@@ -150,11 +154,11 @@
   let selectedSlot = $state('');
   let addressMode = $state('saved');
   let address = $state(savedAddress);
-  let apartment = $state('18');
+  let apartment = $state(live ? '' : '18');
   let intercom = $state('');
-  let entrance = $state('2');
-  let floor = $state('5');
-  let rawPhone = $state('9991234567');
+  let entrance = $state(live ? '' : '2');
+  let floor = $state(live ? '' : '5');
+  let rawPhone = $state(live ? savedPhone.replace(/\D/g,'').replace(/^7/,'').slice(0,10) : '9991234567');
   let courierComment = $state('');
   let acceptedReturnTerms = $state(false);
   let formError = $state('');
@@ -185,12 +189,11 @@
       const matchesQuery =
         !query ||
         unit.title.toLowerCase().includes(query) ||
-        unit.id.toLowerCase().includes(query);
+        (unit.internalID || unit.id).toLowerCase().includes(query);
       return matchesFilter && matchesQuery;
     })
   );
-  let currentMonthly = $derived(
-    storageUnits
+  let currentMonthly = $derived(currentMonthlyPrice ?? storageUnits
       .filter((unit) => unit.status === 'stored')
       .reduce((total, unit) => total + unit.monthlyPrice, 0)
   );
@@ -201,15 +204,15 @@
   let allSelected = $derived(
     selectableUnits.length > 0 && selectableUnits.every((unit) => selectedIds.includes(unit.id))
   );
-  let tripCount = $derived(Math.max(1, Math.ceil(selectedUnits.length / 3)));
-  let baseDeliveryPrice = $derived(method === 'courier' ? 1490 + Math.max(0, tripCount - 1) * 890 : 0);
+  let tripCount = $derived(Math.max(1, Math.ceil(selectedUnits.length / (live ? config.itemsPerTrip : 3))));
+  let baseDeliveryPrice = $derived(method === 'courier' ? (live ? config.returnFee : 1490) + Math.max(0, tripCount - 1) * (live ? config.extraTripFee : 890) : 0);
   let deliveryPrice = $derived(calculatedPrice?.deliveryPrice ?? baseDeliveryPrice);
   let selectedDateLabel = $derived(availableDates.find((date) => date.id === selectedDate));
   let phoneValid = $derived(rawPhone.length === 10);
   let formattedPhone = $derived(formatPhone(rawPhone));
   let scheduleValid = $derived(
-    Boolean(selectedDate && selectedSlot) &&
-      (method === 'pickup' || (address.trim().length >= 8 && phoneValid))
+    Boolean(selectedDate && selectedSlot) && (!live || (availableDates.some(d=>d.id===selectedDate) && timeSlots.includes(selectedSlot))) &&
+      (method === 'pickup' || (address.trim().length >= 8 && phoneValid && (!live || config.addresses.some(a=>a.inZone && a.value===address))))
   );
   let currentStep = $derived(Math.max(0, steps.findIndex((step) => step.id === screen)));
   let draftExists = $derived(
@@ -224,6 +227,20 @@
   let missingConsent = $derived(reviewAttempted && !acceptedReturnTerms);
   let visibleReturnedUnits = $derived(showAllReturnedItems ? selectedUnits : selectedUnits.slice(0, 5));
 
+  $effect(() => {
+    if (!live || !initialized || !draftKey || screen === 'success') return;
+    sessionStorage.setItem(draftKey, JSON.stringify({ operationKey, selectedIds, method, selectedDate, selectedSlot, address, apartment, intercom, entrance, floor, rawPhone, courierComment }));
+  });
+  $effect.pre(() => {
+    if (!live || !draftKey || !initialized) return;
+    const raw = sessionStorage.getItem(draftKey);
+    if (raw && !draftRestored) {
+      draftRestored = true;
+      try { const d = JSON.parse(raw); operationKey = d.operationKey || operationKey; selectedIds = initialSelectedIds.length ? [...initialSelectedIds] : (d.selectedIds || []); method = d.method || ''; selectedDate = d.selectedDate || ''; selectedSlot = d.selectedSlot || ''; address = d.address || ''; apartment = d.apartment || ''; intercom = d.intercom || ''; entrance = d.entrance || ''; floor = d.floor || ''; rawPhone = d.rawPhone || rawPhone; courierComment = d.courierComment || ''; } catch {}
+    }
+  });
+  let draftRestored = $state(false);
+  $effect(() => { if (live && !isBusy && screen !== 'success') { const available = new Set(selectableUnits.map(u => u.id)); const next = selectedIds.filter(id => available.has(id)); if (next.length !== selectedIds.length) { selectedIds = next; formError = 'Статус вещей изменился. Недоступные позиции сняты с выбора.'; } } });
   function toggleTheme() {
     theme = isDark ? 'bumblebee' : 'halloween';
     window.dispatchEvent(new CustomEvent('whm-theme-change', { detail: theme }));
@@ -335,6 +352,7 @@
 
   function buildPayload() {
     return {
+      operationKey, quoteHash: calculatedPrice?.quote?.hash, consent: acceptedReturnTerms,
       selectedIds: [...selectedIds],
       units: selectedUnits,
       method,
@@ -375,7 +393,7 @@
     formError = '';
 
     try {
-      if (deliveryPrice > 0) {
+      if (deliveryPrice > 0 && !live) {
         paymentState = 'processing';
         const payment = await onOpenPayment({
           amount: deliveryPrice,
@@ -397,7 +415,9 @@
         return;
       }
 
-      orderId = result?.orderId || 'WHM-R-2048';
+      createdOrderID = result?.orderId || '';
+      orderId = result?.orderNumber || result?.orderId || (live ? '' : 'WHM-R-2048');
+      if (live && draftKey) sessionStorage.removeItem(draftKey);
       paymentState = 'success';
       await delay(350);
       screen = 'success';
@@ -423,11 +443,13 @@
     if (draftExists) {
       exitConfirm = true;
     } else {
+      if (live && draftKey) sessionStorage.removeItem(draftKey);
       onExit({ draft: null });
     }
   }
 
   function confirmExit(saveDraft) {
+    if (!saveDraft && live && draftKey) sessionStorage.removeItem(draftKey);
     const draft = saveDraft ? buildPayload() : null;
     exitConfirm = false;
     onExit({ draft });
@@ -576,7 +598,7 @@
               <button
                 class="primary-button"
                 type="button"
-                onclick={() => onNavigateToOrder({ ...buildPayload(), orderId })}
+                onclick={() => onNavigateToOrder({ ...buildPayload(), orderId: live ? createdOrderID : orderId })}
               >
                 <span>Перейти к заказу</span>
                 <ArrowRight aria-hidden="true" />
@@ -653,7 +675,7 @@
                           <span class="unit-price">{formatMoney(unit.monthlyPrice)}/мес.</span>
                         </span>
                         <span class="unit-description">{unit.description}</span>
-                        <span class="unit-caption">{unit.id} · хранится с {unit.storedSince}</span>
+                        <span class="unit-caption">{unit.internalID || unit.id} · хранится с {unit.storedSince}</span>
                         {#if unit.lockReason}
                           <span class="locked-note">
                             <Lock aria-hidden="true" />
@@ -682,7 +704,7 @@
               {/if}
 
               <div class="panel-actions">
-                <button class="primary-button" type="button" onclick={goToMethod}>
+                <button class="primary-button" type="button" disabled={selectedIds.length === 0} onclick={goToMethod}>
                   <span>Продолжить</span>
                   <ArrowRight aria-hidden="true" />
                 </button>
@@ -693,7 +715,7 @@
                   <span>Выбрано: {selectedIds.length}</span>
                   <strong>{formatMoney(futureMonthly)}/мес. после возврата</strong>
                 </div>
-                <button class="primary-button compact-button" type="button" onclick={goToMethod}>
+                <button class="primary-button compact-button" type="button" disabled={selectedIds.length === 0} onclick={goToMethod}>
                   <span>Продолжить</span>
                   <ArrowRight aria-hidden="true" />
                 </button>
@@ -746,7 +768,7 @@
               {/if}
 
               <div class="panel-actions">
-                <button class="primary-button" type="button" onclick={goToSchedule}>
+                <button class="primary-button" type="button" disabled={!method} onclick={goToSchedule}>
                   <span>Продолжить</span>
                   <ArrowRight aria-hidden="true" />
                 </button>
@@ -761,21 +783,24 @@
               {#if method === 'courier'}
                 <div class="schedule-grid">
                   <div class="address-column">
-                    <div class="address-switch">
+                    {#if savedAddress}<div class="address-switch">
                       <button class:active={addressMode === 'saved'} type="button" onclick={() => { addressMode = 'saved'; address = savedAddress; }}>Сохранённый адрес</button>
                       <button class:active={addressMode === 'new'} type="button" onclick={() => { addressMode = 'new'; address = ''; }}>Новый адрес</button>
-                    </div>
+                    </div>{/if}
 
                     <label class="text-field full-field" class:invalid={missingAddress}>
                       <span>Адрес доставки</span>
                       <input
                         type="text"
+                        list={live ? "return-addresses" : undefined}
                         autocomplete="street-address"
                         placeholder="Начните вводить адрес"
                         bind:value={address}
                         oninput={() => (formError = '')}
                       />
+                      {#if live}<datalist id="return-addresses">{#each config.addresses as a}<option value={a.value}>{a.inZone ? "Тестовая зона доставки" : "Вне зоны"}</option>{/each}</datalist>{/if}
                       {#if missingAddress}<small class="field-error">Укажите адрес доставки</small>{/if}
+                      {#if live && config.addresses.some(a=>!a.inZone && a.value===address)}<small class="field-error">Адрес вне тестовой зоны доставки.</small><button class="text-button" type="button" onclick={()=>onSupport({unitId:selectedIds[0],note:'Возврат: адрес вне зоны доставки'})}>Обратиться в поддержку</button>{/if}
                     </label>
 
                     <div class="address-fields">
@@ -837,12 +862,12 @@
                         {#each timeSlots as slot, index}
                           <button
                             class:active={selectedSlot === slot}
-                            disabled={index === 2}
+                            disabled={!live && index === 2}
                             type="button"
                             onclick={() => { selectedSlot = slot; formError = ''; }}
                           >
                             {slot}
-                            {#if index === 2}<small>занято</small>{/if}
+                            {#if !live && index === 2}<small>занято</small>{/if}
                           </button>
                         {/each}
                       </div>
@@ -897,7 +922,7 @@
               {/if}
 
               <div class="panel-actions">
-                <button class="primary-button" type="button" disabled={isBusy} onclick={calculateAndReview}>
+                <button class="primary-button" type="button" disabled={!scheduleValid || isBusy} onclick={calculateAndReview}>
                   {#if isBusy}
                     <span class="button-spinner"></span>
                     <span>Рассчитываем</span>
@@ -977,7 +1002,7 @@
               {/if}
 
               <div class="panel-actions">
-                <button class="primary-button" type="button" disabled={isBusy} onclick={submitReturn}>
+                <button class="primary-button" type="button" disabled={isBusy || !acceptedReturnTerms} onclick={submitReturn}>
                   {#if isBusy}
                     <span class="button-spinner"></span>
                     <span>Создаём заявку</span>
@@ -1055,7 +1080,7 @@
         <h2 id="item-modal-title">{itemPreview.title}</h2>
         <p>{itemPreview.description}</p>
         <dl>
-          <div><dt>Идентификатор</dt><dd>{itemPreview.id}</dd></div>
+          <div><dt>Идентификатор</dt><dd>{itemPreview.internalID || itemPreview.id}</dd></div>
           <div><dt>Размер</dt><dd>{itemPreview.size}</dd></div>
           <div><dt>На хранении</dt><dd>с {itemPreview.storedSince}</dd></div>
           <div><dt>Стоимость</dt><dd>{formatMoney(itemPreview.monthlyPrice)}/мес.</dd></div>

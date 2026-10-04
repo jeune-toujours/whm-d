@@ -16,8 +16,8 @@ export async function safe(action) {
   catch (error) { return { ok: false, message: error instanceof ApiError ? error.message : 'Нет соединения. Повторите попытку.', code: error.code }; }
 }
 export function download(path) { window.open(`${base}${path}`, '_blank', 'noopener'); }
-export async function uploadSupport(file) {
-  const form = new FormData(); form.set('_payload', JSON.stringify({ purpose:'support' })); form.set('file', file);
+export async function uploadSupport(file, supportType = 'incident') {
+  const form = new FormData(); form.set('_payload', JSON.stringify({ purpose:'support', supportType })); form.set('file', file);
   const r = await fetch(`${base}/media`, { method:'POST', credentials:'include', body:form, signal:AbortSignal.timeout(60000) });
   const data = await r.json();
   if (!r.ok || !data.doc?.id) throw new ApiError('Не удалось сохранить вложение. Проверьте формат и размер файла (до 25 МБ).', r.status);

@@ -26,3 +26,16 @@ export const sendOTP: TaskConfig<'send-otp'> = {
     return { output: { sent: true } }
   },
 }
+
+export const developerEmail: TaskConfig<'developer-email'> = {
+  slug: 'developer-email', retries: 2,
+  inputSchema: [{ name: 'ticketID', type: 'text', required: true }, { name: 'messageID', type: 'text' }],
+  outputSchema: [{ name: 'sent', type: 'checkbox', required: true }],
+  handler: async ({ input, req }) => {
+    if (!simulationsEnabled()) throw new Error('Developer email provider is not configured')
+    const key = `developer-email:${input.ticketID}:${input.messageID || 'initial'}`
+    const old = await req.payload.find({ collection: 'integration-events', req, overrideAccess: true, limit: 1, where: { key: { equals: key } } })
+    if (!old.totalDocs) await req.payload.create({ collection: 'integration-events', req, overrideAccess: true, data: { key, provider: 'simulation-developer-email', entityID: input.ticketID, status: 'completed' } })
+    return { output: { sent: true } }
+  },
+}

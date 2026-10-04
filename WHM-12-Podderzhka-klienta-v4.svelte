@@ -76,6 +76,7 @@
     in_progress: 'В работе',
     answered: 'Получен ответ',
     resolved: 'Решено',
+    answered: 'Получен ответ',
     rejected: 'Отклонено'
   };
 
@@ -130,6 +131,7 @@
     onSubmitIncident = defaultSubmitIncident,
     onSubmitTechnical = defaultSubmitTechnical,
     onLoadTickets = defaultLoadTickets,
+    onOpenRelatedItem = () => {},
     onOpenRelatedOrder = () => {},
     onReplyTicket = defaultReplyTicket,
     onGoHome = () => {}
@@ -159,6 +161,7 @@
   let submitting = $state(false);
 
   let lastTicketId = $state('');
+  let submissionKey = $state(crypto.randomUUID());
   let lastExpectedResponse = $state('');
   let lastTicketType = $state('');
 
@@ -176,6 +179,7 @@
     }
   });
   let replyMessage = $state('');
+  let replyKey = $state(crypto.randomUUID());
   let replyBusy = $state(false);
   let replyError = $state('');
 
@@ -189,6 +193,8 @@
       screen = 'form';
       if (initialContext?.orderId) {
         selectedOrderId = initialContext.orderId;
+      } else if (initialContext?.unitId) {
+        selectedOrderId = `item:${initialContext.unitId}`;
       }
       if (initialType === 'incident' && initialContext?.note) {
         incidentDescription = initialContext.note;
@@ -196,6 +202,7 @@
       if (initialType === 'technical' && initialContext?.note) {
         technicalDescription = initialContext.note;
       }
+      if (initialType === 'incident') queueMicrotask(() => selectType('incident'));
     }
   });
 
@@ -229,6 +236,7 @@
       contextOptionsLoading = true;
       try {
         contextOptions = await onLoadContextOptions();
+        if (initialContext?.orderId && !contextOptions.some(o=>o.orderId===initialContext.orderId)) contextOptions = [{orderId:initialContext.orderId,title:initialContext.orderNumber || 'Выбранный заказ',caption:'Контекст обращения'},...contextOptions];
         if (!selectedOrderId && contextOptions.length > 0) {
           selectedOrderId = contextOptions[0].orderId;
         }
@@ -273,7 +281,9 @@
     try {
       const trimmedDescription = incidentDescription.trim();
       const result = await onSubmitIncident({
-        orderId: selectedOrderId,
+        operationKey: submissionKey,
+        orderId: initialContext?.orderId || (selectedOrderId.startsWith('item:') ? undefined : selectedOrderId),
+        unitId: initialContext?.unitId || contextOptions.find(o=>o.orderId === selectedOrderId)?.unitId,
         description: trimmedDescription,
         attachments: incidentAttachments
       });
@@ -288,9 +298,10 @@
         shortDescription: shortenText(trimmedDescription),
         status: 'submitted',
         updatedAt: 'Только что',
-        relatedOrderId: selectedOrderId,
+        relatedOrderId: selectedOrderId.startsWith('item:') ? null : selectedOrderId,
         messages: [{ author: 'client', text: trimmedDescription, date: 'Только что' }]
       });
+      submissionKey = crypto.randomUUID();
       lastTicketId = ticketId;
       lastExpectedResponse = result?.expectedResponse || '';
       lastTicketType = 'incident';
@@ -315,6 +326,7 @@
     try {
       const trimmedDescription = technicalDescription.trim();
       const result = await onSubmitTechnical({
+        operationKey: submissionKey,
         section: technicalSection,
         description: trimmedDescription,
         attachments: technicalAttachments
@@ -332,6 +344,7 @@
         updatedAt: 'Только что',
         messages: [{ author: 'client', text: trimmedDescription, date: 'Только что' }]
       });
+      submissionKey = crypto.randomUUID();
       lastTicketId = ticketId;
       lastExpectedResponse = result?.expectedResponse || '';
       lastTicketType = 'technical';
@@ -376,16 +389,17 @@
     replyBusy = true;
     replyError = '';
     try {
-      const result = await onReplyTicket(selectedTicket.id, replyMessage.trim());
+      const result = await onReplyTicket(selectedTicket.id, replyMessage.trim(), replyKey);
       if (result?.ok === false) {
         replyError = result.message || 'Не удалось отправить сообщение.';
         return;
       }
-      selectedTicket.messages = [
+      if (!live) selectedTicket.messages = [
         ...selectedTicket.messages,
         { author: 'client', text: replyMessage.trim(), date: 'Сейчас' }
       ];
       replyMessage = '';
+      replyKey = crypto.randomUUID();
     } catch (error) {
       replyError = 'Нет соединения. Попробуйте ещё раз.';
     } finally {
@@ -403,7 +417,8 @@
 
   function resetToSelect() {
     ticketType = '';
-    selectedOrderId = '';
+    submissionKey = crypto.randomUUID();
+    selectedOrderId = initialContext?.orderId || '';
     incidentDescription = '';
     incidentAttachments = [];
     incidentAttempted = false;
@@ -494,7 +509,7 @@
 
         <label class="text-field" class:invalid={missingOrder}>
           <span>Заказ или вещь</span>
-          <select bind:value={selectedOrderId} disabled={contextOptionsLoading}>
+          <select bind:value={selectedOrderId} disabled={contextOptionsLoading || Boolean(initialContext?.orderId || initialContext?.unitId)}>
             <option value="">{contextOptionsLoading ? 'Загружаем список…' : 'Выберите заказ или вещь'}</option>
             {#each contextOptions as option}
               <option value={option.orderId}>{option.title} · {option.caption}</option>
@@ -627,7 +642,7 @@
                 class:resolved={ticket.status === 'resolved'}
                 class:rejected={ticket.status === 'rejected'}
               >
-                {ticketStatusLabel[ticket.status] ?? ticket.status}
+                {ticket.type === 'technical' && ticket.status === 'submitted' ? 'Отправлено' : ticketStatusLabel[ticket.status] ?? ticket.status}
               </span>
             </button>
           {/each}
@@ -640,7 +655,7 @@
       {#if live && selectedTicket.attachments?.length}<div class="inline-note">Вложения: {#each selectedTicket.attachments as file}<a href={file.url} target="_blank" rel="noopener">{file.filename}</a> {/each}</div>{/if}
       <div class="page-heading">
         <h1>{selectedTicket.shortDescription}</h1>
-        <p>Обращение #{selectedTicket.id} · {ticketStatusLabel[selectedTicket.status] ?? selectedTicket.status}</p>
+        <p>Обращение #{selectedTicket.id} · {selectedTicket.type === 'technical' && selectedTicket.status === 'submitted' ? 'Отправлено' : ticketStatusLabel[selectedTicket.status] ?? selectedTicket.status}</p>
       </div>
 
       {#if selectedTicket.relatedOrderId}
@@ -648,6 +663,7 @@
           Открыть заказ {selectedTicket.relatedOrderId}
         </button>
       {/if}
+      {#if selectedTicket.relatedItemId}<button class="secondary-button small" onclick={()=>onOpenRelatedItem(selectedTicket.relatedItemId)}>Открыть вещь</button>{/if}
 
       <div class="thread">
         {#each selectedTicket.messages as message}
@@ -659,6 +675,7 @@
         {/each}
       </div>
 
+      {#if selectedTicket.closeReason}<p class="inline-note">{selectedTicket.closeReason}</p>{/if}
       {#if canReplyToTicket}
         <label class="text-field">
           <span>Ваше сообщение</span>

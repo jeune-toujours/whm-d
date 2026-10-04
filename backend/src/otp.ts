@@ -20,6 +20,7 @@ async function requestCode(req: PayloadRequest, phone: string, phoneKey: string)
   return transaction(req, [`otp:${phoneKey}`, `otp-ip:${ipKey}`], async () => {
     const recent = await req.payload.find({ collection: 'otp-challenges', req, overrideAccess: true, limit: 30, depth: 0, where: { and: [{ createdAt: { greater_than: new Date(Date.now() - 15 * 60_000).toISOString() } }, { or: [{ phoneKey: { equals: phoneKey } }, { ipKey: { equals: ipKey } }] }] } })
     const samePhone = recent.docs.filter(doc => doc.phoneKey === phoneKey)
+    if (samePhone.some(doc => doc.attempts >= 3 && new Date(doc.expiresAt).getTime() > Date.now())) throw new DomainError(429, 'OTP_LOCKED', 'После трёх неверных кодов вход заблокирован на 10 минут.')
     if (samePhone.length >= 3 || recent.totalDocs >= 20 || samePhone.some(doc => new Date(doc.createdAt).getTime() > Date.now() - 60_000)) throw new DomainError(429, 'OTP_RATE_LIMIT', 'Подождите перед повторным запросом кода.')
     await req.payload.update({ collection: 'otp-challenges', req, overrideAccess: true, where: { phoneKey: { equals: phoneKey } }, data: { consumed: true } })
     const id = randomUUID(), code = testCode || otpCode(id)
@@ -46,9 +47,10 @@ export const authEndpoints = [
     if (!/^\d{6}$/.test(code)) throw new DomainError(400, 'INVALID_OTP', 'Введите шестизначный код.')
     const result = await transaction(req, [`otp:${phoneKey}`, `phone-claim:${digest(`phone:${phone}`)}`], async () => {
       const challenge = (await req.payload.find({ collection: 'otp-challenges', req, overrideAccess: true, limit: 1, sort: '-createdAt', where: { and: [{ phoneKey: { equals: phoneKey } }, { consumed: { equals: false } }, { expiresAt: { greater_than: new Date().toISOString() } }] } })).docs[0]
-      if (!challenge || challenge.attempts >= 5) return new DomainError(400, 'INVALID_OTP', 'Код истёк. Запросите новый.')
+      if (challenge?.attempts >= 3) return new DomainError(429, 'OTP_LOCKED', 'Подождите 10 минут перед повторной попыткой.')
+      if (!challenge) return new DomainError(400, 'INVALID_OTP', 'Код истёк. Запросите новый.')
       if (!matches(challenge.hash, digest(`${challenge.id}:${code}`))) {
-        await req.payload.update({ collection: 'otp-challenges', id: challenge.id, req, overrideAccess: true, data: { attempts: challenge.attempts + 1 } })
+        await req.payload.update({ collection: 'otp-challenges', id: challenge.id, req, overrideAccess: true, data: { attempts: challenge.attempts + 1, ...(challenge.attempts === 2 ? { expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() } : {}) } })
         return new DomainError(400, 'INVALID_OTP', 'Неверный код.')
       }
       if ((await req.payload.count({ collection: 'users', req, overrideAccess: true, where: { phone: { equals: phone } } })).totalDocs) return new DomainError(409, 'PHONE_IN_USE', 'Этот номер уже используется.')
@@ -64,9 +66,10 @@ export const authEndpoints = [
     if (!/^\d{6}$/.test(code)) throw new DomainError(400, 'INVALID_OTP', 'Введите шестизначный код.')
     const result = await transaction(req, [`otp:${phoneKey}`, `phone-claim:${phoneKey}`], async () => {
       const challenge = (await req.payload.find({ collection: 'otp-challenges', req, overrideAccess: true, depth: 0, limit: 1, sort: '-createdAt', where: { and: [{ phoneKey: { equals: phoneKey } }, { consumed: { equals: false } }, { expiresAt: { greater_than: new Date().toISOString() } }] } })).docs[0]
-      if (!challenge || challenge.attempts >= 5) return new DomainError(400, 'INVALID_OTP', 'Код истёк. Запросите новый.')
+      if (challenge?.attempts >= 3) return new DomainError(429, 'OTP_LOCKED', 'Подождите 10 минут перед повторной попыткой.')
+      if (!challenge) return new DomainError(400, 'INVALID_OTP', 'Код истёк. Запросите новый.')
       if (!matches(challenge.hash, digest(`${challenge.id}:${code}`))) {
-        await req.payload.update({ collection: 'otp-challenges', id: challenge.id, req, overrideAccess: true, data: { attempts: challenge.attempts + 1 } })
+        await req.payload.update({ collection: 'otp-challenges', id: challenge.id, req, overrideAccess: true, data: { attempts: challenge.attempts + 1, ...(challenge.attempts === 2 ? { expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() } : {}) } })
         return new DomainError(400, 'INVALID_OTP', 'Неверный код.') // Commit failed-attempt count.
       }
       await req.payload.update({ collection: 'otp-challenges', id: challenge.id, req, overrideAccess: true, data: { consumed: true } })

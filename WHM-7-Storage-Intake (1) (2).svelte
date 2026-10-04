@@ -12,6 +12,8 @@
    * Цены в demo mode служат для проверки динамического расчёта.
    */
   let {
+    live = false, config = null, catalog = [], draftKey = '', initialTheme = 'bumblebee',
+    onCalculateOrder = async () => null, onOversizeRequest = async () => ({ ok: false }),
     customerName = 'Александра',
     savedAddress = 'Москва, ул. Тверская, 18',
     savedPhone = '',
@@ -25,10 +27,11 @@
     onOpenTerms = () => {}
   } = $props();
 
-  const DRAFT_KEY = 'whm-7-storage-intake-draft';
+  const DRAFT_KEY = draftKey || 'whm-7-storage-intake-draft';
+  const draftStorage = live ? sessionStorage : localStorage;
   const THEME_KEY = 'whm-theme';
 
-  const boxItems = [
+  const demoBoxItems = [
     {
       id: 'box-s',
       size: 'S',
@@ -71,16 +74,16 @@
     }
   ];
 
-  const separateItems = [
+  const demoSeparateItems = [
     { id: 'bike', title: 'Велосипед', price: 1490 },
     { id: 'ski', title: 'Лыжи / сноуборд', price: 790 },
     { id: 'suitcase', title: 'Чемодан', price: 890 },
     { id: 'picture', title: 'Картина / зеркало', price: 1290 }
   ];
 
-  const allItems = [...boxItems, ...separateItems];
+  let allItems = $derived([...boxItems, ...separateItems]);
 
-  const optionItems = [
+  const demoOptionItems = [
     {
       id: 'photos',
       title: 'Фотофиксация содержимого',
@@ -134,7 +137,7 @@
     }
   };
 
-  const dates = Array.from({ length: 5 }, (_, index) => {
+  const demoDates = Array.from({ length: 5 }, (_, index) => {
     const date = new Date();
     date.setHours(12, 0, 0, 0);
     date.setDate(date.getDate() + index + 2);
@@ -149,20 +152,27 @@
     };
   });
 
-  const addressCatalog = [
+  const demoAddressCatalog = [
     { value: 'Москва, ул. Тверская, 18', inZone: true },
     { value: 'Москва, ул. Большая Дмитровка, 12', inZone: true },
     { value: 'Москва, Ленинградский проспект, 36', inZone: true },
     { value: 'Химки, Ленинградское шоссе, 5', inZone: false }
   ];
 
-  const warehouse = {
+  const demoWarehouse = {
     name: 'Склад — Север',
     address: 'Москва, Складочная улица, 1с18',
     hours: 'Пн–Вс, 09:00–20:00'
   };
 
-  let theme = $state('bumblebee');
+  let boxItems = $derived(live ? catalog.filter(t => t.itemType === 'box').map(t => ({ ...demoBoxItems.find(b => t.code.endsWith(b.id)), id: t.id, title: t.title, price: t.price, media: t.title })) : demoBoxItems);
+  let separateItems = $derived(live ? catalog.filter(t => t.itemType === 'item').map(t => ({ id: t.id, title: t.title, price: t.price })) : demoSeparateItems);
+  let optionItems = $derived(live ? config.options : demoOptionItems);
+  let dates = $derived(live ? config.dates : demoDates);
+  let addressCatalog = $derived(live ? config.addresses : demoAddressCatalog);
+  let warehouse = $derived(live ? config.warehouses[0] : demoWarehouse);
+  let serverQuote = $state(null), quoting = $state(false), operationKey = $state(crypto.randomUUID()), createdOrderID = $state(''), oversizeFile = $state(null);
+  let theme = $state(initialTheme);
   let view = $state(startAtService ? 'service' : 'home');
   let direction = $state('forward');
   let mounted = $state(false);
@@ -265,10 +275,10 @@
       : 0
   );
   let collectionFee = $derived(
-    service === 'turnkey' ? 1490 : deliveryMode === 'courier' ? 890 : 0
+    service === 'turnkey' ? (live ? config.turnkeyFee : 1490) : deliveryMode === 'courier' ? (live ? config.courierFee : 890) : 0
   );
-  let monthlyTotal = $derived(monthlyStorage + monthlyOptions + insurancePremium);
-  let oneTimeTotal = $derived(oneTimeOptions + collectionFee);
+  let monthlyTotal = $derived(serverQuote?.monthly ?? monthlyStorage + monthlyOptions + insurancePremium);
+  let oneTimeTotal = $derived(serverQuote?.once ?? oneTimeOptions + collectionFee);
   let payNow = $derived(monthlyTotal + oneTimeTotal);
   let progressStep = $derived(stepForView(view));
   let deliverySummary = $derived(
@@ -285,7 +295,7 @@
     if (savedTheme === 'bumblebee' || savedTheme === 'halloween') {
       theme = savedTheme;
     }
-    hasDraft = Boolean(localStorage.getItem(DRAFT_KEY));
+    hasDraft = Boolean(draftStorage.getItem(DRAFT_KEY));
     if (startAtService && hasDraft) resumeDraft();
   });
 
@@ -296,6 +306,7 @@
 
   $effect(() => {
     const snapshot = {
+      operationKey,
       view,
       service,
       deliveryMode,
@@ -305,6 +316,7 @@
       insuranceDeclaredValue,
       insuranceEnabled,
       selectedDateIndex,
+      selectedDateID: selectedDate?.id || '',
       selectedSlot,
       addressQuery,
       selectedAddress,
@@ -323,7 +335,7 @@
       view !== 'home' &&
       view !== 'success'
     ) {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshot));
+      draftStorage.setItem(DRAFT_KEY, JSON.stringify(snapshot));
       hasDraft = true;
     }
   });
@@ -356,6 +368,8 @@
   function go(target, nextDirection = 'forward') {
     direction = nextDirection;
     view = target;
+    if (target === 'review' && live) void calculateQuote();
+    else if (target !== 'success') serverQuote = null;
     haptic();
     requestAnimationFrame(() => {
       const shell = document.querySelector('.whm-app');
@@ -364,6 +378,12 @@
     });
   }
 
+  async function calculateQuote() {
+    quoting = true; serverQuote = null;
+    const result = await onCalculateOrder(buildOrderPayload());
+    if (result?.ok === false) showToast(result.message, true); else serverQuote = result?.quote || null;
+    quoting = false;
+  }
   function toggleTheme() {
     theme = isDark ? 'bumblebee' : 'halloween';
     window.dispatchEvent(new CustomEvent('whm-theme-change', { detail: theme }));
@@ -397,7 +417,7 @@
     zoneNoticeSent = false;
     acceptedTerms = false;
     orderNumber = '';
-    localStorage.removeItem(DRAFT_KEY);
+    draftStorage.removeItem(DRAFT_KEY);
     hasDraft = false;
   }
 
@@ -407,7 +427,7 @@
   }
 
   function resumeDraft() {
-    const raw = localStorage.getItem(DRAFT_KEY);
+    const raw = draftStorage.getItem(DRAFT_KEY);
     if (!raw) {
       startFlow();
       return;
@@ -415,6 +435,7 @@
 
     try {
       const draft = JSON.parse(raw);
+      operationKey = draft.operationKey || crypto.randomUUID();
       service = draft.service || '';
       deliveryMode = draft.deliveryMode || '';
       quantities = draft.quantities || {};
@@ -425,7 +446,11 @@
       selectedDateIndex = Number.isInteger(draft.selectedDateIndex)
         ? draft.selectedDateIndex
         : 0;
+      const restoredDate = live && draft.selectedDateID ? dates.findIndex(d=>d.id===draft.selectedDateID) : selectedDateIndex;
+      const dateExpired = live && Boolean(draft.selectedDateID) && restoredDate < 0;
+      selectedDateIndex = Math.max(0, Math.min(dates.length - 1, restoredDate));
       selectedSlot = draft.selectedSlot || '';
+      if (dateExpired) selectedSlot = '';
       addressQuery = draft.addressQuery || '';
       selectedAddress = draft.selectedAddress || '';
       apartment = draft.apartment || '';
@@ -435,8 +460,9 @@
       contactPhone = draft.contactPhone || '';
       courierComment = draft.courierComment || '';
       acceptedTerms = Boolean(draft.acceptedTerms);
-      go(draft.view && draft.view !== 'home' ? draft.view : 'service');
-      showToast('Черновик восстановлен');
+      if (draft.view === 'review') acceptedTerms = false;
+      go(dateExpired && deliveryMode === 'courier' ? 'slots' : draft.view && draft.view !== 'home' ? draft.view : 'service');
+      showToast(dateExpired ? 'Выбранная дата больше недоступна. Выберите новое время.' : 'Черновик восстановлен');
     } catch {
       startFlow();
     }
@@ -617,6 +643,7 @@
 
   function buildOrderPayload() {
     return {
+      operationKey, quoteHash: serverQuote?.hash, consent: acceptedTerms,
       service,
       deliveryMode,
       items: selectedRows.map((item) => ({
@@ -643,7 +670,7 @@
         deliveryMode === 'self'
           ? { warehouse }
           : {
-              date: selectedDate.short,
+              date: selectedDate.id || selectedDate.short,
               slot: selectedSlot,
               address: selectedAddress,
               apartment,
@@ -666,7 +693,7 @@
   }
 
   async function confirmOrder() {
-    if (!acceptedTerms || isSubmitting) return;
+    if (!acceptedTerms || isSubmitting || (live && (!serverQuote || quoting))) return;
     isSubmitting = true;
     toast = null;
 
@@ -679,10 +706,11 @@
         );
         return;
       }
+      createdOrderID = result?.orderId || '';
       orderNumber =
         result?.orderNumber ||
-        (demoMode ? 'WHM-824731' : 'WHM-' + String(Date.now()).slice(-6));
-      localStorage.removeItem(DRAFT_KEY);
+        (demoMode ? 'WHM-824731' : '');
+      draftStorage.removeItem(DRAFT_KEY);
       hasDraft = false;
       if (result?.paymentUrl && !demoMode) {
         window.location.assign(result.paymentUrl);
@@ -739,6 +767,7 @@
       showToast('Добавьте фотографию в формате изображения');
       return;
     }
+    oversizeFile = file;
     oversizePhotoName = file.name;
     oversizePhotoSize = file.size;
   }
@@ -755,8 +784,9 @@
     haptic();
   }
 
-  function submitOversize() {
+  async function submitOversize() {
     if (oversizeDescription.trim().length < 10 || !oversizePhotoName) return;
+    if (live) { const result = await onOversizeRequest({ description: oversizeDescription, file: oversizeFile }); if (result?.ok === false) { showToast(result.message); return; } oversizeOpen = false; showToast('Запрос индивидуального расчёта сохранён. Ответ появится в поддержке.'); return; }
     oversizeItems = [
       ...oversizeItems,
       {
@@ -774,7 +804,7 @@
   }
 
   function finishToOrder() {
-    onNavigateOrder({
+    onNavigateOrder({ orderId: createdOrderID,
       orderNumber,
       order: buildOrderPayload()
     });
@@ -916,9 +946,9 @@
             <p>{warehouse.address}</p>
             <p>{warehouse.hours}</p>
           {:else}
-            <h2>Курьер приедет {selectedDate.short}</h2>
+            <h2>{live ? 'Выбран тестовый визит' : 'Курьер приедет'} {selectedDate.short}</h2>
             <p>{selectedSlot}, {selectedAddress}</p>
-            <p>Напомним о визите за 1 час.</p>
+            <p>{live ? 'Доставка и напоминания симулируются.' : 'Напомним о визите за 1 час.'}</p>
           {/if}
         </div>
 
@@ -1453,7 +1483,7 @@
                 <p>Укажите точку, куда приедет курьер.</p>
               </div>
 
-              <button
+              {#if savedAddress}<button
                 type="button"
                 class="saved-address"
                 class:selected={selectedAddress === savedAddress}
@@ -1465,7 +1495,7 @@
                   <span>{savedAddress}</span>
                 </span>
                 <span class="card-link">Выбрать</span>
-              </button>
+              </button>{/if}
 
               <div class="form-stack">
                 <label class="field-label" for="address-search">Новый адрес</label>
@@ -1580,14 +1610,14 @@
                 </label>
               </div>
 
-              <div class="map-placeholder media-placeholder" aria-label="Схема адреса в демо-контуре">
+              {#if !live}<div class="map-placeholder media-placeholder" aria-label="Схема адреса в демо-контуре">
                 <span class="media-label">Схема адреса · демо</span>
                 {#if selectedAddress}
                   <span class="map-pin" aria-hidden="true">
                     <MapPin aria-hidden="true" />
                   </span>
                 {/if}
-              </div>
+              </div>{/if}
 
               <div class="sticky-bar">
                 <button
@@ -1607,14 +1637,14 @@
                 <p>Привезите подготовленные вещи в удобное время.</p>
               </div>
 
-              <div class="warehouse-map media-placeholder" aria-label="Схема склада в демо-контуре">
+              {#if !live}<div class="warehouse-map media-placeholder" aria-label="Схема склада в демо-контуре">
                 <span class="media-label">Схема склада · демо</span>
                 <span class="map-pin" aria-hidden="true">
                   <MapPin aria-hidden="true" />
                 </span>
               </div>
 
-              <article class="warehouse-card">
+              {/if}<article class="warehouse-card">
                 <div>
                   <h2>{warehouse.name}</h2>
                   <p>{warehouse.address}</p>
@@ -1786,7 +1816,7 @@
                   <div class="acquiring-note">
                     <h2>Оплата</h2>
                     <p>
-                      После нажатия кнопки откроется защищённая платёжная форма эквайринга.
+                      {live ? 'Откроется симулятор оплаты. Реальных списаний нет.' : 'После нажатия кнопки откроется защищённая платёжная форма эквайринга.'}
                       Сервис не хранит данные банковской карты.
                     </p>
                   </div>
@@ -1813,7 +1843,7 @@
               <button
                 type="button"
                 class="primary-button review-submit"
-                disabled={!acceptedTerms || isSubmitting}
+                disabled={!acceptedTerms || isSubmitting || (live && (!serverQuote || quoting))}
                 onclick={confirmOrder}
               >
                 {isSubmitting ? 'Оформляем…' : demoMode ? 'Оформить заявку (демо)' : 'Оплатить'}
@@ -4074,7 +4104,7 @@
     font-size: var(--type-caption);
     font-weight: 600;
   }
-  .compact-media.media-placeholder:empty::after { content: 'Плейсхолдер'; color: var(--soft-content); font-size: 0.68rem; }
+  .compact-media.media-placeholder:empty::after { content: 'Фото'; color: var(--soft-content); font-size: 0.68rem; }
   .map-placeholder.media-placeholder, .warehouse-map.media-placeholder { background: var(--color-base-200); border: 1px dashed var(--color-base-300); }
 
 </style>

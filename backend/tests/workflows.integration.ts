@@ -36,7 +36,9 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     const tariff = await payload.create({ collection:'tariffs', req:adminReq, overrideAccess:true, data:{ code:`test-${suffix}`, name:'Test box', kind:'storage', itemType:'box', testOnly:true, monthlyPrice:640, itemLimit:1, active:true } })
     const wh = await payload.create({ collection:'warehouses', overrideAccess:true, data:{ name:`Test ${suffix}`, active:true } })
     const cell = await payload.create({ collection:'cells', overrideAccess:true, data:{ name:`Test capacity ${suffix}`, warehouse:wh.id, barcode:`CELL-${suffix}`, capacity:1, active:true } })
-    const orderData = { items:[{ tariffID:tariff.id, quantity:2, description:'Test inventory', price:1 }], fulfillment:'pickup', amount:1 }
+    const configuration = (await request('/v1/checkout-config',c)).data.config;
+    const schedule = { date:configuration.dates[0].id,slot:configuration.slots[0],consent:true };
+    const orderData = { service:'self',consent:true,items:[{ tariffID:tariff.id, quantity:2, description:'Test inventory', price:1 }], fulfillment:'pickup', amount:1 }
     const requests = await Promise.all([request('/v1/intake',c,orderData,suffix), request('/v1/intake',c,orderData,suffix)])
     assert.deepEqual(requests.map(r => r.status), [200,200]); assert.equal(requests[0].data.order.id, requests[1].data.order.id)
     const order = requests[0].data.order, itemID = order.items[0].id, secondID = order.items[1].id
@@ -69,12 +71,33 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     const competing = await Promise.all([request('/v1/warehouse/place',w,placement),request('/v1/warehouse/place',w,{ ...placement,itemID:secondID,barcode:`ITEM2-${suffix}` })])
     assert.deepEqual(competing.map(r => r.status).sort(),[200,409],'Cell capacity holds under concurrent placement')
     const firstPlaced = competing[0].status === 200 ? itemID : secondID, lastID = firstPlaced === itemID ? secondID : itemID
+    const partialHome = (await request('/v1/dashboard',c)).data
+    assert.equal(partialHome.homeUnits.length,0,'Incomplete intake stays out of home even when one item is stored')
+    assert.equal(partialHome.profile.monthlyPrice,640,'Actual stored item remains billable')
+    assert.equal((await request('/v1/returns/quote',c,{...schedule,itemIDs:[firstPlaced],fulfillment:'pickup'})).status,409,'Active intake blocks a partially placed item')
     const nextCell = await payload.create({ collection:'cells', overrideAccess:true, data:{ name:`Spare ${suffix}`, warehouse:wh.id, barcode:`SPARE-${suffix}`, capacity:1, active:true } })
     assert.equal((await request('/v1/warehouse/place',w,{ ...placement,itemID:lastID,cellID:nextCell.id,cellBarcode:nextCell.barcode,barcode:lastID === itemID ? receive.barcode : `ITEM2-${suffix}` })).status,200)
     assert.equal((await request(`/v1/orders/${order.id}`,c)).data.order.backendStatus,'completed')
-    const returns = await Promise.all([request('/v1/returns',c,{ itemIDs:[firstPlaced],fulfillment:'pickup' },`${suffix}-return1`),request('/v1/returns',c,{ itemIDs:[firstPlaced],fulfillment:'pickup' },`${suffix}-return2`)])
+    const historic = (await request(`/v1/history/${order.id}`,c)).data.order;
+    assert.equal(historic.items.length,2); assert.equal(historic.financial.paid,1280);
+    assert.equal((await request(`/v1/history/${order.id}`,o)).status,404);
+    await payload.update({collection:'storage-items',id:firstPlaced,overrideAccess:true,data:{title:'Renamed after completion'}});
+    assert.equal((await request(`/v1/history/${order.id}`,c)).data.order.items.find((i:any)=>i.id === firstPlaced).title,'Test box','History uses operation snapshot');
+    const courierInput={...schedule,itemIDs:[firstPlaced],fulfillment:'courier',address:configuration.addresses[0].value,phone:'+79990000001'};
+    const quote=(await request('/v1/returns/quote',c,courierInput)).data.quote;
+    const proposal=await request('/v1/checkouts',c,{kind:'return',input:courierInput,quoteHash:quote.hash},`${suffix}-proposal`);
+    assert.equal(proposal.status,200);assert.equal(proposal.data.payment.amount,1490);
+    assert.equal((await request('/v1/returns',c,courierInput,`${suffix}-bypass`)).status,409,'Paid return requires checkout');
+    await request(`/v1/payments/${proposal.data.payment.id}/simulate`,c,{result:'failed'});
+    assert.equal((await payload.findByID({collection:'storage-items',id:firstPlaced,overrideAccess:true})).status,'stored','Failed payment does not reserve inventory');
+    assert.equal((await payload.count({collection:'orders',overrideAccess:true,where:{and:[{owner:{equals:client.id}},{type:{equals:'return'}}]}})).totalDocs,0,'Failed payment creates no return');
+    const returns = await Promise.all([request('/v1/returns',c,{ ...schedule,itemIDs:[firstPlaced],fulfillment:'pickup' },`${suffix}-return1`),request('/v1/returns',c,{ ...schedule,itemIDs:[firstPlaced],fulfillment:'pickup' },`${suffix}-return2`)])
     assert.deepEqual(returns.map(r => r.status).sort(),[200,409],'An item cannot enter two concurrent returns')
     const back = returns.find(r => r.status === 200)!.data.order
+    assert.equal((await request(`/v1/orders/${back.id}/cancel`,c,{})).status,409,'Even newly created return cannot be cancelled');
+    assert.equal((await request(`/v1/payments/${proposal.data.payment.id}/simulate`,c,{result:'paid'})).status,409,'Changed inventory rejects stale checkout');
+    const reservedHome=(await request('/v1/dashboard',c)).data;
+    assert.equal(reservedHome.homeUnits.length,1);assert.equal(reservedHome.profile.monthlyPrice,1280,'Reservation does not change billing');
     assert.equal((await request(`/v1/warehouse/orders/${back.id}/pick`,w,{ itemID:firstPlaced,barcode:'wrong' })).status,400)
     const correct = firstPlaced === itemID ? receive.barcode : `ITEM2-${suffix}`
     assert.equal((await request(`/v1/warehouse/orders/${back.id}/pick`,w,{ itemID:firstPlaced,barcode:correct })).status,200)
@@ -87,13 +110,25 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     const attachment = await upload(c,other.id,'support')
     assert.ok([403,404].includes((await request(`/media/${attachment}`,w)).status),'Warehouse cannot read support attachments')
     assert.equal((await payload.findByID({ collection:'media',id:attachment,overrideAccess:true,depth:0 })).owner,client.id,'Client upload cannot impersonate an owner')
-    const ticket = await request('/v1/support',c,{ type:'incident',orderId:back.id,description:'Test support case',attachments:[attachment] }); assert.equal(ticket.status,200)
+    const ticket = await request('/v1/support',c,{ type:'incident',orderId:back.id,description:'Test support case',attachments:[attachment] },`${suffix}-support`); assert.equal(ticket.status,200)
     const tid = ticket.data.ticketId
+    assert.equal((await request('/v1/support',c,{type:'incident',orderId:back.id,description:'Test support case',attachments:[attachment]},`${suffix}-support`)).data.ticketId,tid);
+    const technical=await request('/v1/support',c,{type:'technical',description:'Test app bug'},`${suffix}-technical`);
+    assert.equal(technical.status,200);
+    assert.ok([403,404].includes((await request(`/support-tickets/${technical.data.ticketId}`,a)).status),'Technical tickets bypass office');
+    assert.equal((await request('/v1/warehouse',a)).data.tickets.some((t:any)=>t.id === technical.data.ticketId),false);
     assert.equal((await request(`/support-tickets/${tid}`,a,{ owner:other.id },undefined,'PATCH')).status,403,'Support ownership cannot be reassigned')
-    assert.equal((await request(`/v1/support/${tid}/reply`,o,{ text:'forbidden' })).status,404)
-    assert.equal((await request(`/v1/support/${tid}/reply`,w,{ text:'forbidden' })).status,403)
-    assert.equal((await request(`/v1/support/${tid}/reply`,a,{ text:'Сотрудник отвечает клиенту' })).status,200)
+    assert.equal((await request(`/v1/support/${tid}/reply`,o,{ text:'forbidden' },`${suffix}-forbidden`)).status,404)
+    assert.equal((await request(`/v1/support/${tid}/reply`,w,{ text:'forbidden' },`${suffix}-forbidden`)).status,403)
+    assert.equal((await request(`/v1/support/${tid}/reply`,a,{ text:'Сотрудник отвечает клиенту' },`${suffix}-reply`)).status,200)
     const dashboard = await request('/v1/dashboard',c); assert.equal(dashboard.status,200); assert.equal(dashboard.data.tickets.find((t:any) => t.id === tid).messages.length,2)
+    const courierInput2 = {...schedule,itemIDs:[lastID],fulfillment:'courier',address:configuration.addresses[0].value,phone:'+79990000001'}
+    const courierQuote2 = (await request('/v1/returns/quote',c,courierInput2)).data.quote
+    const checkout2 = await request('/v1/checkouts',c,{kind:'return',input:courierInput2,quoteHash:courierQuote2.hash},`${suffix}-courier-success`)
+    assert.equal(checkout2.status,200)
+    const successful = await request(`/v1/payments/${checkout2.data.payment.id}/simulate`,c,{result:'paid'})
+    assert.equal(successful.status,200);assert.equal(successful.data.order.items[0].itemStatus,'reserved')
+    assert.equal((await request(`/v1/payments/${checkout2.data.payment.id}/simulate`,c,{result:'paid'})).data.payment.orderID,successful.data.order.id,'Successful retry reuses the return')
     assert.ok((await payload.count({ collection:'audit-log',overrideAccess:true,where:{ entityID:{ equals:back.id } } })).totalDocs > 0)
     const plan = await payload.create({ collection:'tariffs', overrideAccess:true, data:{ code:`plan-${suffix}`,name:'Test subscription',kind:'subscription',itemType:'box',testOnly:true,active:true,itemLimit:1,monthlyPrice:900 } })
     const planPayment = await request('/v1/payments',c,{ tariffID:plan.id },`${suffix}-plan`)
@@ -119,12 +154,20 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal((await request('/v1/profile/phone/confirm',o,{ phone:changedPhone,code:phoneCode })).status,400,'Phone-change code cannot be replayed')
     assert.equal((await request('/v1/profile/phone/request',c,{ phone:changedPhone })).status,409)
     // Cancellation refunds a simulated payment once and releases the expected items.
-    const cancelled = (await request('/v1/intake',c,{ ...orderData,items:[{ tariffID:tariff.id,quantity:1 }] },`${suffix}-cancel`)).data.order
+    const cancelled = (await request('/v1/intake',c,{ ...orderData,...schedule,fulfillment:'courier',address:configuration.addresses[0].value,phone:'+79990000001',items:[{ tariffID:tariff.id,quantity:1 }] },`${suffix}-cancel`)).data.order
     const cp = (await request('/v1/payments',c,{ orderID:cancelled.id })).data.payment
     await request(`/v1/payments/${cp.id}/simulate`,c,{ result:'paid' })
     assert.equal((await request(`/v1/orders/${cancelled.id}/cancel`,c,{})).status,200)
     assert.equal((await request(`/v1/orders/${cancelled.id}/cancel`,c,{})).status,200)
     assert.equal((await request(`/v1/payments/${cp.id}`,c)).data.payment.status,'refunded')
     assert.equal((await request(`/v1/payments/${cp.id}/simulate`,c,{ result:'paid' })).data.payment.status,'refunded')
+    const historyMarker = `cursor-fixture-${suffix}`, closedAt = new Date().toISOString()
+    for (let i=0;i<21;i++) await payload.create({collection:'orders',overrideAccess:true,data:{owner:client.id,number:`CURSOR-${suffix}-${i}`,type:'intake',status:'completed',items:[lastID],fulfillment:'pickup',idempotencyKey:`${suffix}-history-${i}`,closedAt,historySearch:historyMarker,details:{version:2,units:[]}}})
+    const firstPage = await request(`/v1/history?search=${historyMarker}`,c)
+    assert.equal(firstPage.status,200); assert.equal(firstPage.data.orders.length,20);assert.ok(firstPage.data.nextCursor)
+    const secondPage = await request(`/v1/history?search=${historyMarker}&cursor=${firstPage.data.nextCursor}`,c)
+    assert.equal(secondPage.status,200);assert.equal(secondPage.data.orders.length,1)
+    assert.equal(new Set([...firstPage.data.orders,...secondPage.data.orders].map((r:any)=>r.id)).size,21,'History cursor neither skips nor duplicates records')
+    assert.equal((await request(`/v1/history?search=${historyMarker}&cursor=${firstPage.data.nextCursor}&type=return`,c)).status,400,'Cursor cannot be reused with another filter')
   } finally { await payload.destroy() }
 })

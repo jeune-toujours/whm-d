@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
 const base = process.env.WHM_BASE_URL || 'http://localhost:4174', backend = process.env.WHM_API_BASE || base;
 let adminEmail = process.env.WHM_ADMIN_EMAIL, adminPassword = process.env.WHM_ADMIN_PASSWORD;
 if (process.env.WHM_ADMIN_SECRET_SSH === '1') {
@@ -15,6 +17,7 @@ const errors = [], marker = `Browser ${Date.now()}`, phone = `999000${1000 + Mat
 const image = { name:'verification.png', mimeType:'image/png', buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQ1sAAAAASUVORK5CYII=', 'base64') };
 try {
   const page = await browser.newPage({ viewport:{ width:1280,height:900 } }); page.on('pageerror', e => errors.push(e.message));
+  async function capture(name) { if (process.env.WHM_SCREENSHOT_DIR) { await mkdir(process.env.WHM_SCREENSHOT_DIR,{recursive:true}); await page.screenshot({path:join(process.env.WHM_SCREENSHOT_DIR,`${name}.png`),fullPage:true}); } }
   page.on('response', r => { if (r.status() >= 400) console.error(`HTTP ${r.status()} ${new URL(r.url()).pathname}`); });
   await page.goto(`${base}/#/signin`);
   await page.getByRole('button',{ name:'Начать хранение',exact:true }).click();
@@ -25,11 +28,27 @@ try {
   for (let i=0;i<6;i++) await page.locator(`#otp-cell-${i}`).fill(code[i]);
   await page.getByLabel('Имя',{ exact:true }).fill('Тестовый'); await page.getByLabel('Фамилия',{ exact:true }).fill('Проверка');
   await page.getByRole('button',{ name:'Продолжить',exact:true }).click(); await page.getByRole('button',{ name:'Пропустить',exact:true }).click(); await page.waitForURL('**/#/home');
-  await page.goto(`${base}/#/intake`); await page.getByLabel('Количество').first().fill('1'); await page.getByLabel('Что внутри / описание').fill(marker);
-  await page.getByRole('button',{ name:'Продолжить',exact:true }).click(); await page.getByRole('button',{ name:'Продолжить',exact:true }).click();
-  await page.getByRole('button',{ name:'Создать заявку и перейти к оплате',exact:true }).click(); await page.waitForURL('**/#/checkout/*');
-  await page.getByRole('button',{ name:'Симулировать отказ',exact:true }).click(); await page.getByText('Оплата отклонена. Можно повторить попытку.',{ exact:false }).waitFor();
-  await page.getByRole('button',{ name:'Симулировать успешную оплату',exact:true }).click(); await page.getByRole('button',{ name:'Продолжить',exact:true }).click(); await page.waitForURL('**/#/order/*');
+  await page.goto(`${base}/#/intake`);
+  await page.locator('.service-card').filter({hasText:'Я упакую сам'}).getByRole('button',{name:'Выбрать',exact:true}).click();
+  await capture('intake-items-desktop');
+  await page.getByRole('button',{name:/Увеличить количество/}).first().click();
+  await page.reload();
+  assert.equal(await page.getByRole('button',{name:/Уменьшить количество/}).first().isEnabled(),true,'Intake draft survives reload');
+  await page.getByRole('button',{name:'Продолжить',exact:true}).click();
+  await page.getByRole('button',{name:'Пропустить',exact:true}).click();
+  await page.getByRole('button',{name:'Пропустить',exact:true}).click();
+  await page.getByRole('button',{name:/Я привезу сам/}).click();
+  await page.getByRole('button',{name:'Перейти к проверке',exact:true}).click();
+  await capture('intake-review-desktop');
+  await page.locator('.terms-card .custom-checkbox').click();
+  await page.getByRole('button',{name:'Оплатить',exact:true}).click();
+  await page.getByRole('dialog',{name:'Симулятор оплаты'}).waitFor();
+  await page.getByRole('button',{name:'Симулировать отказ',exact:true}).click();
+  await page.getByText('Оплата отклонена. Можно повторить попытку.',{exact:false}).waitFor();
+  await page.getByRole('button',{name:'Симулировать успешную оплату',exact:true}).click();
+  await page.getByRole('button',{name:'Продолжить',exact:true}).click();
+  await page.getByRole('button',{name:'Перейти к заказу',exact:true}).click();
+  await page.waitForURL('**/#/order/*');
   const orderID = page.url().split('/order/')[1], response = await page.request.get(`${backend}/api/v1/orders/${orderID}`, { headers:{ Origin:base } }); assert.equal(response.status(),200);
   const order = (await response.json()).order;
   console.log('Client: OTP, onboarding, catalog, persistent intake, failed payment and successful retry passed.');
@@ -44,9 +63,19 @@ try {
   const place = panel.locator('.whm-order').filter({ hasText:order.number }); await place.getByLabel('Скан вещи').fill(barcode);
   const option = place.getByLabel('Ячейка',{ exact:true }).locator('option').filter({ hasText:'TEST-CELL-' }).first(), value = await option.getAttribute('value'), label = await option.textContent(), cellBarcode = label.match(/TEST-CELL-[A-Z]-\d+/)?.[0]; assert.ok(value && cellBarcode);
   await place.getByLabel('Ячейка',{ exact:true }).selectOption(value); await place.getByLabel('Скан ячейки').fill(cellBarcode); await place.getByRole('button',{ name:'Разместить',exact:true }).click(); await place.waitFor({ state:'detached' });
-  await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/home`); await page.getByText(marker,{ exact:true }).waitFor();
-  await page.goto(`${base}/#/return`); await page.locator('.choice').filter({ hasText:marker }).locator('input[type=checkbox]').check();
-  await page.getByRole('button',{ name:'Продолжить',exact:true }).click(); await page.getByRole('button',{ name:'Продолжить',exact:true }).click(); await page.getByRole('button',{ name:'Оформить возврат',exact:true }).click(); await page.waitForURL('**/#/order/*');
+  await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/home`); await page.getByText(order.items[0].internalID,{exact:false}).first().waitFor();
+  await page.goto(`${base}/#/return`);
+  await page.locator('.storage-card').filter({hasText:order.items[0].internalID}).getByRole('checkbox').check();
+  await page.getByRole('button',{name:'Продолжить',exact:true}).filter({visible:true}).first().click();
+  await page.getByRole('button',{name:/Заберу со склада/}).click();
+  await page.getByRole('button',{name:'Продолжить',exact:true}).filter({visible:true}).first().click();
+  await page.locator('.date-row button:not(:disabled)').first().click();
+  await page.locator('.slot-grid button:not(:disabled)').first().click();
+  await page.getByRole('button',{name:'Продолжить',exact:true}).filter({visible:true}).first().click();
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button',{name:/Подтвердить возврат/}).filter({visible:true}).first().click();
+  await page.getByRole('button',{name:'Перейти к заказу',exact:true}).click();
+  await page.waitForURL('**/#/order/*');
   const returnID = page.url().split('/order/')[1], back = (await (await page.request.get(`${backend}/api/v1/orders/${returnID}`, { headers:{ Origin:base } })).json()).order;
   await panel.goto(`${backend}/admin/warehouse/pick`);
   const pick = panel.locator('.whm-order').filter({ hasText:back.number }); await pick.getByLabel('Скан вещи').fill(barcode); await pick.getByRole('button',{ name:'Подобрать',exact:true }).click(); await pick.waitFor({ state:'detached' });
@@ -55,7 +84,7 @@ try {
   const bounds = await handover.locator('canvas').boundingBox(); assert.ok(bounds);
   await panel.mouse.move(bounds.x+30,bounds.y+40); await panel.mouse.down(); await panel.mouse.move(bounds.x+100,bounds.y+80,{ steps:5 }); await panel.mouse.move(bounds.x+200,bounds.y+40,{ steps:5 }); await panel.mouse.up();
   await handover.getByLabel('Все вещи переданы получателю').check(); await handover.getByRole('button',{ name:'Завершить выдачу',exact:true }).click(); await handover.waitFor({ state:'detached' });
-  await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/history`); await page.getByText(back.number,{ exact:true }).waitFor(); await page.goto(`${base}/#/payments`); await page.getByText('Оплачено',{ exact:true }).waitFor();
+  await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/history`); await page.getByText(back.number,{ exact:true }).first().waitFor(); await page.goto(`${base}/#/payments`); await page.getByText('Оплачено',{ exact:true }).first().waitFor();
   await page.setViewportSize({ width:390,height:844 });
   for (const route of ['home','intake','return','history','profile','subscription','payments']) { await page.goto(`${base}/#/${route}`); await page.locator('h1').first().waitFor(); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390), `Mobile width: ${route}`); }
   assert.deepEqual(errors,[],'No browser runtime errors'); console.log('Warehouse: S3 upload, scan/seal, placement, pick, photo/signature; client history, payments and mobile routes passed.');

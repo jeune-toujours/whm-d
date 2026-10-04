@@ -10,3 +10,4 @@ if (!existing.totalDocs) {
   console.log('Administrator created. Remove bootstrap password from runtime environment.')
 } else console.log('User already exists. Credentials were not changed.')
 await payload.destroy()
+process.exit(0)

@@ -15,7 +15,7 @@ test('real OTP, sessions, ownership, native CRUD guards and logout against migra
   const payload = await getPayload({ config })
   try {
     assert.equal((await call('/v1/items')).status, 401)
-    assert.equal((await call('/users/register-first-user', { method: 'POST', body: { email: 'attacker@example.invalid', role: 'admin', password: 'not-a-real-secret' } })).status, 403, 'First-user endpoint cannot bypass admin provisioning')
+    assert.equal((await call('/users/first-register', { method: 'POST', body: { email: 'attacker@example.invalid', role: 'admin', password: 'not-a-real-secret' } })).status, 403, 'First-user endpoint cannot bypass admin provisioning')
     assert.equal((await call('/auth/request-otp', { method: 'POST', body: { phone }, origin: 'https://attacker.invalid' })).status, 403)
     assert.equal((await call('/auth/request-otp', { method: 'POST', body: { phone } })).status, 200)
     assert.equal((await call('/auth/request-otp', { method: 'POST', body: { phone } })).status, 429)

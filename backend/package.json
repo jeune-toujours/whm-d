@@ -9,7 +9,7 @@
     "start": "next start --hostname 0.0.0.0",
     "check": "next typegen && tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:integration": "node --import tsx --test tests/*.integration.ts",
+    "test:integration": "node --import tsx --test --test-force-exit tests/*.integration.ts",
     "payload": "payload",
     "generate:types": "payload generate:types",
     "generate:importmap": "payload generate:importmap",

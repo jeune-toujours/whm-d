@@ -165,8 +165,9 @@
     hours: 'Пн–Вс, 09:00–20:00'
   };
 
-  let boxItems = $derived(live ? catalog.filter(t => t.itemType === 'box').map(t => ({ ...demoBoxItems.find(b => t.code.endsWith(b.id)), id: t.id, title: t.title, price: t.price, media: t.title })) : demoBoxItems);
-  let separateItems = $derived(live ? catalog.filter(t => t.itemType === 'item').map(t => ({ id: t.id, title: t.title, price: t.price })) : demoSeparateItems);
+  const catalogueRank = (tariff, reference) => { const index = reference.findIndex(item=>tariff.code.endsWith(item.id)); return index < 0 ? reference.length : index; };
+  let boxItems = $derived(live ? catalog.filter(t => t.itemType === 'box').sort((a,b)=>catalogueRank(a,demoBoxItems)-catalogueRank(b,demoBoxItems)).map(t => ({ ...demoBoxItems.find(b => t.code.endsWith(b.id)), id: t.id, title: t.title, price: t.price, media: t.title })) : demoBoxItems);
+  let separateItems = $derived(live ? catalog.filter(t => t.itemType === 'item').sort((a,b)=>catalogueRank(a,demoSeparateItems)-catalogueRank(b,demoSeparateItems)).map(t => ({ id: t.id, title: t.title, price: t.price })) : demoSeparateItems);
   let optionItems = $derived(live ? config.options : demoOptionItems);
   let dates = $derived(live ? config.dates : demoDates);
   let addressCatalog = $derived(live ? config.addresses : demoAddressCatalog);
@@ -1113,7 +1114,7 @@
                           <h2>{item.title}</h2>
                           <p>{item.dimensions}</p>
                           <p>{item.example}</p>
-                          <p class="weight-limit">Ограничение по весу: {item.weightLimit}</p>
+                          {#if item.weightLimit}<p class="weight-limit">Ограничение по весу: {item.weightLimit}</p>{/if}
                         </div>
                         <strong>{formatPrice(item.price)} / мес.</strong>
                       </div>

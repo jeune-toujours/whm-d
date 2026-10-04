@@ -191,7 +191,7 @@
   function hoursUntilVisit() { return currentOrder.visitAt ? (new Date(currentOrder.visitAt).getTime() - now) / 3600000 : 0; }
 
   function canCancel() {
-    return currentOrder.type === 'storage' && currentOrder.fulfillment === 'courier'
+    return currentOrder.cancelAllowed !== false && currentOrder.type === 'storage' && currentOrder.fulfillment === 'courier'
       && ['created', 'courier'].includes(currentOrder.status) && hoursUntilVisit() >= 2;
   }
 

@@ -161,6 +161,16 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal((await request(`/v1/orders/${cancelled.id}/cancel`,c,{})).status,200)
     assert.equal((await request(`/v1/payments/${cp.id}`,c)).data.payment.status,'refunded')
     assert.equal((await request(`/v1/payments/${cp.id}/simulate`,c,{ result:'paid' })).data.payment.status,'refunded')
+    const partial = (await request('/v1/intake',c,{...orderData,...schedule,fulfillment:'courier',address:configuration.addresses[0].value,phone:'+79990000001'},`${suffix}-partial-courier`)).data.order
+    assert.equal(partial.cancelAllowed,true)
+    const partialPayment = (await request('/v1/payments',c,{orderID:partial.id})).data.payment
+    await request(`/v1/payments/${partialPayment.id}/simulate`,c,{result:'paid'})
+    assert.equal((await request(`/v1/warehouse/orders/${partial.id}/receive`,w,{itemID:partial.items[0].id,barcode:`PARTIAL-${suffix}`,seal:'PARTIAL-SEAL',evidence:[intakeMedia]})).status,200)
+    const partiallyReceived = (await request(`/v1/orders/${partial.id}`,c)).data.order
+    assert.equal(partiallyReceived.backendStatus,'created','Partial reception retains intake stage until every item arrives')
+    assert.equal(partiallyReceived.cancelAllowed,false,'Client receives server cancellation eligibility')
+    assert.equal((await request(`/v1/orders/${partial.id}/cancel`,c,{})).status,409,'A single physically received item prevents cancellation')
+    assert.equal((await request(`/v1/payments/${partialPayment.id}`,c)).data.payment.status,'paid','Rejected cancellation does not refund payment')
     const historyMarker = `cursor-fixture-${suffix}`, closedAt = new Date().toISOString()
     for (let i=0;i<21;i++) await payload.create({collection:'orders',overrideAccess:true,data:{owner:client.id,number:`CURSOR-${suffix}-${i}`,type:'intake',status:'completed',items:[lastID],fulfillment:'pickup',idempotencyKey:`${suffix}-history-${i}`,closedAt,historySearch:historyMarker,details:{version:2,units:[]}}})
     const firstPage = await request(`/v1/history?search=${historyMarker}`,c)

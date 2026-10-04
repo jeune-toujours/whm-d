@@ -300,6 +300,7 @@
   let {
     live = false, initialOrderId = '', viewKey = '', onLoadPage = null, onLoadDetail = null, onSelectOrder = () => {},
     financialView = false, onLoadPayments = null, onPaymentReceipt = () => {}, onPaymentRetry = () => {}, onShowOrders = () => {}, onShowPayments = () => {},
+    userInitials = 'АМ', onOpenProfile = () => {},
     orders = live ? [] : demoOrders,
     activeOrder = demoActiveOrder,
     initialTheme = 'bumblebee',
@@ -633,7 +634,7 @@
           <Moon aria-hidden="true" />
         {/if}
       </button>
-      <button class="profile-button" type="button" aria-label="Профиль">АМ</button>
+      <button class="profile-button" type="button" aria-label="Профиль" onclick={onOpenProfile}>{userInitials}</button>
     </div>
   </header>
 
@@ -720,7 +721,7 @@
             </div>
             {#if selectedOrder.type === 'intake'}
               <span class="cycle-label">
-                {selectedOrder.currentCount > 0
+                {selectedOrder.status === 'cancelled' ? 'Вещи не были приняты' : selectedOrder.currentCount > 0
                   ? `На хранении ${selectedOrder.currentCount} из ${selectedOrder.items.length}`
                   : 'Все вещи возвращены'}
               </span>
@@ -771,7 +772,7 @@
                   </span>
                   <span class="service-copy">
                     <strong>{service.title}</strong>
-                    <span>{service.status} · {service.date}</span>
+                    <span>{service.status}{service.date ? ` · ${service.date}` : ''}</span>
                     {#if service.insuredValue}<span>Объявленная стоимость {formatMoney(service.insuredValue)}</span>{/if}
                   </span>
                   <span class="service-price">{formatMoney(service.price)}</span>
@@ -843,7 +844,7 @@
           </div>
           <div class="finance-total">
             <span>Итого оплачено</span>
-            <strong>{selectedOrder.financial.paid > 0 ? formatMoney(selectedOrder.financial.paid) : 'Без оплаты'}</strong>
+            <strong>{selectedOrder.financial.paid > 0 ? formatMoney(selectedOrder.financial.paid) : selectedOrder.financial.paymentStatus === 'refunded' ? 'Возвращено полностью' : ['pending','failed'].includes(selectedOrder.financial.paymentStatus) ? 'Не оплачено' : 'Без оплаты'}</strong>
           </div>
           {#if selectedOrder.financial.receiptAvailable || selectedOrder.financial.simulationReceipt}
             <button class="secondary-button receipt-button" type="button" onclick={() => openReceipt(selectedOrder)}>
@@ -1076,7 +1077,7 @@
                             <span>Хранение <strong>{formatMoney(order.financial.storage)}</strong></span>
                             <span>Разово <strong>{formatMoney(order.financial.paid - order.financial.storage)}</strong></span>
                           {:else}
-                            <span>{order.type === 'return' ? 'Возврат' : 'Оплачено'} <strong>{order.financial.paid > 0 ? formatMoney(order.financial.paid) : 'Без оплаты'}</strong></span>
+                            <span>{order.type === 'return' ? 'Возврат' : 'Оплачено'} <strong>{order.financial.paid > 0 ? formatMoney(order.financial.paid) : order.financial.paymentStatus === 'refunded' ? 'Возвращено полностью' : ['pending','failed'].includes(order.financial.paymentStatus) ? 'Не оплачено' : 'Без оплаты'}</strong></span>
                           {/if}
                         </div>
                         {#if order.services.length > 0}

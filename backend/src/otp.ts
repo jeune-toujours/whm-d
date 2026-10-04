@@ -1,0 +1,63 @@
+import { createHmac, randomUUID, timingSafeEqual, randomBytes } from 'node:crypto'
+import { jwtSign, type PayloadRequest } from 'payload'
+import { addSessionToUser, generatePayloadCookie, generateExpiredPayloadCookie } from 'payload/shared'
+import { normalizePhone, DomainError, text } from './domain'
+import { endpoint, body, json, transaction } from './http'
+import { userOf } from './access'
+
+export const digest = (value: string) => createHmac('sha256', process.env.PAYLOAD_SECRET!).update(value).digest('hex')
+export const otpCode = (id: string) => String(parseInt(digest(`otp-code:${id}`).slice(0, 12), 16) % 1_000_000).padStart(6, '0')
+export const stagingCode = (phone: string) => process.env.APP_ENV === 'staging' && process.env.STAGING_TEST_PHONE === phone && /^\d{6}$/.test(process.env.STAGING_TEST_OTP || '') ? process.env.STAGING_TEST_OTP! : null
+const matches = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b))
+const cookieConfig = (req: PayloadRequest) => req.payload.collections.users.config
+
+export const authEndpoints = [
+  endpoint('/auth/request-otp', 'post', async req => {
+    const data = await body(req), phone = normalizePhone(data.phone), phoneKey = digest(`phone:${phone}`)
+    const ip = process.env.TRUST_PROXY === 'true' ? text(req.headers.get('x-forwarded-for')?.split(',').at(-1), 80) : 'shared-untrusted-ip'
+    const ipKey = digest(`ip:${ip || 'unknown'}`), testCode = stagingCode(phone)
+    if (!testCode && !process.env.SMS_RU_API_ID) throw new DomainError(503, 'SMS_NOT_CONFIGURED', 'Вход по SMS пока не подключён.')
+    const result = await transaction(req, [`otp:${phoneKey}`, `otp-ip:${ipKey}`], async () => {
+      const since = new Date(Date.now() - 15 * 60_000).toISOString()
+      const recent = await req.payload.find({ collection: 'otp-challenges', req, overrideAccess: true, limit: 30, depth: 0, where: { and: [{ createdAt: { greater_than: since } }, { or: [{ phoneKey: { equals: phoneKey } }, { ipKey: { equals: ipKey } }] }] } })
+      const samePhone = recent.docs.filter(doc => doc.phoneKey === phoneKey)
+      if (samePhone.length >= 3 || recent.totalDocs >= 20 || samePhone.some(doc => new Date(doc.createdAt).getTime() > Date.now() - 60_000)) throw new DomainError(429, 'OTP_RATE_LIMIT', 'Подождите перед повторным запросом кода.')
+      await req.payload.update({ collection: 'otp-challenges', req, overrideAccess: true, where: { phoneKey: { equals: phoneKey } }, data: { consumed: true } })
+      const id = randomUUID(), code = testCode || otpCode(id)
+      await req.payload.create({ collection: 'otp-challenges', req, overrideAccess: true, data: { id, phoneKey, ipKey, hash: digest(`${id}:${code}`), expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(), attempts: 0, consumed: false } })
+      if (!testCode) await req.payload.jobs.queue({ task: 'send-otp', input: { challengeID: id, phone }, req })
+      return { ok: true, retryAfter: 60 }
+    })
+    return json(result)
+  }),
+  endpoint('/auth/verify-otp', 'post', async req => {
+    const data = await body(req), phone = normalizePhone(data.phone), code = text(data.code, 8), phoneKey = digest(`phone:${phone}`)
+    if (!/^\d{6}$/.test(code)) throw new DomainError(400, 'INVALID_OTP', 'Введите шестизначный код.')
+    const result = await transaction(req, [`otp:${phoneKey}`], async () => {
+      const challenge = (await req.payload.find({ collection: 'otp-challenges', req, overrideAccess: true, depth: 0, limit: 1, sort: '-createdAt', where: { and: [{ phoneKey: { equals: phoneKey } }, { consumed: { equals: false } }, { expiresAt: { greater_than: new Date().toISOString() } }] } })).docs[0]
+      if (!challenge || challenge.attempts >= 5) return new DomainError(400, 'INVALID_OTP', 'Код истёк. Запросите новый.')
+      if (!matches(challenge.hash, digest(`${challenge.id}:${code}`))) {
+        await req.payload.update({ collection: 'otp-challenges', id: challenge.id, req, overrideAccess: true, data: { attempts: challenge.attempts + 1 } })
+        return new DomainError(400, 'INVALID_OTP', 'Неверный код.') // Commit failed-attempt count.
+      }
+      await req.payload.update({ collection: 'otp-challenges', id: challenge.id, req, overrideAccess: true, data: { consumed: true } })
+      let user = (await req.payload.find({ collection: 'users', req, overrideAccess: true, depth: 0, limit: 1, where: { phone: { equals: phone } } })).docs[0]
+      if (user && (user.role !== 'client' || user.active === false)) return new DomainError(403, 'CLIENT_LOGIN_DENIED', 'Вход для этого аккаунта недоступен.')
+      if (!user) user = await req.payload.create({ collection: 'users', req, overrideAccess: true, context: { otpRegistration: true }, data: { email: `${randomUUID()}@client.whm.invalid`, password: randomBytes(48).toString('base64url'), phone, role: 'client', active: true } })
+      const collectionConfig = cookieConfig(req)
+      const { sid } = await addSessionToUser({ collectionConfig, payload: req.payload, req, user: { ...user, collection: 'users' } })
+      const { token } = await jwtSign({ fieldsToSign: { id: user.id, collection: 'users', sid }, secret: req.payload.secret, tokenExpiration: collectionConfig.auth.tokenExpiration })
+      return { cookie: generatePayloadCookie({ collectionAuthConfig: collectionConfig.auth, cookiePrefix: req.payload.config.cookiePrefix, token }), newUser: !user.firstName }
+    })
+    if (result instanceof DomainError) throw result
+    return json({ ok: true, newUser: result.newUser }, 200, { 'Set-Cookie': result.cookie })
+  }),
+  endpoint('/auth/logout', 'post', async req => {
+    const user = userOf(req)
+    if (user) await transaction(req, [`user:${user.id}`], async () => {
+      const record = await req.payload.findByID({ collection: 'users', id: user.id, req, overrideAccess: true, showHiddenFields: true })
+      await req.payload.db.updateOne({ collection: 'users', id: user.id, req, data: { sessions: (record.sessions || []).filter(session => session.id !== user._sid) } })
+    })
+    return json({ ok: true }, 200, { 'Set-Cookie': generateExpiredPayloadCookie({ collectionAuthConfig: cookieConfig(req).auth, cookiePrefix: req.payload.config.cookiePrefix }) })
+  }),
+]

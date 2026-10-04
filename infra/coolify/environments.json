@@ -1,0 +1,19 @@
+{
+  "project": "b3vm1syboizzaw6venw06c2w",
+  "server": "i74mmsoxfwnlhhbiwraaezjp",
+  "githubApp": "dzoynu1fimzvczvcwdwplc3f",
+  "staging": {
+    "branch": "develop",
+    "domain": "https://test-whm.pikman.studio",
+    "environment": "grycolm503bbwmkeckbvptx5",
+    "frontend": "b7gtr016tzkmxnwtshutdnir",
+    "backend": null
+  },
+  "production": {
+    "branch": "main",
+    "domain": "https://whm.pikman.studio",
+    "environment": "dsi9yru0uzfguyr8mamfpccc",
+    "frontend": "9yznztdvdffxgs41qlfd8wjm",
+    "backend": null
+  }
+}

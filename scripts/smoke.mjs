@@ -1,7 +1,8 @@
 import { chromium } from '@playwright/test';
 
 const base = process.env.WHM_BASE_URL || 'http://127.0.0.1:4173';
-const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', headless: true });
+const executablePath = process.env.CHROME_PATH || (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
+const browser = await chromium.launch({ executablePath, headless: true });
 const page = await browser.newPage({ viewport: { width: 1365, height: 900 } });
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));

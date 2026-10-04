@@ -1,0 +1,53 @@
+# WHM backend: текущая реализация
+
+Архитектура: [Notion master plan](https://app.notion.com/p/3ef75fc615c881808c1fdcd5ffb69ea6). Уточнение владельца от 4 октября 2026: PostgreSQL и S3 находятся в **Selectel**. Svelte остаётся в корне, Payload/Next — в `backend/`.
+
+## Запуск
+
+Node.js 24. Заполнить `backend/.env` по `backend/.env.example`. Payload CLI и Next читают `.env`; seed запускать с `node --env-file=.env --import tsx src/seed.ts`.
+
+```bash
+cd backend
+npm ci
+npm run migrate
+node --env-file=.env --import tsx src/seed.ts
+npm run dev
+```
+
+`DATABASE_PUSH=false` на staging и production. Первичная миграция создаёт отдельную схему WHM в выбранной базе. Не применять её в базе другого приложения. Managed PostgreSQL подключается с проверкой TLS; при необходимости задать `DATABASE_CA_FILE`. S3 endpoint/region брать из Selectel: пример `ru-1` не означает, что созданное владельцем хранилище находится именно там.
+
+## Что работает в этом пакете
+
+- Payload Admin `/admin`: стандартные коллекции пользователей, вещей, заказов, ячеек, складов, тарифов, подписок, платежных метаданных, обращений, аудита и интеграционных событий.
+- Четыре роли: `client`, `warehouse`, `manager`, `admin`. Регистрация сотрудников через bootstrap либо действующего администратора. Публичное создание первого администратора запрещено.
+- Серверные ограничения владельца применяются и в WHM endpoints, и в стандартном REST API Payload.
+- `GET /api/health`: процесс работает; `GET /api/ready`: база и миграция доступны. Ответы не раскрывают данные пользователя или параметры соединения.
+- `POST /api/auth/request-otp`, `/verify-otp`, `/logout`; `GET /api/me`; `PATCH /api/v1/profile`.
+- Чтение `/api/v1/items`, `/orders`, `/tariffs`, `/subscription`, `/payments`, `/support`.
+- OTP: HMAC hash, TTL 5 минут, 5 проверок, лимит 3 запросов на телефон и 20 на IP за 15 минут, минимум 60 секунд между запросами. PostgreSQL advisory locks защищают от параллельных запросов между контейнерами. После OTP выдаётся стандартная HttpOnly cookie и серверная сессия Payload; logout отзывает сессию.
+- Опциональный адаптер SMS.RU через Payload Jobs. OTP не хранится открыто даже в очереди: worker получает ID challenge и выводит код через HMAC. Выбор SMS.RU не является утверждённым коммерческим решением; без ключа вход закрыт сообщением о неподключённом провайдере.
+- Только на `APP_ENV=staging` возможен тестовый вход на один заданный `STAGING_TEST_PHONE` и шестизначный `STAGING_TEST_OTP`. Это не общий обход авторизации. Production этот режим игнорирует.
+- Медиа приватны, ограничения MIME и 25 MB, signed downloads действуют 5 минут. Фото клиента читаются только его владельцем или сотрудником склада. Без S3 конфигурации runtime не запускается; локальное хранение файлов отключено.
+
+## Границы этого пакета
+
+Это серверный foundation, ещё не полное MVP. Рабочий фронт остаётся демо. Запись клиентских заказов, четыре складских process views, переключение фронта на API, тарифные правила, платежный провайдер, документы/подпись, интеграция МойСклад и полноценные flows ещё требуют реализации. CRUD коллекций не заменяет готовность складского процесса. Нельзя показывать клиенту успешную оплату или завершённый заказ до подключения соответствующего контура.
+
+Тарифы не заполняются демонстрационными ценами. Bootstrap создаёт только администратора и не меняет существующий пароль. После bootstrap удалить пароль из runtime env. Email-провайдер отключён явно: токены восстановления не выводятся в логи.
+
+## Проверки
+
+```bash
+npm run check
+npm test
+npm run build
+npm run test:integration
+```
+
+Последняя команда требует уже запущенного backend и изолированной PostgreSQL с миграциями; тест создаёт данные. GitHub Actions поднимает временный PostgreSQL 17 и проверяет реальный OTP, невозможность повторного применения кода, ограничения владельца, невозможность создания admin клиентом, отзыв сессии и блокировку аккаунта. Эта проверка не обращается в Selectel и не отправляет SMS. S3 загрузка требует отдельной проверки с реальным staging bucket.
+
+`WHM_BUILD=1` используется только при сборке/генерации без runtime secrets. Никогда не сохранять его в переменных работающего приложения.
+
+## Источники
+
+[Payload auth](https://payloadcms.com/docs/authentication/overview), [Payload migrations](https://payloadcms.com/docs/database/migrations), [Payload Jobs](https://payloadcms.com/docs/jobs-queue/overview), [Selectel S3](https://docs.selectel.ru/api/object-storage-s3/), [SMS.RU API](https://sms.ru/api/send).

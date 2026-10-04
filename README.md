@@ -1,11 +1,16 @@
-# WHM D — клиентский демо-контур
+# WHM D
 
-Кликабельный клиентский фронтенд WHM для просмотра экранов и сценариев до подключения бэкенда. В репозитории нет кабинетов сотрудников, администратора и серверной части.
+Клиентский Svelte frontend и Payload backend для WHM. Работающий клиент пока использует демо-данные; серверный foundation добавлен в `backend/` и подключается к PostgreSQL/S3 в Selectel.
 
 Текущий этап сосредоточен на структуре и логике. Существующая UI-система сохранена и приведена к единому виду: Open Sans, жёлтая акцентная палитра, общие размеры, карточки, состояния и светлая/тёмная темы. Логотип, фирменные изображения и декоративные иллюстрации удалены; медиа-зоны показывают нейтральные плейсхолдеры. Все интерфейсные иконки берутся только из бесплатного набора `@lucide/svelte`.
 
-**Dev-сайт:** https://whm-d-client-preview.vercel.app/#/preview  
-**GitHub:** https://github.com/jeune-toujours/whm-d (приватный репозиторий).
+**Основной dev-домен:** https://whm.pikman.studio
+
+**Staging:** https://test-whm.pikman.studio (`develop`)
+
+**GitHub:** https://github.com/jeune-toujours/whm-d (публичный репозиторий).
+
+Архитектура и backend: [`docs/backend.md`](docs/backend.md). Релизы через VM/Coolify: [`docs/releases.md`](docs/releases.md).
 
 ## Запуск
 
@@ -42,4 +47,6 @@ npm run test:flows
 
 ## Публикация
 
-Стабильный URL развёрнут в проекте Vercel `pikman-studio/whm-d-client-preview`. Для нового релиза из этой папки выполните `vercel deploy --prod --scope pikman-studio`. Автоматическое подключение GitHub к Vercel пока недоступно: интеграция Vercel команды `pikman-studio` не имеет доступа к приватному репозиторию аккаунта `jeune-toujours`. Подключите репозиторий к Vercel после выдачи доступа интеграции; текущий опубликованный сайт работает независимо от этого подключения.
+Текущий способ публикации — GitHub App → Coolify на VM. `develop` публикует staging, `main` — основной контур. Перед merge выполнить проверки и дождаться CI; после deployment проверить HTTPS и SHA релиза. Команды и ограничения описаны в [`docs/releases.md`](docs/releases.md).
+
+Vercel-конфигурация и прежний документ `docs/client-preview.md` относятся к историческому демо-превью.

@@ -134,7 +134,8 @@
     onComplete = () => {},
     onNavigateToOrder = () => {},
     onNavigateHome = null,
-    onExit = () => {}
+    onExit = () => {},
+    onSupport = () => {}
   } = $props();
 
   let availableDates = $derived(live ? config.dates : demoAvailableDates), timeSlots = $derived(live ? config.slots : demoTimeSlots), pickupWarehouse = $derived(live ? config.warehouses[0] : demoPickupWarehouse);
@@ -210,7 +211,7 @@
   let phoneValid = $derived(rawPhone.length === 10);
   let formattedPhone = $derived(formatPhone(rawPhone));
   let scheduleValid = $derived(
-    Boolean(selectedDate && selectedSlot) &&
+    Boolean(selectedDate && selectedSlot) && (!live || (availableDates.some(d=>d.id===selectedDate) && timeSlots.includes(selectedSlot))) &&
       (method === 'pickup' || (address.trim().length >= 8 && phoneValid && (!live || config.addresses.some(a=>a.inZone && a.value===address))))
   );
   let currentStep = $derived(Math.max(0, steps.findIndex((step) => step.id === screen)));
@@ -767,7 +768,7 @@
               {/if}
 
               <div class="panel-actions">
-                <button class="primary-button" type="button" onclick={goToSchedule}>
+                <button class="primary-button" type="button" disabled={!method} onclick={goToSchedule}>
                   <span>Продолжить</span>
                   <ArrowRight aria-hidden="true" />
                 </button>
@@ -799,6 +800,7 @@
                       />
                       {#if live}<datalist id="return-addresses">{#each config.addresses as a}<option value={a.value}>{a.inZone ? "Тестовая зона доставки" : "Вне зоны"}</option>{/each}</datalist>{/if}
                       {#if missingAddress}<small class="field-error">Укажите адрес доставки</small>{/if}
+                      {#if live && config.addresses.some(a=>!a.inZone && a.value===address)}<small class="field-error">Адрес вне тестовой зоны доставки.</small><button class="text-button" type="button" onclick={()=>onSupport({unitId:selectedIds[0],note:'Возврат: адрес вне зоны доставки'})}>Обратиться в поддержку</button>{/if}
                     </label>
 
                     <div class="address-fields">
@@ -920,7 +922,7 @@
               {/if}
 
               <div class="panel-actions">
-                <button class="primary-button" type="button" disabled={isBusy} onclick={calculateAndReview}>
+                <button class="primary-button" type="button" disabled={!scheduleValid || isBusy} onclick={calculateAndReview}>
                   {#if isBusy}
                     <span class="button-spinner"></span>
                     <span>Рассчитываем</span>
@@ -1000,7 +1002,7 @@
               {/if}
 
               <div class="panel-actions">
-                <button class="primary-button" type="button" disabled={isBusy} onclick={submitReturn}>
+                <button class="primary-button" type="button" disabled={isBusy || !acceptedReturnTerms} onclick={submitReturn}>
                   {#if isBusy}
                     <span class="button-spinner"></span>
                     <span>Создаём заявку</span>

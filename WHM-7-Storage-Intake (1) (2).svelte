@@ -316,6 +316,7 @@
       insuranceDeclaredValue,
       insuranceEnabled,
       selectedDateIndex,
+      selectedDateID: selectedDate?.id || '',
       selectedSlot,
       addressQuery,
       selectedAddress,
@@ -445,7 +446,11 @@
       selectedDateIndex = Number.isInteger(draft.selectedDateIndex)
         ? draft.selectedDateIndex
         : 0;
+      const restoredDate = live && draft.selectedDateID ? dates.findIndex(d=>d.id===draft.selectedDateID) : selectedDateIndex;
+      const dateExpired = live && Boolean(draft.selectedDateID) && restoredDate < 0;
+      selectedDateIndex = Math.max(0, Math.min(dates.length - 1, restoredDate));
       selectedSlot = draft.selectedSlot || '';
+      if (dateExpired) selectedSlot = '';
       addressQuery = draft.addressQuery || '';
       selectedAddress = draft.selectedAddress || '';
       apartment = draft.apartment || '';
@@ -456,8 +461,8 @@
       courierComment = draft.courierComment || '';
       acceptedTerms = Boolean(draft.acceptedTerms);
       if (draft.view === 'review') acceptedTerms = false;
-      go(draft.view && draft.view !== 'home' ? draft.view : 'service');
-      showToast('Черновик восстановлен');
+      go(dateExpired && deliveryMode === 'courier' ? 'slots' : draft.view && draft.view !== 'home' ? draft.view : 'service');
+      showToast(dateExpired ? 'Выбранная дата больше недоступна. Выберите новое время.' : 'Черновик восстановлен');
     } catch {
       startFlow();
     }

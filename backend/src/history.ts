@@ -43,7 +43,7 @@ export const historyEndpoints = [
       const comparator = oldest ? 'greater_than' : 'less_than'
       filters.push({ or: [{ closedAt: { [comparator]: value.at } }, { and: [{ closedAt: { equals: value.at } }, { id: { [comparator]: uuid(value.id) } }] }] })
     }
-    const result = await req.payload.find({ collection: 'orders', req, overrideAccess: false, depth: 1, pagination: false, limit: 21, sort: oldest ? 'closedAt,id' : '-closedAt,-id', where: { and: filters } })
+    const result = await req.payload.find({ collection: 'orders', req, overrideAccess: false, depth: 1, pagination: false, limit: 21, sort: oldest ? ['closedAt', 'id'] : ['-closedAt', '-id'], where: { and: filters } })
     const page = result.docs.slice(0, 20), last = page.at(-1), nextCursor = result.docs.length > 20 && last ? Buffer.from(JSON.stringify({ at: last.closedAt, id: last.id, filterHash })).toString('base64url') : null
     return json({ ok: true, orders: await Promise.all(page.map(o => historyDTO(req, o))), nextCursor })
   }),

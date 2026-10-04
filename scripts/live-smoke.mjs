@@ -32,6 +32,8 @@ try {
   await page.locator('.service-card').filter({hasText:'Я упакую сам'}).getByRole('button',{name:'Выбрать',exact:true}).click();
   await capture('intake-items-desktop');
   await page.getByRole('button',{name:/Увеличить количество/}).first().click();
+  await page.reload();
+  assert.equal(await page.getByRole('button',{name:/Уменьшить количество/}).first().isEnabled(),true,'Intake draft survives reload');
   await page.getByRole('button',{name:'Продолжить',exact:true}).click();
   await page.getByRole('button',{name:'Пропустить',exact:true}).click();
   await page.getByRole('button',{name:'Пропустить',exact:true}).click();

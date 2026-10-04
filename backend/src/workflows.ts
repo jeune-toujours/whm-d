@@ -129,6 +129,10 @@ export const workflowEndpoints = [
     const attachments = Array.isArray(data.attachments) && data.attachments.length ? idsOf(data.attachments) : []
     if (attachments.length > 5) throw bad('Максимум пять вложений.')
     await ownedMedia(req, attachments, user.id, 'support')
+    for (const attachment of attachments) {
+      const media = await req.payload.findByID({ collection: 'media', req, id: attachment, overrideAccess: false, depth: 0 })
+      if ((media.supportType || 'incident') !== data.type) throw bad('Вложение должно относиться к выбранному каналу обращения.')
+    }
     return json(await transaction(req, [`support:${user.id}`], async () => {
       const existing = (await req.payload.find({ collection: 'support-tickets', req, overrideAccess: true, limit: 1, where: { idempotencyKey: { equals: key } } })).docs[0]
       if (existing) { if ((existing.details as any)?.requestHash !== requestHash || relationID(existing.owner) !== user.id) throw conflict('Ключ относится к другому обращению.'); return { ok: true, ticketId: existing.id } }

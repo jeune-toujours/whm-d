@@ -15,7 +15,7 @@ const audit: CollectionAfterChangeHook = async ({ req, doc, previousDoc, operati
 const immutableWorkflow: CollectionConfig['hooks'] = {
   beforeChange: [({ data, originalDoc, req, operation }) => {
     if (operation === 'update' && !req.context.workflow) {
-      for (const key of ['owner', 'status', 'cell', 'items', 'monthlyPrice', 'startedAt', 'returnedAt', 'picked', 'signature', 'evidence', 'payment', 'barcode', 'seal', 'contents', 'media', 'details', 'closedAt', 'historySearch', 'hasServices']) {
+      for (const key of ['owner', 'status', 'type', 'fulfillment', 'address', 'slot', 'number', 'requestHash', 'idempotencyKey', 'cell', 'items', 'monthlyPrice', 'startedAt', 'returnedAt', 'picked', 'signature', 'evidence', 'payment', 'barcode', 'seal', 'contents', 'media', 'details', 'closedAt', 'historySearch', 'hasServices']) {
         if (data[key] !== undefined && JSON.stringify(data[key]) !== JSON.stringify(originalDoc[key])) throw new DomainError(403, 'WORKFLOW_REQUIRED', 'Изменение выполняется через складской процесс.')
       }
     }

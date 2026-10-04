@@ -9,6 +9,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "support_messages" ADD COLUMN "idempotency_key" varchar;
   ALTER TABLE "media" ADD COLUMN "support_type" "enum_media_support_type" DEFAULT 'incident';
   CREATE UNIQUE INDEX "support_messages_idempotency_key_idx" ON "support_messages" USING btree ("idempotency_key");`)
+  await db.execute(sql`UPDATE media m SET support_type = 'technical'
+    WHERE m.purpose = 'support' AND EXISTS (
+      SELECT 1 FROM support_tickets_rels r JOIN support_tickets t ON t.id = r.parent_id
+      WHERE r.media_id = m.id AND t.type = 'technical' AND r.path = 'attachments');`)
 }
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {

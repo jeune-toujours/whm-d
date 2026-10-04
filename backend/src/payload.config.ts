@@ -2,7 +2,7 @@ import { buildConfig } from 'payload'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { s3Storage } from '@payloadcms/storage-s3'
 import sharp from 'sharp'
-import { readFileSync } from 'node:fs'
+import { databaseOptions } from './database-options'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { collections } from './collections'
@@ -22,7 +22,7 @@ export default buildConfig({
   upload: { limits: { fileSize: 25 * 1024 * 1024 } },
   db: postgresAdapter({
     idType: 'uuid', allowIDOnCreate: true, push: process.env.DATABASE_PUSH === 'true' && process.env.APP_ENV === 'development', disableCreateDatabase: true,
-    pool: { connectionString: process.env.DATABASE_URL, max: 10, connectionTimeoutMillis: 10_000, ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true, ...(process.env.DATABASE_CA_FILE ? { ca: readFileSync(process.env.DATABASE_CA_FILE, 'utf8') } : {}) } : undefined },
+    pool: { ...databaseOptions(process.env), max: 10, connectionTimeoutMillis: 10_000 },
     migrationDir: path.resolve(sourceDir, 'migrations'),
   }),
   plugins: [s3Storage({

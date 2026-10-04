@@ -1,0 +1,76 @@
+name: Checks
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+        env:
+          VITE_DEMO_MODE: 'true'
+      - run: npx playwright install --with-deps chromium
+      - name: Client flows
+        run: |
+          npm run preview -- --port 4173 > /tmp/whm-preview.log 2>&1 &
+          for attempt in $(seq 1 30); do curl --fail --silent http://127.0.0.1:4173 > /dev/null && break; sleep 1; done
+          npm run test:flows
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: whm_test
+          POSTGRES_PASSWORD: ci-only-not-a-deployed-secret
+          POSTGRES_DB: whm_test
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U whm_test -d whm_test" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      WHM_BUILD: '1'
+      DATABASE_URL: postgres://whm_test:ci-only-not-a-deployed-secret@localhost:5432/whm_test
+      PAYLOAD_SECRET: ci-only-secret-00000000000000000000000000
+      APP_ENV: staging
+      APP_URL: http://localhost:3000
+      CLIENT_URL: http://localhost:3000
+      STAGING_TEST_PHONE: '+79990000001'
+      STAGING_TEST_OTP: '482915'
+      S3_ENDPOINT: http://127.0.0.1:9000
+      S3_REGION: ru-1
+      S3_BUCKET: ci-only-private-bucket
+      S3_ACCESS_KEY_ID: ci-only
+      S3_SECRET_ACCESS_KEY: ci-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run migrate
+      - run: npm run build
+      - name: API and authorization against PostgreSQL
+        run: |
+          WHM_BUILD=0 npm start > /tmp/whm-api.log 2>&1 &
+          for attempt in $(seq 1 60); do curl --fail --silent http://localhost:3000/api/ready > /dev/null && break; sleep 1; done
+          npm run test:integration

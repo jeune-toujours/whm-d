@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { chromium } from '@playwright/test';
 
 const base = process.env.WHM_BASE_URL || 'http://127.0.0.1:4173';
-const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', headless: true });
+const executablePath = process.env.CHROME_PATH || (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
+const browser = await chromium.launch({ executablePath, headless: true });
 
 async function pageFor(route) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -47,7 +48,7 @@ try {
     await page.locator('.date-row button').first().click();
     await page.locator('.slot-grid button').first().click();
     await page.locator('.panel-actions .primary-button').click();
-    await page.locator('.consent-item input').check({ force: true });
+    await page.locator('.consent-item input').check();
     await page.locator('.panel-actions .primary-button').click();
     await page.locator('.success-actions .primary-button').waitFor({ timeout: 10000 });
     await page.locator('.success-actions .primary-button').click();

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "vite build && node scripts/write-release.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "check": "svelte-check --tsconfig ./jsconfig.json",
     "test:flows": "node scripts/smoke.mjs && node scripts/flow-smoke.mjs"

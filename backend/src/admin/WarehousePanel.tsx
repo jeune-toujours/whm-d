@@ -78,6 +78,7 @@ function Handover({ order, busy, perform }: { order: any; busy: boolean; perform
 function Ticket({ ticket, busy, perform }: { ticket: any; busy: boolean; perform: Perform }) {
   const [message, setMessage] = useState('')
   return <section className="whm-order"><h2>{ticket.subject}</h2><p>{ticket.type} · {ticket.status}</p>{ticket.messages.map((m: any, i: number) => <p key={i}><strong>{m.author === 'client' ? 'Клиент' : 'Сотрудник'}</strong> · {m.date}<br />{m.text}</p>)}
+    {ticket.attachments?.map((file: any, i: number) => <p key={i}><a href={file.url} target="_blank" rel="noopener noreferrer">{file.filename}</a></p>)}
     {ticket.status !== 'resolved' && <form onSubmit={e => { e.preventDefault(); void perform(async () => { await api(`/v1/support/${ticket.id}/reply`, { text: message }); setMessage('') }) }}><label>Ответ клиенту<textarea required value={message} onChange={e => setMessage(e.target.value)} /></label><button disabled={busy} type="submit">Ответить</button><button disabled={busy} type="button" onClick={() => void perform(() => api(`/support-tickets/${ticket.id}`, { status: 'resolved' }, 'PATCH'))}>Закрыть обращение</button></form>}
   </section>
 }

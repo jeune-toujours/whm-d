@@ -42,8 +42,8 @@ export const paymentEndpoints = [
   }),
   endpoint('/v1/payments/:id/receipt', 'get', async req => {
     clientUser(req); const p = await req.payload.findByID({ collection: 'payments', id: id(req.routeParams?.id), req, overrideAccess: false, depth: 0 })
-    if (p.status !== 'paid' || p.provider !== 'simulation') throw new DomainError(404, 'NOT_FOUND', 'Квитанция недоступна.')
-    return json({ document: 'Тестовая квитанция. Не является фискальным чеком.', payment: dto(p), currency: 'RUB' }, 200, { 'Content-Disposition': `attachment; filename="test-payment-${p.id}.json"` })
+    if (!['paid', 'refunded'].includes(p.status) || p.provider !== 'simulation') throw new DomainError(404, 'NOT_FOUND', 'Квитанция недоступна.')
+    return json({ document: 'Тестовая квитанция. Не является фискальным чеком.', payment: dto(p), refundAmount: p.status === 'refunded' ? p.amount : 0, currency: 'RUB' }, 200, { 'Content-Disposition': `attachment; filename="test-payment-${p.id}.json"` })
   }),
   endpoint('/v1/payments/:id/simulate', 'post', async req => {
     needSimulation(); const user = clientUser(req), paymentID = id(req.routeParams?.id), data = await body(req)

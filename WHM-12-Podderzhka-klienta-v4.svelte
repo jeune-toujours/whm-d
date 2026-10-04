@@ -637,6 +637,7 @@
       <button class="link-button standalone" type="button" onclick={() => (screen = 'select')}>Новое обращение</button>
 
     {:else if screen === 'detail' && selectedTicket}
+      {#if live && selectedTicket.attachments?.length}<div class="inline-note">Вложения: {#each selectedTicket.attachments as file}<a href={file.url} target="_blank" rel="noopener">{file.filename}</a> {/each}</div>{/if}
       <div class="page-heading">
         <h1>{selectedTicket.shortDescription}</h1>
         <p>Обращение #{selectedTicket.id} · {ticketStatusLabel[selectedTicket.status] ?? selectedTicket.status}</p>

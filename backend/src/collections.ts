@@ -6,9 +6,10 @@ const owner: Field = { name: 'owner', label: 'Клиент', type: 'relationship
 const name: Field = { name: 'name', label: 'Название', type: 'text', required: true }
 const choice = (field: string, options: string[], defaultValue?: string): SelectField => ({ name: field, type: 'select', options, required: true, defaultValue })
 const audit: CollectionAfterChangeHook = async ({ req, doc, previousDoc, operation, collection }) => {
-  if (req.context.skipAudit) return doc
   const fields = collection.fields.filter((field): field is Field & { name: string } => 'name' in field).map(f => f.name).filter(k => JSON.stringify(doc[k]) !== JSON.stringify(previousDoc?.[k]))
-  await req.payload.create({ collection: 'audit-log', overrideAccess: true, req, data: { actor: req.user?.id, entity: collection.slug, entityID: String(doc.id), action: operation, changedFields: fields.join(',') }, context: { skipAudit: true } })
+  // audit-log has no change hook. Do not mutate the request context: nested context
+  // persists across writes and would suppress the remaining audits in a workflow.
+  await req.payload.create({ collection: 'audit-log', overrideAccess: true, req, data: { actor: req.user?.id, entity: collection.slug, entityID: String(doc.id), action: operation, changedFields: fields.join(',') } })
   return doc
 }
 const immutableWorkflow: CollectionConfig['hooks'] = {

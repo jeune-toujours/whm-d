@@ -71,6 +71,8 @@
 
   let {
     initialTheme = 'bumblebee',
+    otpLength = 4,
+    simulation = false,
     onCheckSession = defaultCheckSession,
     onRequestOtp = defaultRequestOtp,
     onVerifyOtp = defaultVerifyOtp,
@@ -92,7 +94,8 @@
   let requestingOtp = $state(false);
   let alreadyRegisteredNotice = $state(false);
 
-  let otpDigits = $state(['', '', '', '']);
+  let otpDigits = $state(Array(otpLength).fill(''));
+  let simulationCode = $state('');
   let otpError = $state('');
   let otpAttempts = $state(0);
   let otpLockedUntil = $state(0);
@@ -195,6 +198,7 @@
         return;
       }
       resetOtpStep();
+      simulationCode = result?.simulationCode || '';
       screen = 'otp';
     } catch (error) {
       phoneError = 'Нет соединения. Попробуйте ещё раз.';
@@ -204,7 +208,7 @@
   }
 
   function resetOtpStep() {
-    otpDigits = ['', '', '', ''];
+    otpDigits = Array(otpLength).fill('');
     otpError = '';
     otpAttempts = 0;
     otpLockedUntil = 0;
@@ -279,7 +283,7 @@
         return;
       }
       stopResendCountdown();
-      if (mode === 'register') {
+      if (result?.newUser ?? (mode === 'register')) {
         screen = 'profile';
       } else {
         onComplete();
@@ -302,6 +306,7 @@
         return;
       }
       startResendCountdown();
+      simulationCode = result?.simulationCode || '';
     } catch (error) {
       otpError = 'Нет соединения. Попробуйте ещё раз.';
     } finally {
@@ -474,6 +479,7 @@
       <div class="page-heading">
         <h1>Введите код из SMS</h1>
         <p>Код отправлен на +7 {formattedPhone}</p>
+        {#if simulationCode}<p data-testid="simulation-otp">Тестовое SMS: <strong>{simulationCode}</strong></p>{/if}
       </div>
 
       <div class="otp-row" class:locked={isOtpLocked}>

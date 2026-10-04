@@ -1,4 +1,6 @@
 <script>
+  import LiveApp from './LiveApp.svelte';
+  const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
   import { ExternalLink } from '@lucide/svelte';
   import { onMount } from 'svelte';
   import Auth from '../WHM-3-Avtorizatsiya-i-Onboarding-v3.svelte';
@@ -124,6 +126,10 @@
   }
 </script>
 
+{#if !demoMode}
+  <LiveApp />
+{:else}
+
 <div class="review-bar" role="region" aria-label="Навигация по демо-контру">
   <span><strong>Клиентский демо-контур</strong><i></i>Без бэкенда</span>
   <div><button type="button" onclick={() => navigate('home')}>Главная</button><button type="button" onclick={() => navigate('preview')}>Все экраны <ExternalLink size={14} aria-hidden="true" /></button></div>
@@ -158,6 +164,8 @@
     <InfoScreen title={infoTitle} description={infoDescription} onBack={() => navigate(infoBackRoute)} />
   {/if}
 {/key}
+
+{/if}
 
 <style>
   .review-bar{height:38px;padding:0 clamp(12px,3vw,30px);display:flex;align-items:center;justify-content:space-between;gap:12px;background:#292922;color:#e8e8df;font:11px/1 'Open Sans', sans-serif}.review-bar span{display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.review-bar strong{color:#f4c84a;letter-spacing:.08em}.review-bar i{width:4px;height:4px;border-radius:50%;background:#9c9c8c}.review-bar div{display:flex;gap:3px;flex:0 0 auto}.review-bar button{border:0;background:transparent;color:#f1f1ea;font-size:11px;font-weight:700;padding:8px}.review-bar button:hover{color:#f4c84a}@media(max-width:520px){.review-bar span{font-size:0}.review-bar strong{font-size:11px}.review-bar i{display:none}}

@@ -122,6 +122,8 @@
 
   let {
     initialTheme = 'bumblebee',
+    live = false,
+    liveTickets = null,
     initialType = null,
     initialContext = null,
     onLoadContextOptions = defaultLoadContextOptions,
@@ -144,6 +146,8 @@
   let selectedOrderId = $state('');
   let incidentDescription = $state('');
   let incidentAttachments = $state([]);
+  let incidentFileInput;
+  let technicalFileInput;
   let incidentAttempted = $state(false);
 
   let technicalSection = $state('');
@@ -165,6 +169,12 @@
   let ticketsError = $state(false);
 
   let selectedTicket = $state(null);
+  $effect(() => {
+    if (liveTickets) {
+      tickets = liveTickets;
+      if (selectedTicket) selectedTicket = liveTickets.find(t => t.id === selectedTicket.id) || selectedTicket;
+    }
+  });
   let replyMessage = $state('');
   let replyBusy = $state(false);
   let replyError = $state('');
@@ -229,6 +239,7 @@
   }
 
   function attachIncidentFile() {
+    if (live) { incidentFileInput?.click(); return; }
     incidentAttachments = [...incidentAttachments, { name: `Фото_${incidentAttachments.length + 1}.jpg` }];
   }
 
@@ -237,6 +248,7 @@
   }
 
   function attachTechnicalFile() {
+    if (live) { technicalFileInput?.click(); return; }
     technicalAttachments = [...technicalAttachments, { name: `Скриншот_${technicalAttachments.length + 1}.png` }];
   }
 
@@ -416,6 +428,11 @@
   <title>Поддержка клиента · Клиентский интерфейс</title>
   <meta name="description" content="Обращения по вещам на хранении и техническим проблемам" />
 </svelte:head>
+
+{#if live}
+  <input hidden type="file" bind:this={incidentFileInput} accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf" onchange={e => { if (incidentAttachments.length < 5 && e.currentTarget.files?.[0]) incidentAttachments = [...incidentAttachments, { name:e.currentTarget.files[0].name, file:e.currentTarget.files[0] }]; e.currentTarget.value = ''; }} />
+  <input hidden type="file" bind:this={technicalFileInput} accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf" onchange={e => { if (technicalAttachments.length < 5 && e.currentTarget.files?.[0]) technicalAttachments = [...technicalAttachments, { name:e.currentTarget.files[0].name, file:e.currentTarget.files[0] }]; e.currentTarget.value = ''; }} />
+{/if}
 
 <div class="whm-app" data-theme={theme}>
   <div class="ambient ambient-one"></div>
@@ -620,6 +637,7 @@
       <button class="link-button standalone" type="button" onclick={() => (screen = 'select')}>Новое обращение</button>
 
     {:else if screen === 'detail' && selectedTicket}
+      {#if live && selectedTicket.attachments?.length}<div class="inline-note">Вложения: {#each selectedTicket.attachments as file}<a href={file.url} target="_blank" rel="noopener">{file.filename}</a> {/each}</div>{/if}
       <div class="page-heading">
         <h1>{selectedTicket.shortDescription}</h1>
         <p>Обращение #{selectedTicket.id} · {ticketStatusLabel[selectedTicket.status] ?? selectedTicket.status}</p>

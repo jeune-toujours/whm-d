@@ -1,20 +1,20 @@
 <script>
   import { ArrowLeft, CreditCard, ExternalLink } from '@lucide/svelte';
   import { formatMoney } from '../demo.js';
-  let { payments = [], initialTheme = 'bumblebee', onBack = () => {}, onReceipt = () => {} } = $props();
-  const statusText = { paid: 'Оплачено', refunded: 'Возврат', failed: 'Ошибка' };
+  let { simulation = false, onRetry = () => {}, payments = [], initialTheme = 'bumblebee', onBack = () => {}, onReceipt = () => {} } = $props();
+  const statusText = { paid: 'Оплачено', refunded: 'Возврат', failed: 'Ошибка', pending: 'Ожидает оплаты' };
 </script>
 
 <svelte:head><title>История платежей · Клиентский интерфейс</title></svelte:head>
 <div class:dark={initialTheme === 'halloween'} class="page">
   <header><button class="back" type="button" onclick={onBack} aria-label="Назад"><ArrowLeft aria-hidden="true" /></button><div class="brand"><strong>Клиентский интерфейс</strong></div></header>
-  <main><span class="eyebrow">ПРОФИЛЬ / ПОДПИСКА</span><h1>История платежей</h1><p class="intro">Начисления за хранение и доступные чеки. В демо-контуре показаны примеры операций.</p>
+  <main><span class="eyebrow">ПРОФИЛЬ / ПОДПИСКА</span><h1>История платежей</h1><p class="intro">{simulation ? 'Все операции тестовые и сохранены в базе.' : 'Начисления за хранение и доступные чеки. В демо-контуре показаны примеры операций.'}</p>
     <section class="list" aria-label="Платежи">
       {#each payments as payment}
-        <div class="row"><div class="icon"><CreditCard aria-hidden="true" /></div><div class="details"><strong>Хранение вещей</strong><span>{payment.date} · {payment.id}</span></div><div class="amount"><strong>{formatMoney(payment.amount)}</strong><small class:refunded={payment.status === 'refunded'}>{statusText[payment.status] || payment.status}</small></div>{#if payment.hasReceipt}<button type="button" onclick={() => onReceipt(payment)}>Чек <ExternalLink size={14} aria-hidden="true" /></button>{/if}</div>
+        <div class="row"><div class="icon"><CreditCard aria-hidden="true" /></div><div class="details"><strong>Хранение вещей</strong><span>{payment.date} · {payment.id}</span></div><div class="amount"><strong>{formatMoney(payment.amount)}</strong><small class:refunded={payment.status === 'refunded'}>{statusText[payment.status] || payment.status}</small></div>{#if payment.hasReceipt}<button type="button" onclick={() => onReceipt(payment)}>{simulation ? 'Квитанция' : 'Чек'} <ExternalLink size={14} aria-hidden="true" /></button>{/if}{#if simulation && ['pending','failed'].includes(payment.status)}<button type="button" onclick={() => onRetry(payment)}>Продолжить оплату</button>{/if}</div>
       {:else}<div class="empty">Платежей пока нет.</div>{/each}
     </section>
-    <p class="note">Данные и чеки демонстрационные. Реальные списания здесь не выполняются.</p>
+    <p class="note">{simulation ? 'Квитанции тестовые, не являются фискальными чеками. Реальных списаний нет.' : 'Данные и чеки демонстрационные. Реальные списания здесь не выполняются.'}</p>
   </main>
 </div>
 <style>

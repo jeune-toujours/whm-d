@@ -7,7 +7,6 @@ import config from '../src/payload.config'
 
 const base = process.env.APP_URL || 'http://localhost:3000'
 const phone = process.env.STAGING_TEST_PHONE!
-const code = process.env.STAGING_TEST_OTP!
 async function call(path: string, options: { method?: string; body?: unknown; cookie?: string; origin?: string } = {}) {
   return fetch(`${base}/api${path}`, { method: options.method || 'GET', headers: { 'Content-Type': 'application/json', Origin: options.origin || base, ...(options.cookie ? { Cookie: options.cookie } : {}) }, body: options.body !== undefined ? JSON.stringify(options.body) : undefined, signal: AbortSignal.timeout(15_000) })
 }
@@ -17,7 +16,10 @@ test('real OTP, sessions, ownership, native CRUD guards and logout against migra
     assert.equal((await call('/v1/items')).status, 401)
     assert.equal((await call('/users/first-register', { method: 'POST', body: { email: 'attacker@example.invalid', role: 'admin', password: 'not-a-real-secret' } })).status, 403, 'First-user endpoint cannot bypass admin provisioning')
     assert.equal((await call('/auth/request-otp', { method: 'POST', body: { phone }, origin: 'https://attacker.invalid' })).status, 403)
-    assert.equal((await call('/auth/request-otp', { method: 'POST', body: { phone } })).status, 200)
+    const issued = await call('/auth/request-otp', { method: 'POST', body: { phone } })
+    assert.equal(issued.status, 200)
+    const code = (await issued.json()).simulationCode || process.env.STAGING_TEST_OTP
+    assert.ok(typeof code === 'string' && /^\d{6}$/.test(code), 'A test OTP is available without logging it')
     assert.equal((await call('/auth/request-otp', { method: 'POST', body: { phone } })).status, 429)
     assert.equal((await call('/auth/verify-otp', { method: 'POST', body: { phone, code: code === '000000' ? '999999' : '000000' } })).status, 400)
     const verification = await call('/auth/verify-otp', { method: 'POST', body: { phone, code } })

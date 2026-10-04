@@ -179,8 +179,9 @@ export const workflowEndpoints = [
       await ownedMedia(req, evidence, relationID(order.owner), 'intake')
       const duplicate = await req.payload.find({ collection: 'storage-items', req, overrideAccess: true, limit: 1, where: { barcode: { equals: barcode } } }); if (duplicate.totalDocs) throw conflict('Штрихкод уже используется.')
       await req.payload.update({ collection: 'storage-items', id: itemID, req, overrideAccess: true, context: wf, data: { barcode, seal, contents: text(data.contents, 5000), media: evidence, status: 'received' } })
-      const fresh = await orderByID(req, id)
-      if ((fresh.items || []).every(i => typeof i === 'object' && i.status === 'received')) { await req.payload.update({ collection: 'orders', id, req, overrideAccess: true, context: wf, data: { status: 'received' } }); await event(req, order, 'received') }
+      // Populated relations can be cached on this request. Count fresh rows in the transaction.
+      const pending = await req.payload.count({ collection: 'storage-items', req, overrideAccess: true, where: { and: [{ id: { in: (order.items || []).map(relationID) } }, { status: { not_equals: 'received' } }] } })
+      if (!pending.totalDocs) { await req.payload.update({ collection: 'orders', id, req, overrideAccess: true, context: wf, data: { status: 'received' } }); await event(req, order, 'received') }
       else await event(req, order, 'created', `Принята вещь ${item.internalID}`)
       return { ok: true }
     }))
@@ -195,9 +196,9 @@ export const workflowEndpoints = [
       const occupied = await req.payload.count({ collection: 'storage-items', req, overrideAccess: true, where: { and: [{ cell: { equals: cellID } }, { status: { not_equals: 'returned' } }] } })
       if (occupied.totalDocs >= cell.capacity) throw conflict('В ячейке нет места.')
       await req.payload.update({ collection: 'storage-items', id: itemID, req, overrideAccess: true, context: wf, data: { cell: cellID, status: 'stored', startedAt: new Date().toISOString() } })
-      const fresh = await orderByID(req, orderID)
+      const pending = await req.payload.count({ collection: 'storage-items', req, overrideAccess: true, where: { and: [{ id: { in: (order.items || []).map(relationID) } }, { status: { not_equals: 'stored' } }] } })
       await event(req, order, 'received', `Размещена вещь ${item.internalID} в ${cell.name}`)
-      if ((fresh.items || []).every(i => typeof i === 'object' && i.status === 'stored')) { await event(req, order, 'placed'); await req.payload.update({ collection: 'orders', id: orderID, req, overrideAccess: true, context: wf, data: { status: 'completed' } }); await event(req, order, 'completed') }
+      if (!pending.totalDocs) { await event(req, order, 'placed'); await req.payload.update({ collection: 'orders', id: orderID, req, overrideAccess: true, context: wf, data: { status: 'completed' } }); await event(req, order, 'completed') }
       return { ok: true }
     }))
   }),

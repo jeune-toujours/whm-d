@@ -3,7 +3,7 @@
   import { plans as demoPlans, formatMoney } from '../demo.js';
 
   let { plans = demoPlans, simulation = false, profile, unitCount = 0, hasActiveOrder = false, initialTheme = 'bumblebee', onBack = () => {}, onChangePlan = async () => ({ ok: true }), onPause = async () => ({ ok: true }), onReturn = () => {}, onOpenPayments = () => {} } = $props();
-  let selected = $state(profile?.planId || 'standard');
+  let selected = $state(profile?.planId || (simulation ? '' : 'standard'));
   let busy = $state(false);
   let notice = $state('');
   let paused = $state(profile?.subscriptionStatus === 'paused');
@@ -74,7 +74,7 @@
       </div>
       {#if downgradeBlocked}<p class="warning">Выбранный тариф рассчитан на меньшее число вещей. Верните часть вещей перед переходом.</p>{/if}
       <div class="action-row">
-        <button class="primary" type="button" disabled={busy || selected === currentPlan.id || downgradeBlocked} onclick={applyPlan}>{busy ? 'Сохраняем…' : 'Применить тариф'}</button>
+        <button class="primary" type="button" disabled={busy || !selected || selected === currentPlan.id || downgradeBlocked} onclick={applyPlan}>{busy ? 'Сохраняем…' : 'Применить тариф'}</button>
         {#if downgradeBlocked}<button class="secondary" type="button" onclick={onReturn}>Оформить возврат</button>{/if}
       </div>
     </section>

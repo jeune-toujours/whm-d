@@ -62,6 +62,7 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive, seal:'TEST-SEAL' })).status,200)
     assert.equal((await request('/v1/warehouse/place',w,{ orderID:order.id,itemID,cellID:cell.id,barcode:receive.barcode,cellBarcode:cell.barcode })).status,409,'Whole intake must be received before placement')
     assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive,itemID:secondID,barcode:`ITEM2-${suffix}`,seal:'TEST-SEAL2' })).status,200)
+    assert.equal((await request(`/v1/orders/${order.id}`,c)).data.order.backendStatus,'received','All received items advance intake to placement')
     assert.equal((await request(`/storage-items/${itemID}`,w,{ status:'returned' },undefined,'PATCH')).status,403,'Native CRUD cannot bypass workflow')
     const placement = { orderID:order.id,itemID,cellID:cell.id,barcode:receive.barcode,cellBarcode:cell.barcode }
     assert.equal((await request('/v1/warehouse/place',w,{ ...placement,barcode:'wrong' })).status,400)

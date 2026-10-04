@@ -25,7 +25,8 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/src ./src
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/start.sh ./start.sh
 USER node
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=10s --start-period=45s CMD wget -q -O /dev/null http://127.0.0.1:3000/api/health || exit 1
-CMD ["node", "server.js"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s CMD wget -q -O /dev/null http://127.0.0.1:3000/api/ready || exit 1
+CMD ["sh", "start.sh"]

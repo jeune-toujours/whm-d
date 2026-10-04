@@ -40,16 +40,27 @@ ssh -F C:/Users/pashr/.ssh/config whm
 
 `scripts/release.mjs` подходит для CI или HTTPS панели: токен передаётся переменной окружения `COOLIFY_TOKEN`, URL — `COOLIFY_URL`, UUID приложений — `COOLIFY_STAGING_APPS` / `COOLIFY_PRODUCTION_APPS`. Не записывать их значения в команды или документы.
 
-## Следующий deployment backend
+## Deployment backend
 
 До запуска нужны отдельные Selectel базы/credentials и S3 bucket либо prefix для каждого окружения. В Coolify: build pack Dockerfile, context `/backend`, Dockerfile `/Dockerfile`, порт `3000`, runtime env из `backend/.env.example`. Токен Coolify не является паролем PostgreSQL или S3-ключом.
 
 При общем домене routes `/api`, `/admin`, `/_next` направляются в backend, остальные — во frontend. **Strip Prefixes выключить**: Payload ожидает полные пути. Включить передачу `SOURCE_COMMIT` и readiness `/api/ready`. Проверить, что API отвечает JSON и админка загружает Next assets, а не статический `index.html`.
 
-Миграцию выполнять из **нового образа** до запуска сервиса с новой схемой: `npm run migrate`. Существующие данные — только совместимые расширения схемы; удаление полей отдельным релизом. В Coolify не использовать pre-deploy exec в старом контейнере как способ применения новых миграций. Для первого backend можно выполнять миграцию в entrypoint нового контейнера с отдельным DB lock; frontend не переключается на live до проверки readiness.
+Миграция выполняется автоматически из **нового образа** до запуска Next: `start.sh` → `npm run migrate:deploy` → `server.js`. PostgreSQL advisory lock сериализует миграции; история schema push блокирует запуск и требует проверки. CI применяет миграции дважды, чтобы проверить повторный запуск. Существующие данные — только совместимые расширения схемы; удаление полей отдельным релизом. В Coolify не использовать pre-deploy exec в старом контейнере для новых миграций. Frontend переключается на live после проверки readiness и реализации клиентских сценариев.
+
+### Настройки Selectel staging
+
+Исходный файл владельца: `/home/pavel/.config/whm/staging.env`, права `600`. Адаптированный файл: `/home/pavel/.config/whm/staging.runtime.env`, также `600`. Секреты загружаются по localhost API Coolify на VM, `is_buildtime=false`, `is_runtime=true`; в Docker build credentials не передаются.
+
+- Endpoint S3 дополняется `https://`; изолированный prefix `staging`.
+- `APP_URL` и `CLIENT_URL` — `https://test-whm.pikman.studio`. Имена `PUBLIC_APP_URL`, `PUBLIC_API_URL`, `PAYLOAD_PUBLIC_SERVER_URL` из исходного файла заменяются настройками приложения.
+- PostgreSQL: `DATABASE_SSL=true`, `DATABASE_CA` содержит PEM из официального `https://storage.dbaas.selcloud.ru/CA.pem`. `DATABASE_CA_FILE` поддерживается для локальной работы. Проверка цепочки и имени сертификата включена. SSL-параметры URL не могут отключить явно включённый TLS.
+- `DATABASE_PUSH=false`, `APP_ENV=staging`. Настройки production должны использовать отдельную базу и prefix/credentials.
+
+Сертификат и инструкции: [Selectel PostgreSQL](https://docs.selectel.ru/managed-databases/postgresql/connect-to-cluster/). Поведение SSL URL: [node-postgres](https://node-postgres.com/features/ssl).
 
 ## Текущее состояние
 
-Первый frontend релиз на `main` выполнен владельцем и отвечает HTTPS 200. Payload собирается отдельно, но backend deployment требует подключения параметров Selectel. Наличие базы в личном кабинете не означает, что приложение уже подключено к ней.
+Первый frontend релиз на `main` выполнен владельцем. Staging frontend уже развёрнут из `develop`. Создан отдельный staging backend; PostgreSQL Selectel проверен через TLS, S3 доступен. Статус конкретного backend deployment проверять через `scripts/coolify.py status staging` и `/api/ready`; эта документация не заменяет проверку завершённого релиза. Клиент пока работает в demo до реализации API-сценариев.
 
 [Coolify GitHub App](https://coolify.io/docs/applications/sources/github/overview), [routing](https://coolify.io/docs/core/networking/domains), [deployment API](https://coolify.io/docs/api/endpoints/deployments/deploy-by-tag-or-uuid).

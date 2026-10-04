@@ -192,6 +192,8 @@
       screen = 'form';
       if (initialContext?.orderId) {
         selectedOrderId = initialContext.orderId;
+      } else if (initialContext?.unitId) {
+        selectedOrderId = `item:${initialContext.unitId}`;
       }
       if (initialType === 'incident' && initialContext?.note) {
         incidentDescription = initialContext.note;
@@ -199,6 +201,7 @@
       if (initialType === 'technical' && initialContext?.note) {
         technicalDescription = initialContext.note;
       }
+      if (initialType === 'incident') queueMicrotask(() => selectType('incident'));
     }
   });
 
@@ -232,6 +235,7 @@
       contextOptionsLoading = true;
       try {
         contextOptions = await onLoadContextOptions();
+        if (initialContext?.orderId && !contextOptions.some(o=>o.orderId===initialContext.orderId)) contextOptions = [{orderId:initialContext.orderId,title:initialContext.orderNumber || 'Выбранный заказ',caption:'Контекст обращения'},...contextOptions];
         if (!selectedOrderId && contextOptions.length > 0) {
           selectedOrderId = contextOptions[0].orderId;
         }
@@ -277,7 +281,7 @@
       const trimmedDescription = incidentDescription.trim();
       const result = await onSubmitIncident({
         operationKey: submissionKey,
-        orderId: initialContext?.orderId || selectedOrderId,
+        orderId: initialContext?.orderId || (selectedOrderId.startsWith('item:') ? undefined : selectedOrderId),
         unitId: initialContext?.unitId || contextOptions.find(o=>o.orderId === selectedOrderId)?.unitId,
         description: trimmedDescription,
         attachments: incidentAttachments
@@ -293,7 +297,7 @@
         shortDescription: shortenText(trimmedDescription),
         status: 'submitted',
         updatedAt: 'Только что',
-        relatedOrderId: selectedOrderId,
+        relatedOrderId: selectedOrderId.startsWith('item:') ? null : selectedOrderId,
         messages: [{ author: 'client', text: trimmedDescription, date: 'Только что' }]
       });
       submissionKey = crypto.randomUUID();
@@ -389,7 +393,7 @@
         replyError = result.message || 'Не удалось отправить сообщение.';
         return;
       }
-      selectedTicket.messages = [
+      if (!live) selectedTicket.messages = [
         ...selectedTicket.messages,
         { author: 'client', text: replyMessage.trim(), date: 'Сейчас' }
       ];

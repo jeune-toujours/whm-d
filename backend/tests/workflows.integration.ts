@@ -71,6 +71,10 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     const competing = await Promise.all([request('/v1/warehouse/place',w,placement),request('/v1/warehouse/place',w,{ ...placement,itemID:secondID,barcode:`ITEM2-${suffix}` })])
     assert.deepEqual(competing.map(r => r.status).sort(),[200,409],'Cell capacity holds under concurrent placement')
     const firstPlaced = competing[0].status === 200 ? itemID : secondID, lastID = firstPlaced === itemID ? secondID : itemID
+    const partialHome = (await request('/v1/dashboard',c)).data
+    assert.equal(partialHome.homeUnits.length,0,'Incomplete intake stays out of home even when one item is stored')
+    assert.equal(partialHome.profile.monthlyPrice,640,'Actual stored item remains billable')
+    assert.equal((await request('/v1/returns/quote',c,{...schedule,itemIDs:[firstPlaced],fulfillment:'pickup'})).status,409,'Active intake blocks a partially placed item')
     const nextCell = await payload.create({ collection:'cells', overrideAccess:true, data:{ name:`Spare ${suffix}`, warehouse:wh.id, barcode:`SPARE-${suffix}`, capacity:1, active:true } })
     assert.equal((await request('/v1/warehouse/place',w,{ ...placement,itemID:lastID,cellID:nextCell.id,cellBarcode:nextCell.barcode,barcode:lastID === itemID ? receive.barcode : `ITEM2-${suffix}` })).status,200)
     assert.equal((await request(`/v1/orders/${order.id}`,c)).data.order.backendStatus,'completed')
@@ -118,6 +122,13 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal((await request(`/v1/support/${tid}/reply`,w,{ text:'forbidden' },`${suffix}-forbidden`)).status,403)
     assert.equal((await request(`/v1/support/${tid}/reply`,a,{ text:'Сотрудник отвечает клиенту' },`${suffix}-reply`)).status,200)
     const dashboard = await request('/v1/dashboard',c); assert.equal(dashboard.status,200); assert.equal(dashboard.data.tickets.find((t:any) => t.id === tid).messages.length,2)
+    const courierInput2 = {...schedule,itemIDs:[lastID],fulfillment:'courier',address:configuration.addresses[0].value,phone:'+79990000001'}
+    const courierQuote2 = (await request('/v1/returns/quote',c,courierInput2)).data.quote
+    const checkout2 = await request('/v1/checkouts',c,{kind:'return',input:courierInput2,quoteHash:courierQuote2.hash},`${suffix}-courier-success`)
+    assert.equal(checkout2.status,200)
+    const successful = await request(`/v1/payments/${checkout2.data.payment.id}/simulate`,c,{result:'paid'})
+    assert.equal(successful.status,200);assert.equal(successful.data.order.items[0].itemStatus,'reserved')
+    assert.equal((await request(`/v1/payments/${checkout2.data.payment.id}/simulate`,c,{result:'paid'})).data.payment.orderID,successful.data.order.id,'Successful retry reuses the return')
     assert.ok((await payload.count({ collection:'audit-log',overrideAccess:true,where:{ entityID:{ equals:back.id } } })).totalDocs > 0)
     const plan = await payload.create({ collection:'tariffs', overrideAccess:true, data:{ code:`plan-${suffix}`,name:'Test subscription',kind:'subscription',itemType:'box',testOnly:true,active:true,itemLimit:1,monthlyPrice:900 } })
     const planPayment = await request('/v1/payments',c,{ tariffID:plan.id },`${suffix}-plan`)

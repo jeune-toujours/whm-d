@@ -280,7 +280,7 @@
         </div>
         <h2>{currentMonthly > 0 ? 'Вещи участвуют в активной заявке' : 'У вас пока нет вещей на хранении'}</h2>
         {#if currentMonthly > 0}<p>Хранение сейчас: {formatMoney(currentMonthly)}/мес. Стоимость изменится после передачи вещей.</p>{/if}
-        <p>Сдайте вещи на хранение — мы заберём их и разместим на складе.</p>
+        <p>{currentMonthly > 0 ? 'Статус и состав заявки доступны в активном заказе.' : 'Сдайте вещи на хранение — мы заберём их и разместим на складе.'}</p>
         <button class="primary-button" type="button" onclick={onGoToHandover}>
           <span>Сдать вещи</span>
           <ArrowRight aria-hidden="true" />

@@ -365,6 +365,7 @@
     const timer=setTimeout(()=>loadPage(params),200);return ()=>clearTimeout(timer);
   });
   $effect(() => { if (live && initialOrderId && initialOrderId!==selectedOrderId) void openOrder({id:initialOrderId}); });
+  $effect(() => { if (live && !initialOrderId) selectedOrderId = ''; });
   async function loadPage(params,append=false) {
     const sequence=++requestSequence;loading=true;errorMessage='';
     try { const r=await onLoadPage({...params,cursor:append?pageCursor:null});if(sequence!==requestSequence)return;orders=append?[...new Map([...orders,...r.orders].map(o=>[o.id,o])).values()]:r.orders;pageCursor=r.nextCursor; }

@@ -30,7 +30,7 @@ try {
   await page.getByRole('button',{ name:'Создать заявку и перейти к оплате',exact:true }).click(); await page.waitForURL('**/#/checkout/*');
   await page.getByRole('button',{ name:'Симулировать отказ',exact:true }).click(); await page.getByText('Оплата отклонена. Можно повторить попытку.',{ exact:false }).waitFor();
   await page.getByRole('button',{ name:'Симулировать успешную оплату',exact:true }).click(); await page.getByRole('button',{ name:'Продолжить',exact:true }).click(); await page.waitForURL('**/#/order/*');
-  const orderID = page.url().split('/order/')[1], response = await page.request.get(`${backend}/api/v1/orders/${orderID}`); assert.equal(response.status(),200);
+  const orderID = page.url().split('/order/')[1], response = await page.request.get(`${backend}/api/v1/orders/${orderID}`, { headers:{ Origin:base } }); assert.equal(response.status(),200);
   const order = (await response.json()).order;
   console.log('Client: OTP, onboarding, catalog, persistent intake, failed payment and successful retry passed.');
   const staff = await browser.newContext(), login = await staff.request.post(`${backend}/api/users/login`, { data:{ email:adminEmail,password:adminPassword }, headers:{ Origin:backend } }); assert.equal(login.status(),200); adminPassword = undefined;
@@ -47,7 +47,7 @@ try {
   await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/home`); await page.getByText(marker,{ exact:true }).waitFor();
   await page.goto(`${base}/#/return`); await page.locator('.choice').filter({ hasText:marker }).locator('input[type=checkbox]').check();
   await page.getByRole('button',{ name:'Продолжить',exact:true }).click(); await page.getByRole('button',{ name:'Продолжить',exact:true }).click(); await page.getByRole('button',{ name:'Оформить возврат',exact:true }).click(); await page.waitForURL('**/#/order/*');
-  const returnID = page.url().split('/order/')[1], back = (await (await page.request.get(`${backend}/api/v1/orders/${returnID}`)).json()).order;
+  const returnID = page.url().split('/order/')[1], back = (await (await page.request.get(`${backend}/api/v1/orders/${returnID}`, { headers:{ Origin:base } })).json()).order;
   await panel.goto(`${backend}/admin/warehouse/pick`);
   const pick = panel.locator('.whm-order').filter({ hasText:back.number }); await pick.getByLabel('Скан вещи').fill(barcode); await pick.getByRole('button',{ name:'Подобрать',exact:true }).click(); await pick.waitFor({ state:'detached' });
   await panel.goto(`${backend}/admin/warehouse/return`);

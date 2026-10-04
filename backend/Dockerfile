@@ -12,6 +12,7 @@ RUN WHM_BUILD=1 npm run build
 
 FROM node:24-alpine AS runtime
 WORKDIR /app
+RUN apk add --no-cache curl
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
@@ -28,5 +29,5 @@ COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/start.sh ./start.sh
 USER node
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s CMD wget -q -O /dev/null http://127.0.0.1:3000/api/ready || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s CMD curl --fail --silent http://127.0.0.1:3000/api/ready > /dev/null || exit 1
 CMD ["sh", "start.sh"]

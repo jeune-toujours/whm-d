@@ -7,7 +7,7 @@ import { hasRole } from './access'
 const bad = (message: string) => new DomainError(400, 'INVALID_REQUEST', message)
 const conflict = (message: string) => new DomainError(409, 'CONFLICT', message)
 const required = (value: unknown, max = 200) => { const v = text(value, max); if (!v) throw bad('Заполните обязательные поля.'); return v }
-const idOf = (value: unknown) => { const id = required(value, 40); if (!/^[0-9a-f-]{36}$/i.test(id)) throw bad('Неверный идентификатор.'); return id }
+const idOf = (value: unknown) => { const id = required(value, 40); if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw bad('Неверный идентификатор.'); return id }
 const idsOf = (value: unknown) => { if (!Array.isArray(value) || !value.length || value.length > 50) throw bad('Выберите от 1 до 50 вещей.'); const ids = value.map(idOf); if (new Set(ids).size !== ids.length) throw bad('Вещи не должны повторяться.'); return ids }
 const terminal = (status: string) => ['completed', 'cancelled'].includes(status)
 const wf = { workflow: true }

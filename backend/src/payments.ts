@@ -5,7 +5,7 @@ import { DomainError, relationID, text } from './domain'
 import { simulationsEnabled } from './simulations'
 
 const needSimulation = () => { if (!simulationsEnabled()) throw new DomainError(503, 'PAYMENT_NOT_CONFIGURED', 'Платёжный провайдер пока не подключён.') }
-const id = (v: unknown) => { const s = text(v, 40); if (!/^[0-9a-f-]{36}$/i.test(s)) throw new DomainError(400, 'INVALID_REQUEST', 'Неверный идентификатор.'); return s }
+const id = (v: unknown) => { const s = text(v, 40); if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) throw new DomainError(400, 'INVALID_REQUEST', 'Неверный идентификатор.'); return s }
 const dto = (p: any) => ({ id: p.id, amount: p.amount, status: p.status, provider: p.provider, orderID: relationID(p.order), tariffID: relationID(p.tariff), paidAt: p.paidAt, receiptURL: p.receiptURL, checkoutUrl: `/#/checkout/${p.id}` })
 
 export const paymentEndpoints = [

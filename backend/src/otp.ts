@@ -44,7 +44,7 @@ export const authEndpoints = [
   endpoint('/v1/profile/phone/confirm', 'post', async req => {
     const user = clientUser(req), data = await body(req), phone = normalizePhone(data.phone), code = text(data.code, 8), phoneKey = digest(`phone-change:${user.id}:${phone}`)
     if (!/^\d{6}$/.test(code)) throw new DomainError(400, 'INVALID_OTP', 'Введите шестизначный код.')
-    const result = await transaction(req, [`otp:${phoneKey}`, `phone-claim:${phone}`], async () => {
+    const result = await transaction(req, [`otp:${phoneKey}`, `phone-claim:${digest(`phone:${phone}`)}`], async () => {
       const challenge = (await req.payload.find({ collection: 'otp-challenges', req, overrideAccess: true, limit: 1, sort: '-createdAt', where: { and: [{ phoneKey: { equals: phoneKey } }, { consumed: { equals: false } }, { expiresAt: { greater_than: new Date().toISOString() } }] } })).docs[0]
       if (!challenge || challenge.attempts >= 5) return new DomainError(400, 'INVALID_OTP', 'Код истёк. Запросите новый.')
       if (!matches(challenge.hash, digest(`${challenge.id}:${code}`))) {
@@ -62,7 +62,7 @@ export const authEndpoints = [
   endpoint('/auth/verify-otp', 'post', async req => {
     const data = await body(req), phone = normalizePhone(data.phone), code = text(data.code, 8), phoneKey = digest(`phone:${phone}`)
     if (!/^\d{6}$/.test(code)) throw new DomainError(400, 'INVALID_OTP', 'Введите шестизначный код.')
-    const result = await transaction(req, [`otp:${phoneKey}`], async () => {
+    const result = await transaction(req, [`otp:${phoneKey}`, `phone-claim:${phoneKey}`], async () => {
       const challenge = (await req.payload.find({ collection: 'otp-challenges', req, overrideAccess: true, depth: 0, limit: 1, sort: '-createdAt', where: { and: [{ phoneKey: { equals: phoneKey } }, { consumed: { equals: false } }, { expiresAt: { greater_than: new Date().toISOString() } }] } })).docs[0]
       if (!challenge || challenge.attempts >= 5) return new DomainError(400, 'INVALID_OTP', 'Код истёк. Запросите новый.')
       if (!matches(challenge.hash, digest(`${challenge.id}:${code}`))) {

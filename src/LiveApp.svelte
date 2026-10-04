@@ -21,7 +21,7 @@
   let data = $state({ units:[], orders:[], activeOrders:[], profile:{}, tariffs:[], warehouses:[], tickets:[] });
   let chosen = $state([]), supportContext = $state(null), supportType = $state(null);
   let info = $state({ title:'Информация', description:'', back:'home' });
-  let pendingPhone = '', refreshing = false;
+  let pendingPhone = '', refreshing = false, planOperation = null;
   let root = $derived(route.split('/')[0]), routeID = $derived(route.split('/')[1] || '');
   let item = $derived(data.units.find(u => u.id === routeID));
   let order = $derived(data.orders.find(o => o.id === routeID));
@@ -61,7 +61,7 @@
     });
   }
   async function payOrder(o) { const r = await safe(() => api('/v1/payments', { orderID:o.id })); if (r.ok === false) error = r.message; else navigate(`checkout/${r.payment.id}`); }
-  async function changePlan(id) { return safe(async () => { const r = await api('/v1/payments', { tariffID:id }, 'POST', crypto.randomUUID()); navigate(`checkout/${r.payment.id}`); return { ok:true }; }); }
+  async function changePlan(id) { return safe(async () => { if (planOperation?.tariffID !== id) planOperation = { tariffID:id, key:crypto.randomUUID() }; const r = await api('/v1/payments', { tariffID:id }, 'POST', planOperation.key); planOperation = null; navigate(`checkout/${r.payment.id}`); return { ok:true }; }); }
   async function pauseSubscription() { return safe(async () => { const r = await api('/v1/subscription/pause', {}); await refresh(); return r; }); }
   async function logout() { const r = await safe(() => api('/auth/logout', {})); if (r.ok === false) error = r.message; else { authenticated = false; data = { units:[], orders:[], activeOrders:[], profile:{}, tariffs:[], warehouses:[], tickets:[] }; navigate('signin'); } }
   async function loadOrder() { const r = await api(`/v1/orders/${routeID}`); data.orders = data.orders.map(o => o.id === r.order.id ? r.order : o); return displayedOrder(r.order); }
@@ -90,7 +90,7 @@
     {:else if root === 'order'}{#if order}
       <div class:dark={theme === 'halloween'} class="live-page order-extra"><div class="live-shell"><p><strong>{order.number}</strong> · {order.statusLabel}</p>{#if order.type === 'storage' && order.backendStatus !== 'cancelled' && order.paymentStatus !== 'paid'}<button class="primary" onclick={() => payOrder(order)}>Перейти к тестовой оплате</button>{/if}</div></div>
       <ActiveOrder initialTheme={theme} order={displayedOrder(order)} autoRefreshMs={8000} onRefresh={loadOrder} onCancel={() => safe(async () => { const r = await api(`/v1/orders/${order.id}/cancel`, {}); await refresh(); return r; })} onBack={() => navigate('home')} onHome={() => navigate('home')} onItemOpen={u => navigate(`item/${u.id}`)} onOpenHistory={() => navigate('history')} onSupport={() => openSupport({ orderId:order.id }, 'incident')} onContactCourier={() => infoScreen('Курьер', 'Курьер не назначен. Это тестовая логистическая заявка.')} />
-      <div class:dark={theme === 'halloween'} class="live-page order-extra"><section class="live-shell"><h2>История операций</h2>{#each order.events || [] as event}<div class="row"><strong>{event.label}</strong><span>{new Date(event.at).toLocaleString('ru-RU')}</span>{#if event.note}<small>{event.note}</small>{/if}</div>{/each}</section></div>
+      <div class:dark={theme === 'halloween'} class="live-page order-extra"><section class="live-shell"><h2>История операций</h2>{#each order.events || [] as event}<div class="row"><strong>{event.label}</strong><span>{new Date(event.at).toLocaleString('ru-RU')}</span>{#if event.note}<small>{event.note}</small>{/if}</div>{/each}<div class="actions"><button class="secondary" onclick={() => download(`/v1/orders/${order.id}/report`)}>Скачать отчёт об операции</button></div></section></div>
     {:else}<InfoScreen title="Заказ недоступен" description="Откройте историю и выберите заказ." onBack={() => navigate('history')} />{/if}
     {:else if root === 'history' || root === 'orders'}<LiveHistory orders={data.orders} activeOnly={root === 'orders'} initialTheme={theme} onBack={() => navigate('home')} onOpen={openOrder} />
     {:else if root === 'support'}<Support initialTheme={theme} initialType={supportType} initialContext={supportContext} live={true} onLoadContextOptions={contextOptions} onSubmitIncident={payload => submitTicket('incident',payload)} onSubmitTechnical={payload => submitTicket('technical',payload)} onLoadTickets={() => data.tickets} onReplyTicket={(id,text) => safe(async () => { const r = await api(`/v1/support/${id}/reply`, { text }); await refresh(); return r; })} liveTickets={data.tickets} onOpenRelatedOrder={ticket => openOrder(ticket.relatedOrderId)} onGoHome={() => navigate('home')} />

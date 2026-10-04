@@ -85,9 +85,11 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     const returned = await payload.findByID({ collection:'storage-items',id:firstPlaced,overrideAccess:true,depth:0 }); assert.equal(returned.status,'returned'); assert.equal(returned.cell,null)
     const report = await request(`/v1/orders/${back.id}/report`,c); assert.equal(report.status,200); assert.equal(report.data.materials.length,2)
     const attachment = await upload(c,other.id,'support')
+    assert.ok([403,404].includes((await request(`/media/${attachment}`,w)).status),'Warehouse cannot read support attachments')
     assert.equal((await payload.findByID({ collection:'media',id:attachment,overrideAccess:true,depth:0 })).owner,client.id,'Client upload cannot impersonate an owner')
     const ticket = await request('/v1/support',c,{ type:'incident',orderId:back.id,description:'Test support case',attachments:[attachment] }); assert.equal(ticket.status,200)
     const tid = ticket.data.ticketId
+    assert.equal((await request(`/support-tickets/${tid}`,a,{ owner:other.id },undefined,'PATCH')).status,403,'Support ownership cannot be reassigned')
     assert.equal((await request(`/v1/support/${tid}/reply`,o,{ text:'forbidden' })).status,404)
     assert.equal((await request(`/v1/support/${tid}/reply`,w,{ text:'forbidden' })).status,403)
     assert.equal((await request(`/v1/support/${tid}/reply`,a,{ text:'Сотрудник отвечает клиенту' })).status,200)

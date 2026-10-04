@@ -161,5 +161,13 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal((await request(`/v1/orders/${cancelled.id}/cancel`,c,{})).status,200)
     assert.equal((await request(`/v1/payments/${cp.id}`,c)).data.payment.status,'refunded')
     assert.equal((await request(`/v1/payments/${cp.id}/simulate`,c,{ result:'paid' })).data.payment.status,'refunded')
+    const historyMarker = `cursor-fixture-${suffix}`, closedAt = new Date().toISOString()
+    for (let i=0;i<21;i++) await payload.create({collection:'orders',overrideAccess:true,data:{owner:client.id,number:`CURSOR-${suffix}-${i}`,type:'intake',status:'completed',items:[lastID],fulfillment:'pickup',idempotencyKey:`${suffix}-history-${i}`,closedAt,historySearch:historyMarker,details:{version:2,units:[]}}})
+    const firstPage = await request(`/v1/history?search=${historyMarker}`,c)
+    assert.equal(firstPage.status,200); assert.equal(firstPage.data.orders.length,20);assert.ok(firstPage.data.nextCursor)
+    const secondPage = await request(`/v1/history?search=${historyMarker}&cursor=${firstPage.data.nextCursor}`,c)
+    assert.equal(secondPage.status,200);assert.equal(secondPage.data.orders.length,1)
+    assert.equal(new Set([...firstPage.data.orders,...secondPage.data.orders].map((r:any)=>r.id)).size,21,'History cursor neither skips nor duplicates records')
+    assert.equal((await request(`/v1/history?search=${historyMarker}&cursor=${firstPage.data.nextCursor}&type=return`,c)).status,400,'Cursor cannot be reused with another filter')
   } finally { await payload.destroy() }
 })

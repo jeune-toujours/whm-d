@@ -131,6 +131,7 @@
     onSubmitIncident = defaultSubmitIncident,
     onSubmitTechnical = defaultSubmitTechnical,
     onLoadTickets = defaultLoadTickets,
+    onOpenRelatedItem = () => {},
     onOpenRelatedOrder = () => {},
     onReplyTicket = defaultReplyTicket,
     onGoHome = () => {}
@@ -641,7 +642,7 @@
                 class:resolved={ticket.status === 'resolved'}
                 class:rejected={ticket.status === 'rejected'}
               >
-                {ticketStatusLabel[ticket.status] ?? ticket.status}
+                {ticket.type === 'technical' && ticket.status === 'submitted' ? 'Отправлено' : ticketStatusLabel[ticket.status] ?? ticket.status}
               </span>
             </button>
           {/each}
@@ -662,6 +663,7 @@
           Открыть заказ {selectedTicket.relatedOrderId}
         </button>
       {/if}
+      {#if selectedTicket.relatedItemId}<button class="secondary-button small" onclick={()=>onOpenRelatedItem(selectedTicket.relatedItemId)}>Открыть вещь</button>{/if}
 
       <div class="thread">
         {#each selectedTicket.messages as message}

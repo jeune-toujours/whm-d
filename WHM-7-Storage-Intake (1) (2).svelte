@@ -4099,7 +4099,7 @@
     font-size: var(--type-caption);
     font-weight: 600;
   }
-  .compact-media.media-placeholder:empty::after { content: 'Плейсхолдер'; color: var(--soft-content); font-size: 0.68rem; }
+  .compact-media.media-placeholder:empty::after { content: 'Фото'; color: var(--soft-content); font-size: 0.68rem; }
   .map-placeholder.media-placeholder, .warehouse-map.media-placeholder { background: var(--color-base-200); border: 1px dashed var(--color-base-300); }
 
 </style>

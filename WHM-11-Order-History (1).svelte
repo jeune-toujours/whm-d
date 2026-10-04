@@ -972,7 +972,7 @@
           </div>
         {/if}
 
-        {#if loading}
+        {#if loading && orders.length === 0}
           <div class="skeleton-list" aria-label="Загрузка истории" aria-live="polite">
             {#each [1, 2, 3] as row}
               <div class="skeleton-card">

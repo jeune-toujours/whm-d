@@ -82,7 +82,7 @@ try {
   const bounds = await handover.locator('canvas').boundingBox(); assert.ok(bounds);
   await panel.mouse.move(bounds.x+30,bounds.y+40); await panel.mouse.down(); await panel.mouse.move(bounds.x+100,bounds.y+80,{ steps:5 }); await panel.mouse.move(bounds.x+200,bounds.y+40,{ steps:5 }); await panel.mouse.up();
   await handover.getByLabel('Все вещи переданы получателю').check(); await handover.getByRole('button',{ name:'Завершить выдачу',exact:true }).click(); await handover.waitFor({ state:'detached' });
-  await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/history`); await page.getByText(back.number,{ exact:true }).first().waitFor(); await page.goto(`${base}/#/payments`); await page.getByText('Оплачено',{ exact:true }).waitFor();
+  await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/history`); await page.getByText(back.number,{ exact:true }).first().waitFor(); await page.goto(`${base}/#/payments`); await page.getByText('Оплачено',{ exact:true }).first().waitFor();
   await page.setViewportSize({ width:390,height:844 });
   for (const route of ['home','intake','return','history','profile','subscription','payments']) { await page.goto(`${base}/#/${route}`); await page.locator('h1').first().waitFor(); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390), `Mobile width: ${route}`); }
   assert.deepEqual(errors,[],'No browser runtime errors'); console.log('Warehouse: S3 upload, scan/seal, placement, pick, photo/signature; client history, payments and mobile routes passed.');

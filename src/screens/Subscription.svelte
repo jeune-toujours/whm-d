@@ -1,14 +1,14 @@
 <script>
   import { ArrowLeft, ArrowRight, Check, CreditCard, Pause } from '@lucide/svelte';
-  import { plans, formatMoney } from '../demo.js';
+  import { plans as demoPlans, formatMoney } from '../demo.js';
 
-  let { profile, unitCount = 0, hasActiveOrder = false, initialTheme = 'bumblebee', onBack = () => {}, onChangePlan = async () => ({ ok: true }), onPause = async () => ({ ok: true }), onReturn = () => {}, onOpenPayments = () => {} } = $props();
+  let { plans = demoPlans, simulation = false, profile, unitCount = 0, hasActiveOrder = false, initialTheme = 'bumblebee', onBack = () => {}, onChangePlan = async () => ({ ok: true }), onPause = async () => ({ ok: true }), onReturn = () => {}, onOpenPayments = () => {} } = $props();
   let selected = $state(profile?.planId || 'standard');
   let busy = $state(false);
   let notice = $state('');
-  let paused = $state(false);
-  let currentPlan = $derived(plans.find(plan => plan.id === profile?.planId) || plans[1]);
-  let selectedPlan = $derived(plans.find(plan => plan.id === selected) || plans[1]);
+  let paused = $state(profile?.subscriptionStatus === 'paused');
+  let currentPlan = $derived(plans.find(plan => plan.id === profile?.planId) || (simulation ? { id:'', title:'Подписка не выбрана', price:0, volume:'' } : plans[1]));
+  let selectedPlan = $derived(plans.find(plan => plan.id === selected) || { limit:Infinity });
   let downgradeBlocked = $derived(selectedPlan.limit < unitCount);
   let pauseBlocked = $derived(unitCount > 0 || hasActiveOrder);
 
@@ -18,7 +18,7 @@
     busy = true;
     try {
       const result = await onChangePlan(selected);
-      notice = result?.ok === false ? result.message || 'Не удалось изменить тариф.' : `Тариф «${selectedPlan.title}» выбран в демо-контуре.`;
+      notice = result?.ok === false ? result.message || 'Не удалось изменить тариф.' : simulation ? 'Подтвердите тестовую оплату.' : `Тариф «${selectedPlan.title}» выбран в демо-контуре.`;
     } catch { notice = 'Не удалось изменить тариф. Повторите попытку.'; }
     finally { busy = false; }
   }
@@ -30,7 +30,7 @@
     try {
       const result = await onPause();
       if (result?.ok === false) notice = result.message || 'Не удалось приостановить подписку.';
-      else { paused = true; notice = 'Подписка приостановлена в демо-контуре.'; }
+      else { paused = true; notice = simulation ? 'Тестовая подписка приостановлена.' : 'Подписка приостановлена в демо-контуре.'; }
     } catch { notice = 'Не удалось приостановить подписку.'; }
     finally { busy = false; }
   }
@@ -61,7 +61,7 @@
     </section>
 
     <section class="section">
-      <div class="section-heading"><h2>Выберите тариф</h2><p>Изменение в демо сохраняется только в этом браузере.</p></div>
+      <div class="section-heading"><h2>Выберите тариф</h2><p>{simulation ? 'Тестовый тариф применяется после подтверждения оплаты.' : 'Изменение в демо сохраняется только в этом браузере.'}</p></div>
       <div class="plan-grid">
         {#each plans as plan}
           <button class:selected={selected === plan.id} class="plan-card" type="button" onclick={() => { selected = plan.id; notice = ''; }} aria-pressed={selected === plan.id}>

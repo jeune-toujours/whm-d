@@ -1,5 +1,6 @@
 import type { TaskConfig } from 'payload'
 import { digest, otpCode, stagingCode } from './otp'
+import { simulationsEnabled } from './simulations'
 
 export const sendOTP: TaskConfig<'send-otp'> = {
   slug: 'send-otp', retries: 2,
@@ -10,6 +11,12 @@ export const sendOTP: TaskConfig<'send-otp'> = {
     if (challenge.consumed || new Date(challenge.expiresAt).getTime() <= Date.now()) return { output: { sent: false } }
     const code = stagingCode(input.phone) || otpCode(challenge.id)
     if (digest(`${challenge.id}:${code}`) !== challenge.hash) throw new Error('OTP configuration changed')
+    if (simulationsEnabled()) {
+      const key = `sms:${challenge.id}`
+      const seen = await req.payload.find({ collection: 'integration-events', req, overrideAccess: true, limit: 1, where: { key: { equals: key } } })
+      if (!seen.totalDocs) await req.payload.create({ collection: 'integration-events', req, overrideAccess: true, data: { key, provider: 'simulation-sms', status: 'completed', entityID: challenge.id } })
+      return { output: { sent: true } }
+    }
     // Code is derived in the worker. Neither queue payload nor challenge stores plaintext OTP.
     const response = await fetch('https://sms.ru/sms/send', { method: 'POST', body: new URLSearchParams({ api_id: process.env.SMS_RU_API_ID!, to: input.phone.replace(/\D/g, ''), msg: `Код входа WHM: ${code}`, json: '1' }), signal: AbortSignal.timeout(10_000) })
     if (!response.ok) throw new Error(`SMS provider HTTP ${response.status}`)

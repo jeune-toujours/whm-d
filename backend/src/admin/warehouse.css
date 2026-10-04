@@ -1,0 +1,13 @@
+.whm-work { max-width: 1120px; padding: 24px 0 64px; }
+.whm-work h1 { margin: 0 0 16px; }
+.whm-work button { border: 1px solid var(--theme-elevation-300); background: var(--theme-elevation-100); color: var(--theme-text); padding: 12px 18px; border-radius: 4px; cursor: pointer; margin: 8px 8px 8px 0; }
+.whm-work button:disabled { opacity: .5; cursor: wait; }
+.whm-order { margin: 24px 0; border: 1px solid var(--theme-elevation-200); border-radius: 6px; padding: 24px; }
+.whm-operation { padding: 20px; margin: 20px 0; background: var(--theme-elevation-50); border-radius: 6px; }
+.whm-work label { display: grid; gap: 8px; margin: 16px 0; max-width: 640px; }
+.whm-work input, .whm-work textarea, .whm-work select { background: var(--theme-elevation-0); color: var(--theme-text); border: 1px solid var(--theme-elevation-300); padding: 12px; border-radius: 4px; font: inherit; min-width: 0; }
+.whm-work textarea { min-height: 90px; }
+.whm-work canvas { background: white; border: 1px solid var(--theme-elevation-400); width: 100%; touch-action: none; }
+.whm-work .whm-checkbox { display: flex; align-items: center; }
+.whm-error { background: var(--theme-error-100); padding: 16px; }
+.whm-empty { padding: 40px 0; }

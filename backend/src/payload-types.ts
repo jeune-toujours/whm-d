@@ -164,6 +164,8 @@ export interface User {
   role: 'client' | 'manager' | 'warehouse' | 'admin';
   active?: boolean | null;
   notifications?: boolean | null;
+  paymentBrand?: string | null;
+  paymentLast4?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -240,7 +242,7 @@ export interface Warehouse {
 export interface Media {
   id: string;
   owner: string | User;
-  purpose: 'intake' | 'return' | 'signature' | 'document';
+  purpose: 'intake' | 'return' | 'signature' | 'document' | 'support';
   prefix?: string | null;
   _objectKey?: string | null;
   updatedAt: string;
@@ -274,6 +276,45 @@ export interface Order {
   signature?: (string | null) | Media;
   evidence?: (string | Media)[] | null;
   idempotencyKey: string;
+  requestHash?: string | null;
+  payment?: (string | null) | Payment;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments".
+ */
+export interface Payment {
+  id: string;
+  owner: string | User;
+  amount: number;
+  status: 'pending' | 'paid' | 'failed' | 'refunded';
+  provider?: string | null;
+  providerID?: string | null;
+  idempotencyKey?: string | null;
+  order?: (string | null) | Order;
+  tariff?: (string | null) | Tariff;
+  receiptURL?: string | null;
+  paidAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tariffs".
+ */
+export interface Tariff {
+  id: string;
+  name: string;
+  code: string;
+  kind: 'storage' | 'subscription';
+  itemType: 'box' | 'item';
+  testOnly?: boolean | null;
+  monthlyPrice: number;
+  itemLimit: number;
+  rules?: string | null;
+  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -293,21 +334,6 @@ export interface OrderEvent {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tariffs".
- */
-export interface Tariff {
-  id: string;
-  name: string;
-  code: string;
-  monthlyPrice: number;
-  itemLimit: number;
-  rules?: string | null;
-  active?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "subscriptions".
  */
 export interface Subscription {
@@ -317,21 +343,6 @@ export interface Subscription {
   status: 'pending' | 'active' | 'paused' | 'cancelled';
   nextChargeAt?: string | null;
   providerCustomerID?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payments".
- */
-export interface Payment {
-  id: string;
-  owner: string | User;
-  amount: number;
-  status: 'pending' | 'paid' | 'failed' | 'refunded';
-  providerID?: string | null;
-  receiptURL?: string | null;
-  paidAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -347,6 +358,7 @@ export interface SupportTicket {
   status: 'submitted' | 'in_progress' | 'resolved';
   order?: (string | null) | Order;
   item?: (string | null) | StorageItem;
+  attachments?: (string | Media)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -638,6 +650,8 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   active?: T;
   notifications?: T;
+  paymentBrand?: T;
+  paymentLast4?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -695,6 +709,8 @@ export interface OrdersSelect<T extends boolean = true> {
   signature?: T;
   evidence?: T;
   idempotencyKey?: T;
+  requestHash?: T;
+  payment?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -743,6 +759,9 @@ export interface CellsSelect<T extends boolean = true> {
 export interface TariffsSelect<T extends boolean = true> {
   name?: T;
   code?: T;
+  kind?: T;
+  itemType?: T;
+  testOnly?: T;
   monthlyPrice?: T;
   itemLimit?: T;
   rules?: T;
@@ -771,7 +790,11 @@ export interface PaymentsSelect<T extends boolean = true> {
   owner?: T;
   amount?: T;
   status?: T;
+  provider?: T;
   providerID?: T;
+  idempotencyKey?: T;
+  order?: T;
+  tariff?: T;
   receiptURL?: T;
   paidAt?: T;
   updatedAt?: T;
@@ -788,6 +811,7 @@ export interface SupportTicketsSelect<T extends boolean = true> {
   status?: T;
   order?: T;
   item?: T;
+  attachments?: T;
   updatedAt?: T;
   createdAt?: T;
 }

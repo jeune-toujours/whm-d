@@ -377,13 +377,13 @@
                   <span class="unit-price">{formatMoney(unit.monthlyPrice)}/мес.</span>
                 </span>
                 <span class="unit-description">{unit.description}</span>
-                <span class="unit-caption">{unit.id} · хранится с {unit.storedSinceLabel}</span>
-                <span class="unit-status">На хранении</span>
+                <span class="unit-caption">{unit.internalID || unit.id}{unit.storedSinceLabel ? ` · хранится с ${unit.storedSinceLabel}` : ''}</span>
+                <span class="unit-status">{unit.statusLabel || 'На хранении'}</span>
               </span>
             </button>
             <div class="unit-actions">
               <button class="link-button" type="button" onclick={() => openItemDetails(unit)}>Подробнее</button>
-              <button class="link-button" type="button" onclick={() => quickReturn(unit)}>Вернуть эту вещь</button>
+              <button class="link-button" type="button" disabled={Boolean(unit.lockReason)} onclick={() => quickReturn(unit)}>Вернуть эту вещь</button>
             </div>
           </article>
         {/each}

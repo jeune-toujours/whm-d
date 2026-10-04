@@ -2,10 +2,10 @@
   import { ArrowLeft, Check, Copy, ExternalLink, Camera, Image, Video } from '@lucide/svelte';
   import { formatMoney } from '../demo.js';
 
-  let { item, initialTheme = 'bumblebee', onBack = () => {}, onReturn = () => {}, onSupport = () => {}, onOpenDocument = () => {} } = $props();
+  let { live = false, item, initialTheme = 'bumblebee', onBack = () => {}, onReturn = () => {}, onSupport = () => {}, onOpenDocument = () => {} } = $props();
   let copied = $state(false);
   let dark = $derived(initialTheme === 'halloween');
-  let archived = $derived(Boolean(item?.archived || item?.currentStatus === 'returned'));
+  let archived = $derived(Boolean(item?.archived || item?.currentStatus === 'returned' || item?.status === 'returned'));
   let canReturn = $derived(!archived && item?.status === 'stored' && !item?.lockReason);
   let contents = $derived(item?.contents?.length ? item.contents : item?.description ? item.description.split(',').map(value => value.trim()) : []);
 
@@ -27,7 +27,7 @@
     <div class="eyebrow">Мои вещи <span>/</span> {item?.id}</div>
     <div class="title-row">
       <div><h1>{item?.title || 'Вещь на хранении'}</h1><p>{item?.description || 'Подробная информация о единице хранения'}</p></div>
-      <span class:archive={archived} class="status">{archived ? 'Возвращена' : item?.status === 'return-requested' ? 'Готовится к возврату' : 'На хранении'}</span>
+      <span class:archive={archived} class="status">{live ? item.statusLabel : archived ? 'Возвращена' : item?.status === 'return-requested' ? 'Готовится к возврату' : 'На хранении'}</span>
     </div>
 
     <div class="columns">
@@ -35,7 +35,7 @@
         <section class="visual-card" aria-label="Плейсхолдер фотографии вещи">
           <Image aria-hidden="true" />
           <span class="placeholder-title">Место для фотографии</span>
-          <span class="visual-label">Фотография появится после подключения складского контура</span>
+          <span class="visual-label">{live ? 'Фотографии доступны в материалах приёмки после загрузки сотрудником.' : 'Фотография появится после подключения складского контура'}</span>
         </section>
 
         <section class="card">
@@ -43,12 +43,12 @@
           {#if contents.length}
             <ul class="contents">{#each contents as content}<li><span class="check"><Check size={14} aria-hidden="true" /></span>{content}</li>{/each}</ul>
           {:else}<p class="muted">Опись пока не добавлена. После приёмки она появится здесь.</p>{/if}
-          <p class="note">Опись в этом прототипе демонстрационная и не является актом приёмки.</p>
+          <p class="note">{live ? 'Опись сохранена сотрудником при приёмке. Юридический шаблон акта ещё не утверждён.' : 'Опись в этом прототипе демонстрационная и не является актом приёмки.'}</p>
         </section>
 
         <section class="card">
           <div class="section-title"><h2>Материалы приёмки</h2></div>
-          <div class="media-list"><div><Camera aria-hidden="true" /><strong>Фотографии</strong><small>Появятся после фотофиксации</small></div><div><Video aria-hidden="true" /><strong>Видео</strong><small>Появится, если запись была сделана</small></div></div>
+          {#if live && item.media?.length}<div class="media-list">{#each item.media as media}<a href={media.url} target="_blank" rel="noopener">{#if media.mimeType?.startsWith('video/')}<Video />{:else}<Camera />{/if}<strong>{media.filename}</strong><small>Открыть материал</small></a>{/each}</div>{:else}<div class="media-list"><div><Camera aria-hidden="true" /><strong>Фотографии</strong><small>Появятся после фотофиксации</small></div><div><Video aria-hidden="true" /><strong>Видео</strong><small>Появится, если запись была сделана</small></div></div>{/if}
         </section>
 
         <section class="card">

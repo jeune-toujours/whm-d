@@ -1,7 +1,7 @@
 import type { Access, PayloadRequest } from 'payload'
 
 export type Role = 'client' | 'manager' | 'warehouse' | 'admin'
-export type WHMUser = { id: string; role: Role; active?: boolean; phone?: string; firstName?: string; lastName?: string; contactEmail?: string; _sid?: string; collection: 'users' }
+export type WHMUser = { id: string; role: Role; active?: boolean; phone?: string; firstName?: string; lastName?: string; contactEmail?: string; paymentBrand?: string | null; paymentLast4?: string | null; _sid?: string; collection: 'users' }
 export const userOf = (req: Pick<PayloadRequest, 'user'>) => req.user as WHMUser | null
 export const hasRole = (req: Pick<PayloadRequest, 'user'>, roles: Role[]) => {
   const user = userOf(req)

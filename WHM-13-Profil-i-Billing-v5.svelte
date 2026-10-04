@@ -113,6 +113,9 @@
 
   let {
     initialTheme = 'bumblebee',
+    planOptions = demoPlans,
+    otpLength = 4,
+    simulation = false,
     onLoadProfile = defaultLoadProfile,
     onSaveProfile = defaultSaveProfile,
     onRequestPhoneChange = defaultRequestPhoneChange,
@@ -162,6 +165,7 @@
 
   let pendingPhoneDigits = $state('');
   let otpCode = $state('');
+  let simulationCode = $state('');
   let otpError = $state('');
   let otpBusy = $state(false);
   let resendCooldown = $state(0);
@@ -322,6 +326,7 @@
         editError = result.message || 'Не удалось отправить код подтверждения.';
         return;
       }
+      simulationCode = result?.simulationCode || '';
       editStep = 'otp';
       startResendCountdown();
     } catch (error) {
@@ -332,7 +337,7 @@
   }
 
   async function confirmPhoneOtp() {
-    if (otpCode.trim().length < 4) {
+    if (otpCode.trim().length !== otpLength) {
       otpError = 'Введите код из SMS.';
       return;
     }
@@ -390,8 +395,8 @@
   }
 
   async function confirmPlanChange() {
-    const nextPlan = demoPlans.find((plan) => plan.id === selectedPlanId);
-    const activePlan = demoPlans.find((plan) => plan.id === planId);
+    const nextPlan = planOptions.find((plan) => plan.id === selectedPlanId);
+    const activePlan = planOptions.find((plan) => plan.id === planId);
     if (!nextPlan || nextPlan.id === planId) {
       planModalOpen = false;
       return;
@@ -510,7 +515,7 @@
   }
 
   let isDark = $derived(theme === 'halloween');
-  let currentPlan = $derived(demoPlans.find((plan) => plan.id === planId));
+  let currentPlan = $derived(planOptions.find((plan) => plan.id === planId));
   let fullName = $derived(`${firstName} ${lastName}`.trim() || 'Клиент');
   let editFormattedPhone = $derived(formatPhoneDigits(editPhoneDigits));
   let maskedPendingPhone = $derived(formatPhoneDigits(pendingPhoneDigits));
@@ -670,7 +675,7 @@
 
       <section class="section-card account-actions">
         <button class="secondary-button" type="button" onclick={requestLogout}>Выйти</button>
-        <button class="danger-link" type="button" onclick={requestDeleteAccount}>Удалить аккаунт</button>
+        <button class="danger-link" type="button" onclick={requestDeleteAccount}>{simulation ? 'Отключить тестовый аккаунт' : 'Удалить аккаунт'}</button>
         {#if deleteBlockedMessage}
           <p class="inline-note warning" role="alert">
             {deleteBlockedMessage}
@@ -736,6 +741,7 @@
         {:else}
           <h2 id="edit-modal-title">Подтвердите новый номер</h2>
           <p>Код отправлен на +7 {maskedPendingPhone}</p>
+          {#if simulationCode}<p data-testid="simulation-otp">Тестовое SMS: <strong>{simulationCode}</strong></p>{/if}
           <label class="text-field">
             <span>Код из SMS</span>
             <input type="tel" inputmode="numeric" maxlength="6" bind:value={otpCode} />
@@ -773,7 +779,7 @@
         <button class="modal-close" type="button" aria-label="Закрыть" onclick={closePlanModal}><X aria-hidden="true" /></button>
         <h2 id="plan-modal-title">Выберите тариф</h2>
         <div class="plan-list">
-          {#each demoPlans as plan}
+          {#each planOptions as plan}
             <label class="plan-option" class:selected={selectedPlanId === plan.id}>
               <input
                 type="radio"
@@ -820,7 +826,7 @@
         <button class="modal-close" type="button" aria-label="Закрыть" disabled={paymentBusy} onclick={closePaymentModal}><X aria-hidden="true" /></button>
         <h2 id="payment-modal-title">Способ оплаты</h2>
         <p>В рабочей версии привязка карты откроется в защищённом интерфейсе платёжного провайдера. Приложение получит только маскированный способ оплаты.</p>
-        <p class="inline-note">В демо-контуре можно посмотреть успешный результат без ввода реквизитов и списания денег.</p>
+        <p class="inline-note">{simulation ? 'Симулируем привязку тестового способа оплаты. Реквизиты не нужны, результат сохранится в базе.' : 'В демо-контуре можно посмотреть успешный результат без ввода реквизитов и списания денег.'}</p>
 
         {#if cardError}
           <p class="inline-note warning" role="alert">{cardError}</p>
@@ -828,7 +834,7 @@
 
         <div class="modal-actions">
           <button class="primary-button" type="button" disabled={paymentBusy} onclick={submitPaymentDemo}>
-            {paymentBusy ? 'Подключаем…' : 'Показать демо-привязку'}
+            {paymentBusy ? 'Подключаем…' : simulation ? 'Подключить тестовую карту' : 'Показать демо-привязку'}
           </button>
           <button class="secondary-button" type="button" disabled={paymentBusy} onclick={closePaymentModal}>Отмена</button>
         </div>
@@ -870,11 +876,11 @@
         onkeydown={(event) => event.stopPropagation()}
       >
         <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (deleteConfirmOpen = false)}><X aria-hidden="true" /></button>
-        <h2 id="delete-modal-title">Удалить аккаунт без возможности восстановления?</h2>
-        <p>Это действие необратимо. Личные данные и история будут удалены согласно регламенту.</p>
+        <h2 id="delete-modal-title">{simulation ? 'Отключить тестовый аккаунт?' : 'Удалить аккаунт без возможности восстановления?'}</h2>
+        <p>{simulation ? 'Вход будет отключён. Записи и история операций сохранятся для проверки. Правила удаления персональных данных ещё не утверждены.' : 'Это действие необратимо. Личные данные и история будут удалены согласно регламенту.'}</p>
         <div class="modal-actions">
           <button class="danger-button" type="button" disabled={deleteBusy} onclick={confirmDeleteAccount}>
-            {deleteBusy ? 'Удаляем…' : 'Удалить аккаунт'}
+            {deleteBusy ? 'Обрабатываем…' : simulation ? 'Отключить аккаунт' : 'Удалить аккаунт'}
           </button>
           <button class="secondary-button" type="button" onclick={() => (deleteConfirmOpen = false)}>Отмена</button>
         </div>

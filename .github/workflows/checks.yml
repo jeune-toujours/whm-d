@@ -30,7 +30,7 @@ jobs:
           npm run test:flows
   backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: backend
@@ -48,15 +48,19 @@ jobs:
       DATABASE_URL: postgres://whm_test:ci-only-not-a-deployed-secret@localhost:5432/whm_test
       PAYLOAD_SECRET: ci-only-secret-00000000000000000000000000
       APP_ENV: staging
+      SIMULATE_INTEGRATIONS: 'true'
+      SEED_STAGING: 'true'
+      BOOTSTRAP_ADMIN_EMAIL: ci-admin@whm.invalid
+      BOOTSTRAP_ADMIN_PASSWORD: ci-only-admin-password-not-used-outside-tests
       APP_URL: http://localhost:3000
-      CLIENT_URL: http://localhost:3000
+      CLIENT_URL: http://localhost:4174
       STAGING_TEST_PHONE: '+79990000001'
       STAGING_TEST_OTP: '482915'
       S3_ENDPOINT: http://127.0.0.1:9000
       S3_REGION: ru-1
       S3_BUCKET: ci-only-private-bucket
       S3_ACCESS_KEY_ID: ci-only
-      S3_SECRET_ACCESS_KEY: ci-only
+      S3_SECRET_ACCESS_KEY: ci-only-secret
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -67,13 +71,35 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
+      - name: Private S3 fixture for integration tests
+        run: |
+          docker run -d --name whm-test-s3 -p 9000:9000 -e MINIO_ROOT_USER=ci-only -e MINIO_ROOT_PASSWORD=ci-only-secret minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+          for attempt in $(seq 1 30); do curl --fail --silent http://127.0.0.1:9000/minio/health/ready > /dev/null && break; sleep 1; done
+          node --input-type=module -e "import {S3Client,CreateBucketCommand} from '@aws-sdk/client-s3'; const s3=new S3Client({endpoint:process.env.S3_ENDPOINT,region:process.env.S3_REGION,forcePathStyle:true,credentials:{accessKeyId:process.env.S3_ACCESS_KEY_ID,secretAccessKey:process.env.S3_SECRET_ACCESS_KEY}}); await s3.send(new CreateBucketCommand({Bucket:process.env.S3_BUCKET}));"
       - run: WHM_BUILD=0 npm run migrate:deploy
       - run: WHM_BUILD=0 npm run migrate:deploy
+      - run: WHM_BUILD=0 npm run seed
       - name: Build deployment image
         run: docker build --build-arg SOURCE_COMMIT="$GITHUB_SHA" -t whm-backend:ci .
       - name: Container readiness and authorization against PostgreSQL
         run: |
-          docker run -d --name whm-api --network host -e DATABASE_URL -e PAYLOAD_SECRET -e APP_ENV -e APP_URL -e CLIENT_URL -e STAGING_TEST_PHONE -e STAGING_TEST_OTP -e S3_ENDPOINT -e S3_REGION -e S3_BUCKET -e S3_ACCESS_KEY_ID -e S3_SECRET_ACCESS_KEY whm-backend:ci
+          docker run -d --name whm-api --network host -e DATABASE_URL -e PAYLOAD_SECRET -e APP_ENV -e APP_URL -e CLIENT_URL -e SIMULATE_INTEGRATIONS -e SEED_STAGING -e STAGING_TEST_PHONE -e STAGING_TEST_OTP -e S3_ENDPOINT -e S3_REGION -e S3_BUCKET -e S3_ACCESS_KEY_ID -e S3_SECRET_ACCESS_KEY whm-backend:ci
           for attempt in $(seq 1 90); do test "$(docker inspect --format='{{.State.Health.Status}}' whm-api)" = healthy && break; sleep 1; done
           test "$(docker inspect --format='{{.State.Health.Status}}' whm-api)" = healthy
           npm run test:integration
+      - name: Live client and warehouse browser flows
+        working-directory: .
+        env:
+          VITE_DEMO_MODE: 'false'
+          VITE_API_URL: http://localhost:3000/api
+          WHM_BASE_URL: http://localhost:4174
+          WHM_API_BASE: http://localhost:3000
+          WHM_ADMIN_EMAIL: ci-admin@whm.invalid
+          WHM_ADMIN_PASSWORD: ci-only-admin-password-not-used-outside-tests
+        run: |
+          npm ci
+          npm run build
+          npx playwright install --with-deps chromium
+          npm run preview -- --port 4174 > /tmp/whm-live-preview.log 2>&1 &
+          for attempt in $(seq 1 30); do curl --fail --silent http://localhost:4174 > /dev/null && break; sleep 1; done
+          npm run test:live

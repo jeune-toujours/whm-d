@@ -33,11 +33,11 @@ function CameraScanner({ label, onCode, onClose }: { label: string; onCode: (cod
         if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
           setError('Сканирование камерой доступно через HTTPS в браузере с поддержкой камеры. Можно ввести код вручную.'); return
         }
-        const { BrowserMultiFormatReader } = await import('@zxing/browser')
+        const { BrowserMultiFormatOneDReader } = await import('@zxing/browser')
         if (cancelled) return
         stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } })
         if (cancelled) { stop(); return }
-        const reader = new BrowserMultiFormatReader(undefined, { delayBetweenScanAttempts: 250 })
+        const reader = new BrowserMultiFormatOneDReader(undefined, { delayBetweenScanAttempts: 250 })
         controls = await reader.decodeFromStream(stream, preview, (result, _error, activeControls) => {
           if (!result || cancelled) return
           const code = result.getText().trim()

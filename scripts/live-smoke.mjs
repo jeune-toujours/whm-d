@@ -16,18 +16,21 @@ const browser = await chromium.launch({ executablePath, headless:true });
 const errors = [], marker = `Browser ${Date.now()}`, phone = `999000${1000 + Math.floor(Math.random()*8000)}`;
 const image = { name:'verification.png', mimeType:'image/png', buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQ1sAAAAASUVORK5CYII=', 'base64') };
 try {
-  const page = await browser.newPage({ viewport:{ width:1280,height:900 } }); page.on('pageerror', e => errors.push(e.message));
+  const page = await browser.newPage({ viewport:{ width:1280,height:900 } }); page.setDefaultTimeout(20000); page.on('pageerror', e => errors.push(e.message));
   async function capture(name) { if (process.env.WHM_SCREENSHOT_DIR) { await mkdir(process.env.WHM_SCREENSHOT_DIR,{recursive:true}); await page.screenshot({path:join(process.env.WHM_SCREENSHOT_DIR,`${name}.png`),fullPage:true}); } }
   page.on('response', r => { if (r.status() >= 400) console.error(`HTTP ${r.status()} ${new URL(r.url()).pathname}`); });
   await page.goto(`${base}/#/signin`);
   await page.getByRole('button',{ name:'Начать хранение',exact:true }).click();
+  await page.setViewportSize({width:320,height:740});
   await page.getByLabel('Номер телефона').fill(phone);
   await page.getByRole('button',{ name:'Получить код',exact:true }).click();
   const inbox = page.getByTestId('simulation-otp'); await inbox.waitFor();
+  assert.ok(await page.evaluate(()=>{const row=document.querySelector('.otp-row').getBoundingClientRect();return [...document.querySelectorAll('.otp-cell')].every(e=>{const b=e.getBoundingClientRect();return b.left>=row.left-1&&b.right<=row.right+1})}),'Six OTP cells fit their form at 320 px');
   const code = (await inbox.textContent()).match(/\d{6}/)?.[0]; assert.ok(code);
   for (let i=0;i<6;i++) await page.locator(`#otp-cell-${i}`).fill(code[i]);
   await page.getByLabel('Имя',{ exact:true }).fill('Тестовый'); await page.getByLabel('Фамилия',{ exact:true }).fill('Проверка');
   await page.getByRole('button',{ name:'Продолжить',exact:true }).click(); await page.getByRole('button',{ name:'Пропустить',exact:true }).click(); await page.waitForURL('**/#/home');
+  await page.setViewportSize({width:1280,height:900});
   await page.goto(`${base}/#/intake`);
   await page.locator('.service-card').filter({hasText:'Я упакую сам'}).getByRole('button',{name:'Выбрать',exact:true}).click();
   await capture('intake-items-desktop');
@@ -41,8 +44,10 @@ try {
   await page.getByRole('button',{name:'Перейти к проверке',exact:true}).click();
   await capture('intake-review-desktop');
   await page.locator('.terms-card .custom-checkbox').click();
+  await page.setViewportSize({width:320,height:740});
   await page.getByRole('button',{name:'Оплатить',exact:true}).click();
   await page.getByRole('dialog',{name:'Симулятор оплаты'}).waitFor();
+  assert.ok(await page.evaluate(()=>{const frame=document.querySelector('.payment-frame');return frame.scrollWidth<=frame.clientWidth&&document.documentElement.scrollWidth<=320}),'Payment dialog fits a 320 px viewport');
   await page.getByRole('button',{name:'Симулировать отказ',exact:true}).click();
   await page.getByText('Оплата отклонена. Можно повторить попытку.',{exact:false}).waitFor();
   await page.getByRole('button',{name:'Симулировать успешную оплату',exact:true}).click();
@@ -64,8 +69,14 @@ try {
   const option = place.getByLabel('Ячейка',{ exact:true }).locator('option').filter({ hasText:'TEST-CELL-' }).first(), value = await option.getAttribute('value'), label = await option.textContent(), cellBarcode = label.match(/TEST-CELL-[A-Z]-\d+/)?.[0]; assert.ok(value && cellBarcode);
   await place.getByLabel('Ячейка',{ exact:true }).selectOption(value); await place.getByLabel('Скан ячейки').fill(cellBarcode); await place.getByRole('button',{ name:'Разместить',exact:true }).click(); await place.waitFor({ state:'detached' });
   await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/home`); await page.getByText(order.items[0].internalID,{exact:false}).first().waitFor();
+  for(const width of [320,390,768,1440]) {
+    await page.setViewportSize({width,height:844});await page.goto(`${base}/#/item/${order.items[0].id}`);await page.locator('.copy').waitFor();
+    assert.equal(await page.locator('.copy').innerText(),order.items[0].internalID,'Item card shows the public number');
+    assert.ok(await page.evaluate(()=>{const width=document.documentElement.clientWidth,button=document.querySelector('.navigation-back'),b=button.getBoundingClientRect(),s=button.querySelector('svg').getBoundingClientRect(),main=document.querySelector('.shell'),m=main.getBoundingClientRect();return document.documentElement.scrollWidth<=width&&b.width>=40&&Math.abs(b.y+b.height/2-s.y-s.height/2)<=1&&Math.abs(b.x-m.x-parseFloat(getComputedStyle(main).paddingLeft))<=1}),'Item card header and content grid fit each viewport');
+  }
+  await page.setViewportSize({width:320,height:740});
   await page.goto(`${base}/#/return`);
-  await page.locator('.storage-card').filter({hasText:order.items[0].internalID}).getByRole('checkbox').check();
+  await page.locator('.storage-card').filter({hasText:order.items[0].internalID}).locator('.storage-select').click();
   await page.getByRole('button',{name:'Продолжить',exact:true}).filter({visible:true}).first().click();
   await page.getByRole('button',{name:/Заберу со склада/}).click();
   await page.getByRole('button',{name:'Продолжить',exact:true}).filter({visible:true}).first().click();
@@ -84,7 +95,14 @@ try {
   const bounds = await handover.locator('canvas').boundingBox(); assert.ok(bounds);
   await panel.mouse.move(bounds.x+30,bounds.y+40); await panel.mouse.down(); await panel.mouse.move(bounds.x+100,bounds.y+80,{ steps:5 }); await panel.mouse.move(bounds.x+200,bounds.y+40,{ steps:5 }); await panel.mouse.up();
   await handover.getByLabel('Все вещи переданы получателю').check(); await handover.getByRole('button',{ name:'Завершить выдачу',exact:true }).click(); await handover.waitFor({ state:'detached' });
-  await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/history`); await page.getByText(back.number,{ exact:true }).first().waitFor(); await page.goto(`${base}/#/payments`); await page.getByText('Оплачено',{ exact:true }).first().waitFor();
+  await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/history`); await page.getByText(back.number,{ exact:true }).first().waitFor();
+  const filteredHistory = page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname.endsWith('/v1/history')&&url.searchParams.get('type')==='return'&&response.status()===200;});
+  await page.getByRole('tab',{name:'Возврат',exact:true}).click();await filteredHistory;
+  await page.locator('.order-card').filter({hasText:back.number}).click();
+  await page.locator('.related-order').filter({hasText:order.number}).waitFor();
+  assert.match(await page.locator('.related-order').filter({hasText:order.number}).innerText(),/1 единица/,'Related order summary works without an items array');
+  await page.locator('.related-order').filter({hasText:order.number}).click();await page.getByRole('heading',{name:order.number,exact:true}).waitFor();
+  await page.goto(`${base}/#/payments`); await page.getByText('Оплачено',{ exact:true }).first().waitFor();
   await page.setViewportSize({ width:390,height:844 });
   for (const route of ['home','intake','return','history','profile','subscription','payments']) { await page.goto(`${base}/#/${route}`); await page.locator('h1').first().waitFor(); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390), `Mobile width: ${route}`); }
   assert.deepEqual(errors,[],'No browser runtime errors'); console.log('Warehouse: S3 upload, scan/seal, placement, pick, photo/signature; client history, payments and mobile routes passed.');

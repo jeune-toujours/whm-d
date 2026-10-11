@@ -1,5 +1,6 @@
 <script>
-  import { ArrowLeft, ArrowRight, Check, CreditCard, Pause } from '@lucide/svelte';
+  import { ArrowRight, Check, CreditCard, Pause } from '@lucide/svelte';
+  import BackButton from '../components/BackButton.svelte';
   import { plans as demoPlans, formatMoney } from '../demo.js';
 
   let { plans = demoPlans, simulation = false, profile, unitCount = 0, hasActiveOrder = false, initialTheme = 'bumblebee', onBack = () => {}, onChangePlan = async () => ({ ok: true }), onPause = async () => ({ ok: true }), onReturn = () => {}, onOpenPayments = () => {} } = $props();
@@ -40,8 +41,8 @@
 
 <div class:dark={initialTheme === 'halloween'} class="subscription-page">
   <header class="header">
-    <button class="back" type="button" onclick={onBack} aria-label="Назад"><ArrowLeft aria-hidden="true" /></button>
-    <div class="brand"><strong>Клиентский интерфейс</strong></div>
+    <BackButton {onBack} />
+    <div class="brand"><strong class="system-label">Клиентский интерфейс</strong></div>
     <span class="header-label">Подписка</span>
   </header>
 
@@ -98,7 +99,7 @@
 
 <style>
   .subscription-page{--bg:#fff;--surface:#fff;--soft:#f8f8f6;--line:#e8e8e5;--ink:#22221f;--muted:#777873;--yellow:#f5c844;min-height:100dvh;background:var(--bg);color:var(--ink);font:16px/1.5 'Open Sans',sans-serif}.subscription-page.dark{--bg:#24231f;--surface:#292824;--soft:#313029;--line:#47453d;--ink:#f3f0e8;--muted:#b2afa5;--yellow:#e6aa35}
-  .header{height:76px;max-width:1080px;margin:auto;padding:0 24px;display:flex;align-items:center;gap:16px}.back{width:42px;height:42px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-size:24px}.brand{display:flex;align-items:center;gap:8px;font-size:19px;letter-spacing:.1em}.header-label{margin-left:auto;color:var(--muted);font-size:13px}
+  .header{height:76px;max-width:1032px;margin:auto;padding:0 24px;display:flex;align-items:center;gap:16px}.brand{display:flex;align-items:center;gap:8px;min-width:0}.header-label{flex:0 0 auto;margin-left:auto;color:var(--muted);font-size:13px}
   .shell{max-width:1032px;margin:32px auto 70px;padding:0 24px}.eyebrow{color:var(--muted);font-size:13px}.eyebrow span{padding:0 8px}h1{margin:18px 0 8px;font-size:clamp(34px,5vw,56px);line-height:1.1;letter-spacing:-.045em}.intro{margin:0 0 30px;color:var(--muted)}
   .current-card{display:grid;grid-template-columns:1fr auto;gap:20px;padding:30px;border-radius:22px;background:#fae5a0;color:#27251e}.current-card h2{font-size:28px;letter-spacing:-.03em;margin:10px 0 3px}.current-card p{margin:0;color:#655734;font-size:13px}.kicker{font-weight:800;font-size:12px;letter-spacing:.07em;text-transform:uppercase}.current-price{text-align:right;display:grid;align-content:center}.current-price strong{font-size:32px;letter-spacing:-.04em}.current-price span{font-size:13px}.charge-line{grid-column:1/-1;display:flex;gap:8px;align-items:center;border-top:1px solid #ad934f77;padding-top:17px;font-size:13px;font-weight:700}.dot{width:8px;height:8px;background:#4e8b51;border-radius:50%}
   .section{margin-top:45px}.section-heading h2{margin:0;font-size:24px}.section-heading p{margin:4px 0 20px;color:var(--muted);font-size:13px}.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.plan-card{padding:21px;text-align:left;border:1px solid var(--line);border-radius:17px;background:var(--surface);color:var(--ink);min-height:194px;display:flex;flex-direction:column;align-items:stretch}.plan-card.selected{border:2px solid #d1a52e;background:#fffaf0;padding:20px}.dark .plan-card.selected{background:#393327}.plan-top{display:flex;align-items:center;justify-content:space-between;gap:5px;font-size:17px}.plan-top small{border-radius:100px;padding:4px 7px;background:var(--soft);font-size:10px;color:var(--muted)}.plan-volume{color:var(--muted);font-size:13px;margin-top:4px}.plan-price{font-weight:800;font-size:25px;letter-spacing:-.03em;margin-top:auto}.plan-price small{font-size:12px;color:var(--muted);font-weight:500}.plan-action{display:inline-flex;align-items:center;gap:5px;margin-top:9px;font-size:12px;font-weight:800}.action-row{display:flex;gap:10px;margin-top:20px}.primary,.secondary{min-height:50px;padding:0 21px;border-radius:10px;font-weight:800}.primary{background:var(--yellow);color:#171717;border:0}.primary:disabled{opacity:.45;cursor:not-allowed}.secondary{border:1px solid var(--line);background:var(--surface);color:var(--ink)}.warning,.notice{padding:14px 16px;border-radius:10px;margin:16px 0 0;background:#fff2d5;color:#684509;font-size:13px}.notice{background:var(--soft);color:var(--ink)}

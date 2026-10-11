@@ -871,7 +871,7 @@
                   </span>
                   <span>
                     <strong>{related?.number ?? 'Связанный заказ'}</strong>
-                    <small>{related ? `${orderTypeLabel(related)} · ${(related.items?.length || related.count || 0)} ${pluralUnits(related.items.length)}` : 'Открыть заказ'}</small>
+                    <small>{related ? `${orderTypeLabel(related)} · ${(related.items?.length ?? related.count ?? 0)} ${pluralUnits(related.items?.length ?? related.count ?? 0)}` : 'Открыть заказ'}</small>
                   </span>
                   <ChevronRight class="chevron" aria-hidden="true" />
                 </button>

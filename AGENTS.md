@@ -16,6 +16,7 @@ https://app.notion.com/p/3ef75fc615c881808c1fdcd5ffb69ea6
 
 ## Implementation
 
+- Root WHM Svelte screen files are the primary reference for client layout, design and flows (owner clarification 2026-10-04). Notion adds requirements and governs technical architecture; record discrepancies instead of redesigning the screen to match stale prose.
 - Preserve the current UI system, themes and neutral media placeholders.
 - Use only `@lucide/svelte` icons in the client.
 - Object ownership and role permissions must be enforced on the server.

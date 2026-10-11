@@ -756,7 +756,7 @@
   .otp-row { margin-top: 1.5rem; display: flex; justify-content: center; gap: 0.6rem; }
   .otp-row.locked { opacity: 0.5; }
   .otp-cell {
-    width: 3.1rem; height: 3.4rem; flex: 0 0 auto; text-align: center; font-size: 1.2rem; font-weight: 800;
+    width: 3.1rem; max-width: 3.1rem; min-width: 0; height: 3.4rem; flex: 0 1 3.1rem; padding: 0; text-align: center; font-size: 1.2rem; font-weight: 800;
     border: var(--border) solid var(--soft-border); border-radius: var(--radius-field);
     background: var(--color-base-100); color: var(--color-base-content); outline: 0;
     transition: border-color 180ms ease, box-shadow 180ms ease;
@@ -765,7 +765,7 @@
 
   @media (max-width: 380px) {
     .otp-row { gap: 0.45rem; }
-    .otp-cell { width: 2.7rem; height: 3.1rem; font-size: 1.1rem; }
+    .otp-cell { width: 2.7rem; flex-basis: 2.7rem; height: 3.1rem; font-size: 1.1rem; }
   }
 
   .otp-actions { margin-top: 1.25rem; display: grid; gap: 0.5rem; justify-items: start; }

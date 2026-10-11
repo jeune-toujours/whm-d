@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
-  import { ArrowLeft, CreditCard, CheckCircle, XCircle } from '@lucide/svelte';
+  import { CreditCard, CheckCircle, XCircle } from '@lucide/svelte';
+  import BackButton from '../components/BackButton.svelte';
   import { api, safe, download } from '../api.js';
   import '../live.css';
   let { id, initialTheme = 'bumblebee', onBack, onComplete, embedded = false } = $props();
@@ -15,7 +16,7 @@
   }
 </script>
 <svelte:head><title>Тестовая оплата · WHM</title></svelte:head>
-<div class:dark={initialTheme === 'halloween'} class:embedded class="live-page"><header><button onclick={onBack} aria-label={embedded ? 'Отменить оплату' : 'Назад'}><ArrowLeft /></button><strong>Клиентский интерфейс</strong></header>
+<div class:dark={initialTheme === 'halloween'} class:embedded class="live-page"><header><BackButton {onBack} label={embedded ? 'Отменить оплату' : 'Назад'} /><strong class="system-label">Клиентский интерфейс</strong></header>
   <main class="live-shell" style="max-width:720px"><span class="eyebrow">ОПЛАТА</span><h1>Подтверждение платежа</h1>
     {#if payment}<section class="card"><CreditCard size={32} /><h2>{new Intl.NumberFormat('ru-RU', { style:'currency', currency:'RUB', maximumFractionDigits:0 }).format(payment.amount)}</h2><p class="muted">{payment.checkoutKind === 'return' ? 'Обратная доставка вещей' : payment.checkoutKind === 'intake' || payment.orderID ? 'Оформление сдачи на хранение' : 'Изменение тарифа подписки'}</p>
       {#if ['paid','refunded'].includes(payment.status)}<p role="status"><CheckCircle size={20} /> {payment.status === 'refunded' ? 'Тестовый платёж возвращён' : 'Тестовый платёж подтверждён'}</p><div class="actions"><button class="primary" onclick={() => onComplete(payment, true)}>Продолжить</button><button class="secondary" onclick={() => download(`/v1/payments/${id}/receipt`)}>Тестовая квитанция</button></div>
@@ -24,4 +25,4 @@
     {#if error}<p class="error" role="alert">{error}</p><button class="secondary" onclick={load}>Повторить загрузку</button>{/if}
   </main>
 </div>
-<style>.embedded { min-height:0; } .embedded .live-shell { padding:20px; } .embedded header { padding:16px 20px; } .embedded .card { margin:0; }</style>
+<style>header { max-width:720px; } .embedded { min-height:0; } .embedded .live-shell { padding:20px; } .embedded header { padding:16px 20px; } .embedded .card { margin:0; }</style>

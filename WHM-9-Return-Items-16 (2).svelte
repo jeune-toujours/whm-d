@@ -710,17 +710,6 @@
                 </button>
               </div>
 
-              <div class="mobile-summary">
-                <div>
-                  <span>Выбрано: {selectedIds.length}</span>
-                  <strong>{formatMoney(futureMonthly)}/мес. после возврата</strong>
-                </div>
-                <button class="primary-button compact-button" type="button" disabled={selectedIds.length === 0} onclick={goToMethod}>
-                  <span>Продолжить</span>
-                  <ArrowRight aria-hidden="true" />
-                </button>
-              </div>
-
             {:else if screen === 'method'}
               <div class="page-heading">
                 <h1>Как хотите получить вещи?</h1>
@@ -949,7 +938,7 @@
                     {#each selectedUnits as unit}
                       <div>
                         <span>{unit.title}</span>
-                        <strong>{unit.id}</strong>
+                        <strong>{unit.internalID || unit.id}</strong>
                       </div>
                     {/each}
                   </div>
@@ -1013,6 +1002,21 @@
                 </button>
               </div>
             {/if}
+            <div class="mobile-summary">
+              <div>
+                <span>Выбрано: {selectedIds.length}</span>
+                <strong>{formatMoney(futureMonthly)}/мес. после возврата</strong>
+              </div>
+              <button
+                class="primary-button compact-button"
+                type="button"
+                disabled={isBusy || (screen === 'select' && selectedIds.length === 0) || (screen === 'method' && !method) || (screen === 'schedule' && !scheduleValid) || (screen === 'review' && !acceptedReturnTerms)}
+                onclick={() => { if (screen === 'select') goToMethod(); else if (screen === 'method') goToSchedule(); else if (screen === 'schedule') calculateAndReview(); else if (screen === 'review') submitReturn(); }}
+              >
+                {#if isBusy}<span class="button-spinner"></span><span>Создаём заявку</span>
+                {:else}<span>{screen === 'review' ? demoMode ? 'Оформить возврат (демо)' : deliveryPrice > 0 ? 'Оплатить ' + formatMoney(deliveryPrice) : 'Подтвердить возврат' : 'Продолжить'}</span><ArrowRight aria-hidden="true" />{/if}
+              </button>
+            </div>
           </section>
         </div>
       {/if}

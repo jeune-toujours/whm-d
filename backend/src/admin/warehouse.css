@@ -11,3 +11,20 @@
 .whm-work .whm-checkbox { display: flex; align-items: center; }
 .whm-error { background: var(--theme-error-100); padding: 16px; }
 .whm-empty { padding: 40px 0; }
+.whm-barcode-field { max-width: 640px; margin: 16px 0; }
+.whm-work .whm-barcode-field label { margin: 0 0 8px; }
+.whm-barcode-input { display: flex; align-items: stretch; gap: 8px; }
+.whm-barcode-input input { width: 100%; flex: 1; }
+.whm-work .whm-camera-button { display: grid; place-items: center; flex: 0 0 48px; padding: 0; margin: 0; min-height: 48px; }
+.whm-barcode-result { margin: 8px 0 0; overflow-wrap: anywhere; font-size: .9em; }
+.whm-scanner { box-sizing: border-box; width: min(560px, calc(100% - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; border: 1px solid var(--theme-elevation-300); border-radius: 8px; padding: 20px; background: var(--theme-elevation-0); color: var(--theme-text); }
+.whm-scanner::backdrop { background: rgb(0 0 0 / 65%); }
+.whm-scanner-heading { display: flex; gap: 12px; justify-content: space-between; align-items: center; }
+.whm-scanner h2 { margin: 0; font-size: 1.25rem; }
+.whm-scanner button { border: 1px solid var(--theme-elevation-300); border-radius: 4px; background: var(--theme-elevation-100); color: var(--theme-text); cursor: pointer; padding: 12px 16px; font: inherit; }
+.whm-scanner .whm-scanner-close { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; padding: 0; }
+.whm-scanner-preview { position: relative; background: #111; border-radius: 6px; overflow: hidden; aspect-ratio: 4 / 3; }
+.whm-scanner video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.whm-scanner-target { position: absolute; inset: 25% 8%; border: 2px solid white; border-radius: 4px; pointer-events: none; }
+.whm-scanner-error { padding: 12px; background: var(--theme-error-100); }
+.whm-scanner-actions { display: flex; flex-wrap: wrap; gap: 8px; }

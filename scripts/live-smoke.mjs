@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import { installTestCamera, scanBarcode, verifyCameraLifecycle } from './camera-smoke.mjs';
 const base = process.env.WHM_BASE_URL || 'http://localhost:4174', backend = process.env.WHM_API_BASE || base;
 let adminEmail = process.env.WHM_ADMIN_EMAIL, adminPassword = process.env.WHM_ADMIN_PASSWORD;
 if (process.env.WHM_ADMIN_SECRET_SSH === '1') {
@@ -58,16 +59,17 @@ try {
   const order = (await response.json()).order;
   console.log('Client: OTP, onboarding, catalog, persistent intake, failed payment and successful retry passed.');
   const staff = await browser.newContext(), login = await staff.request.post(`${backend}/api/users/login`, { data:{ email:adminEmail,password:adminPassword }, headers:{ Origin:backend } }); assert.equal(login.status(),200); adminPassword = undefined;
-  const panel = await staff.newPage(); panel.on('pageerror', e => errors.push(e.message));
+  const panel = await staff.newPage(); panel.setDefaultTimeout(20000); panel.on('pageerror', e => errors.push(e.message)); await installTestCamera(panel);
   await panel.goto(`${backend}/admin/warehouse/receive`);
   const intake = panel.locator('.whm-order').filter({ hasText:order.number });
-  await intake.getByLabel('Скан вещи').fill(`SCAN-${Date.now()}`); const barcode = await intake.getByLabel('Скан вещи').inputValue();
+  await verifyCameraLifecycle(panel,intake);
+  const barcode = `SCAN-${Date.now()}`; await scanBarcode(panel,intake,'Скан вещи',barcode);
   await intake.getByLabel(/^Пломба/).fill(`SEAL-${Date.now()}`); await intake.getByLabel('Опись').fill('Тестовая опись\nПроверка браузером');
   await intake.getByLabel('Фото или видео',{ exact:true }).setInputFiles(image); await intake.getByRole('button',{ name:'Принять',exact:true }).click(); await intake.waitFor({ state:'detached' });
   await panel.goto(`${backend}/admin/warehouse/place`);
-  const place = panel.locator('.whm-order').filter({ hasText:order.number }); await place.getByLabel('Скан вещи').fill(barcode);
+  const place = panel.locator('.whm-order').filter({ hasText:order.number }); await scanBarcode(panel,place,'Скан вещи',barcode);
   const option = place.getByLabel('Ячейка',{ exact:true }).locator('option').filter({ hasText:'TEST-CELL-' }).first(), value = await option.getAttribute('value'), label = await option.textContent(), cellBarcode = label.match(/TEST-CELL-[A-Z]-\d+/)?.[0]; assert.ok(value && cellBarcode);
-  await place.getByLabel('Ячейка',{ exact:true }).selectOption(value); await place.getByLabel('Скан ячейки').fill(cellBarcode); await place.getByRole('button',{ name:'Разместить',exact:true }).click(); await place.waitFor({ state:'detached' });
+  await place.getByLabel('Ячейка',{ exact:true }).selectOption(value); await scanBarcode(panel,place,'Скан ячейки',cellBarcode); await place.getByRole('button',{ name:'Разместить',exact:true }).click(); await place.waitFor({ state:'detached' });
   await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/home`); await page.getByText(order.items[0].internalID,{exact:false}).first().waitFor();
   for(const width of [320,390,768,1440]) {
     await page.setViewportSize({width,height:844});await page.goto(`${base}/#/item/${order.items[0].id}`);await page.locator('.copy').waitFor();
@@ -89,7 +91,7 @@ try {
   await page.waitForURL('**/#/order/*');
   const returnID = page.url().split('/order/')[1], back = (await (await page.request.get(`${backend}/api/v1/orders/${returnID}`, { headers:{ Origin:base } })).json()).order;
   await panel.goto(`${backend}/admin/warehouse/pick`);
-  const pick = panel.locator('.whm-order').filter({ hasText:back.number }); await pick.getByLabel('Скан вещи').fill(barcode); await pick.getByRole('button',{ name:'Подобрать',exact:true }).click(); await pick.waitFor({ state:'detached' });
+  const pick = panel.locator('.whm-order').filter({ hasText:back.number }); await scanBarcode(panel,pick,'Скан вещи',barcode); await pick.getByRole('button',{ name:'Подобрать',exact:true }).click(); await pick.waitFor({ state:'detached' });
   await panel.goto(`${backend}/admin/warehouse/return`);
   const handover = panel.locator('.whm-order').filter({ hasText:back.number }); await handover.getByLabel('Фото или видео выдачи').setInputFiles(image);
   const bounds = await handover.locator('canvas').boundingBox(); assert.ok(bounds);
@@ -105,5 +107,5 @@ try {
   await page.goto(`${base}/#/payments`); await page.getByText('Оплачено',{ exact:true }).first().waitFor();
   await page.setViewportSize({ width:390,height:844 });
   for (const route of ['home','intake','return','history','profile','subscription','payments']) { await page.goto(`${base}/#/${route}`); await page.locator('h1').first().waitFor(); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390), `Mobile width: ${route}`); }
-  assert.deepEqual(errors,[],'No browser runtime errors'); console.log('Warehouse: S3 upload, scan/seal, placement, pick, photo/signature; client history, payments and mobile routes passed.');
+  assert.deepEqual(errors,[],'No browser runtime errors'); console.log('Warehouse: real camera decoding, denial/retry/cancellation, S3 upload, placement, pick, photo/signature; client history, payments and mobile routes passed.');
 } finally { await browser.close(); }

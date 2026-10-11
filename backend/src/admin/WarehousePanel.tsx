@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Gutter } from '@payloadcms/ui'
+import { BarcodeField } from './BarcodeField'
 import './warehouse.css'
 
 type Mode = 'receive' | 'place' | 'pick' | 'return' | 'support'
@@ -52,9 +53,9 @@ function ItemOperation({ mode, order, item, cells, busy, perform }: { mode: Mode
   })
   return <form className="whm-operation" onSubmit={e => { e.preventDefault(); void submit() }}><h3>{item.title} · {item.internalID}</h3><p>{item.description} {item.cellName ? `· Ячейка ${item.cellName}` : ''}</p>
     {mode !== 'receive' && <p>Ожидаемый штрихкод: <code>{item.barcode}</code></p>}
-    <label>Скан вещи<input required autoComplete="off" value={barcode} onChange={e => setBarcode(e.target.value)} /></label>
+    <BarcodeField label="Скан вещи" value={barcode} onChange={setBarcode} disabled={busy} />
     {mode === 'receive' && <><label>Пломба{item.type === 'box' ? ' (обязательно)' : ''}<input required={item.type === 'box'} value={seal} onChange={e => setSeal(e.target.value)} /></label><label>Опись<textarea value={contents} onChange={e => setContents(e.target.value)} placeholder="Каждая позиция с новой строки" /></label><label>Фото или видео<input required type="file" accept="image/jpeg,image/png,image/webp,video/mp4" onChange={e => setFile(e.target.files?.[0] || null)} /></label></>}
-    {mode === 'place' && <><label htmlFor={`cell-${item.id}`}>Ячейка</label><select id={`cell-${item.id}`} required value={cell} onChange={e => setCell(e.target.value)}><option value="">Выберите ячейку</option>{cells.filter(c => c.active).map(c => <option key={c.id} value={c.id}>{c.name} · {c.occupied}/{c.capacity} · {c.barcode}</option>)}</select><label>Скан ячейки<input required value={cellBarcode} onChange={e => setCellBarcode(e.target.value)} /></label></>}
+    {mode === 'place' && <><label htmlFor={`cell-${item.id}`}>Ячейка</label><select id={`cell-${item.id}`} required value={cell} onChange={e => setCell(e.target.value)}><option value="">Выберите ячейку</option>{cells.filter(c => c.active).map(c => <option key={c.id} value={c.id}>{c.name} · {c.occupied}/{c.capacity} · {c.barcode}</option>)}</select><BarcodeField label="Скан ячейки" value={cellBarcode} onChange={setCellBarcode} disabled={busy} /></>}
     <button type="submit" disabled={busy}>{busy ? 'Сохранение…' : mode === 'receive' ? 'Принять' : mode === 'place' ? 'Разместить' : 'Подобрать'}</button>
   </form>
 }

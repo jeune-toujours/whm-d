@@ -17,7 +17,8 @@ const browser = await chromium.launch({ executablePath, headless:true });
 const errors = [], marker = `Browser ${Date.now()}`, phone = `999000${1000 + Math.floor(Math.random()*8000)}`;
 const image = { name:'verification.png', mimeType:'image/png', buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQ1sAAAAASUVORK5CYII=', 'base64') };
 try {
-  const page = await browser.newPage({ viewport:{ width:1280,height:900 } }); page.setDefaultTimeout(20000); page.on('pageerror', e => errors.push(e.message));
+  const sharedContext = await browser.newContext({ viewport:{ width:1280,height:900 } });
+  const page = await sharedContext.newPage(); page.setDefaultTimeout(20000); page.on('pageerror', e => errors.push(e.message));
   async function capture(name) { if (process.env.WHM_SCREENSHOT_DIR) { await mkdir(process.env.WHM_SCREENSHOT_DIR,{recursive:true}); await page.screenshot({path:join(process.env.WHM_SCREENSHOT_DIR,`${name}.png`),fullPage:true}); } }
   page.on('response', r => { if (r.status() >= 400) console.error(`HTTP ${r.status()} ${new URL(r.url()).pathname}`); });
   await page.goto(`${base}/#/signin`);

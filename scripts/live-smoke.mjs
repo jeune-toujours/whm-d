@@ -55,10 +55,14 @@ try {
   await page.getByRole('button',{name:'Продолжить',exact:true}).click();
   await page.getByRole('button',{name:'Перейти к заказу',exact:true}).click();
   await page.waitForURL('**/#/order/*');
-  const orderID = page.url().split('/order/')[1], response = await page.request.get(`${backend}/api/v1/orders/${orderID}`, { headers:{ Origin:base } }); assert.equal(response.status(),200);
+  const orderID = page.url().split('/order/')[1], response = await page.request.get(`${backend}/api/v1/orders/${orderID}`, { headers:{ Origin:base, 'X-WHM-Client':'1' } }); assert.equal(response.status(),200);
   const order = (await response.json()).order;
+  const clientIdentity = (await (await page.request.get(`${backend}/api/me`, { headers:{Origin:base} })).json()).user.id;
   console.log('Client: OTP, onboarding, catalog, persistent intake, failed payment and successful retry passed.');
-  const staff = await browser.newContext(), login = await staff.request.post(`${backend}/api/users/login`, { data:{ email:adminEmail,password:adminPassword }, headers:{ Origin:backend } }); assert.equal(login.status(),200); adminPassword = undefined;
+  // One browser profile: the regression was the employee and client replacing
+  // each other's cookie. Separate contexts would hide that bug.
+  const staff = page.context(), login = await staff.request.post(`${backend}/api/users/login`, { data:{ email:adminEmail,password:adminPassword }, headers:{ Origin:backend } }); assert.equal(login.status(),200); adminPassword = undefined;
+  assert.equal((await (await page.request.get(`${backend}/api/me`, { headers:{ Origin:base } })).json()).user.id, clientIdentity, 'Staff login preserves the client in the same browser');
   const panel = await staff.newPage(); panel.setDefaultTimeout(20000); panel.on('pageerror', e => errors.push(e.message)); await installTestCamera(panel);
   await panel.goto(`${backend}/admin/warehouse/receive`);
   const intake = panel.locator('.whm-order').filter({ hasText:order.number });
@@ -89,7 +93,7 @@ try {
   await page.getByRole('button',{name:/Подтвердить возврат/}).filter({visible:true}).first().click();
   await page.getByRole('button',{name:'Перейти к заказу',exact:true}).click();
   await page.waitForURL('**/#/order/*');
-  const returnID = page.url().split('/order/')[1], back = (await (await page.request.get(`${backend}/api/v1/orders/${returnID}`, { headers:{ Origin:base } })).json()).order;
+  const returnID = page.url().split('/order/')[1], back = (await (await page.request.get(`${backend}/api/v1/orders/${returnID}`, { headers:{ Origin:base, 'X-WHM-Client':'1' } })).json()).order;
   await panel.goto(`${backend}/admin/warehouse/pick`);
   const pick = panel.locator('.whm-order').filter({ hasText:back.number }); await scanBarcode(panel,pick,'Скан вещи',barcode); await pick.getByRole('button',{ name:'Подобрать',exact:true }).click(); await pick.waitFor({ state:'detached' });
   await panel.goto(`${backend}/admin/warehouse/return`);
@@ -107,5 +111,8 @@ try {
   await page.goto(`${base}/#/payments`); await page.getByText('Оплачено',{ exact:true }).first().waitFor();
   await page.setViewportSize({ width:390,height:844 });
   for (const route of ['home','intake','return','history','profile','subscription','payments']) { await page.goto(`${base}/#/${route}`); await page.locator('h1').first().waitFor(); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390), `Mobile width: ${route}`); }
-  assert.deepEqual(errors,[],'No browser runtime errors'); console.log('Warehouse: real camera decoding, denial/retry/cancellation, S3 upload, placement, pick, photo/signature; client history, payments and mobile routes passed.');
+  const clientLogout = await page.request.post(`${backend}/api/auth/logout`, { data:{}, headers:{Origin:base} }); assert.equal(clientLogout.status(),200);
+  assert.equal((await (await staff.request.get(`${backend}/api/users/me`,{headers:{Origin:backend}})).json()).user.role,'admin','Client logout preserves the employee in the same browser');
+  await panel.reload(); await panel.locator('.whm-work').waitFor(); assert.ok(!panel.url().includes('/login'),'Warehouse remains open after client logout');
+  assert.deepEqual(errors,[],'No browser runtime errors'); console.log('Warehouse: real camera decoding, denial/retry/cancellation, S3 upload, placement, pick, photo/signature; client history, payments and mobile routes; staff/client session isolation in one browser passed.');
 } finally { await browser.close(); }

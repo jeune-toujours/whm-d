@@ -4,7 +4,7 @@ export async function api(path, data, method = 'POST', key) {
   const response = await fetch(`${base}${path}`, {
     method: data === undefined ? 'GET' : method,
     credentials: 'include', signal: AbortSignal.timeout(20000),
-    headers: { ...(data === undefined ? {} : { 'Content-Type': 'application/json' }), ...(key ? { 'Idempotency-Key': key } : {}) },
+    headers: { 'X-WHM-Client': '1', ...(data === undefined ? {} : { 'Content-Type': 'application/json' }), ...(key ? { 'Idempotency-Key': key } : {}) },
     body: data === undefined ? undefined : JSON.stringify(data),
   });
   const result = await response.json().catch(() => null);
@@ -15,10 +15,14 @@ export async function safe(action) {
   try { return await action(); }
   catch (error) { return { ok: false, message: error instanceof ApiError ? error.message : 'Нет соединения. Повторите попытку.', code: error.code }; }
 }
-export function download(path) { window.open(`${base}${path}`, '_blank', 'noopener'); }
+export function download(path) {
+  const url = new URL(`${base}${path}`, window.location.origin);
+  url.searchParams.set('whm-client', '1');
+  window.open(url.href, '_blank', 'noopener');
+}
 export async function uploadSupport(file, supportType = 'incident') {
   const form = new FormData(); form.set('_payload', JSON.stringify({ purpose:'support', supportType })); form.set('file', file);
-  const r = await fetch(`${base}/media`, { method:'POST', credentials:'include', body:form, signal:AbortSignal.timeout(60000) });
+  const r = await fetch(`${base}/media`, { method:'POST', credentials:'include', headers:{ 'X-WHM-Client':'1' }, body:form, signal:AbortSignal.timeout(60000) });
   const data = await r.json();
   if (!r.ok || !data.doc?.id) throw new ApiError('Не удалось сохранить вложение. Проверьте формат и размер файла (до 25 МБ).', r.status);
   return data.doc.id;

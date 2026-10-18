@@ -8,7 +8,7 @@ import config from '../src/payload.config'
 const base = process.env.APP_URL || 'http://localhost:3000'
 const phone = process.env.STAGING_TEST_PHONE!
 async function call(path: string, options: { method?: string; body?: unknown; cookie?: string; origin?: string } = {}) {
-  return fetch(`${base}/api${path}`, { method: options.method || 'GET', headers: { 'Content-Type': 'application/json', Origin: options.origin || base, ...(options.cookie ? { Cookie: options.cookie } : {}) }, body: options.body !== undefined ? JSON.stringify(options.body) : undefined, signal: AbortSignal.timeout(15_000) })
+  return fetch(`${base}/api${path}`, { method: options.method || 'GET', headers: { 'Content-Type': 'application/json', 'X-WHM-Client': '1', Origin: options.origin || base, ...(options.cookie ? { Cookie: options.cookie } : {}) }, body: options.body !== undefined ? JSON.stringify(options.body) : undefined, signal: AbortSignal.timeout(15_000) })
 }
 test('real OTP, sessions, ownership, native CRUD guards and logout against migrated PostgreSQL', { timeout: 120_000 }, async () => {
   const payload = await getPayload({ config })
@@ -61,7 +61,7 @@ test('real OTP, sessions, ownership, native CRUD guards and logout against migra
     const collectionConfig = payload.collections.users.config
     const { sid } = await addSessionToUser({ collectionConfig, payload, req, user: { ...other, collection: 'users' } })
     const { token } = await jwtSign({ fieldsToSign: { id: other.id, collection: 'users', sid }, secret: payload.secret, tokenExpiration: 60 })
-    const disabledCookie = generatePayloadCookie({ collectionAuthConfig: collectionConfig.auth, cookiePrefix: payload.config.cookiePrefix, token }).split(';')[0]
+    const disabledCookie = generatePayloadCookie({ collectionAuthConfig: collectionConfig.auth, cookiePrefix: 'whm-client', token }).split(';')[0]
     await payload.update({ collection: 'users', id: other.id, data: { active: false }, overrideAccess: true })
     assert.equal((await call('/v1/items', { cookie: disabledCookie })).status, 401)
   } finally { await payload.destroy() }

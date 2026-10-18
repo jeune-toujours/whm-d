@@ -4,11 +4,12 @@ import { randomUUID, randomBytes } from 'node:crypto'
 import { getPayload, jwtSign, createLocalReq } from 'payload'
 import { addSessionToUser, generatePayloadCookie } from 'payload/shared'
 import config from '../src/payload.config'
+import { digest } from '../src/otp'
 
 const base = process.env.APP_URL || 'http://localhost:3000'
 const phone = process.env.STAGING_TEST_PHONE!
 async function call(path: string, options: { method?: string; body?: unknown; cookie?: string; origin?: string } = {}) {
-  return fetch(`${base}/api${path}`, { method: options.method || 'GET', headers: { 'Content-Type': 'application/json', Origin: options.origin || base, ...(options.cookie ? { Cookie: options.cookie } : {}) }, body: options.body !== undefined ? JSON.stringify(options.body) : undefined, signal: AbortSignal.timeout(15_000) })
+  return fetch(`${base}/api${path}`, { method: options.method || 'GET', headers: { 'Content-Type': 'application/json', 'X-WHM-Client': '1', Origin: options.origin || base, ...(options.cookie ? { Cookie: options.cookie } : {}) }, body: options.body !== undefined ? JSON.stringify(options.body) : undefined, signal: AbortSignal.timeout(15_000) })
 }
 test('real OTP, sessions, ownership, native CRUD guards and logout against migrated PostgreSQL', { timeout: 120_000 }, async () => {
   const payload = await getPayload({ config })
@@ -46,7 +47,9 @@ test('real OTP, sessions, ownership, native CRUD guards and logout against migra
     assert.equal((await (await call('/me', { cookie })).json()).user.firstName, 'Тест')
     assert.equal((await call('/auth/logout', { method: 'POST', cookie })).status, 200)
     assert.equal((await call('/me', { cookie })).status, 401, 'Logout revokes server session, not just cookie')
-    const before = await payload.find({ collection: 'otp-challenges', overrideAccess: true, sort: '-createdAt', limit: 1 })
+    // Other integration files issue OTPs concurrently. Assert on this phone's
+    // challenge, not whichever unrelated user happened to request a code last.
+    const before = await payload.find({ collection: 'otp-challenges', overrideAccess: true, where: { phoneKey: { equals: digest(`phone:${phone}`) } }, sort: '-createdAt', limit: 1 })
     assert.equal(before.docs[0].attempts, 1, 'Failed OTP attempt survives the transaction')
     const lockedPhone='+7999000'+String(1000+Math.floor(Math.random()*8000));
     const lockedResponse=await call('/auth/request-otp',{method:'POST',body:{phone:lockedPhone}});
@@ -61,7 +64,7 @@ test('real OTP, sessions, ownership, native CRUD guards and logout against migra
     const collectionConfig = payload.collections.users.config
     const { sid } = await addSessionToUser({ collectionConfig, payload, req, user: { ...other, collection: 'users' } })
     const { token } = await jwtSign({ fieldsToSign: { id: other.id, collection: 'users', sid }, secret: payload.secret, tokenExpiration: 60 })
-    const disabledCookie = generatePayloadCookie({ collectionAuthConfig: collectionConfig.auth, cookiePrefix: payload.config.cookiePrefix, token }).split(';')[0]
+    const disabledCookie = generatePayloadCookie({ collectionAuthConfig: collectionConfig.auth, cookiePrefix: 'whm-client', token }).split(';')[0]
     await payload.update({ collection: 'users', id: other.id, data: { active: false }, overrideAccess: true })
     assert.equal((await call('/v1/items', { cookie: disabledCookie })).status, 401)
   } finally { await payload.destroy() }

@@ -12,15 +12,15 @@ async function session(payload: Payload, user: any) {
   const req = await createLocalReq({ user: { ...user, collection: 'users' } }, payload), cfg = payload.collections.users.config
   const { sid } = await addSessionToUser({ collectionConfig: cfg, payload, req, user: { ...user, collection: 'users' } })
   const { token } = await jwtSign({ fieldsToSign: { id:user.id, collection:'users', sid }, secret:payload.secret, tokenExpiration:3600 })
-  return generatePayloadCookie({ collectionAuthConfig:cfg.auth, cookiePrefix:payload.config.cookiePrefix, token }).split(';')[0]
+  return generatePayloadCookie({ collectionAuthConfig:cfg.auth, cookiePrefix:user.role === 'client' ? 'whm-client' : payload.config.cookiePrefix, token }).split(';')[0]
 }
 async function request(path: string, cookie: string, data?: unknown, key?: string, method = 'POST') {
-  const response = await fetch(`${base}/api${path}`, { method:data === undefined ? 'GET' : method, headers:{ Origin:base, Cookie:cookie, 'Content-Type':'application/json', ...(key ? { 'Idempotency-Key':key } : {}) }, body:data === undefined ? undefined : JSON.stringify(data), signal:AbortSignal.timeout(20000) })
+  const response = await fetch(`${base}/api${path}`, { method:data === undefined ? 'GET' : method, headers:{ Origin:base, Cookie:cookie, 'Content-Type':'application/json', ...(cookie.startsWith('whm-client-token=') ? { 'X-WHM-Client':'1' } : {}), ...(key ? { 'Idempotency-Key':key } : {}) }, body:data === undefined ? undefined : JSON.stringify(data), signal:AbortSignal.timeout(20000) })
   return { status:response.status, data:await response.json() }
 }
 async function upload(cookie: string, owner: string, purpose: string) {
   const form = new FormData(); form.set('_payload', JSON.stringify({ owner, purpose })); form.set('file', new Blob([png], { type:'image/png' }), `integration-${suffix}-${purpose}.png`)
-  const r = await fetch(`${base}/api/media`, { method:'POST', headers:{ Cookie:cookie, Origin:base }, body:form })
+  const r = await fetch(`${base}/api/media`, { method:'POST', headers:{ Cookie:cookie, Origin:base, ...(cookie.startsWith('whm-client-token=') ? { 'X-WHM-Client':'1' } : {}) }, body:form })
   const data = await r.json(); assert.equal(r.status, 201, `Upload ${purpose}: ${data.errors?.[0]?.message || data.message || ''}`)
   return data.doc.id as string
 }

@@ -29,7 +29,15 @@ export function withAuthContext(handler: RESTHandler, settings: Promise<{ cookie
     if (client) selected.push(`${staffName}=${client.slice(client.indexOf('=') + 1)}`)
     const headers = new Headers(request.headers)
     headers.set('cookie', selected.join('; '))
-    const response = await handler(new Request(request, { headers }), args)
+    // Next supplies a proxied Request. Passing that object to Node's Request
+    // copy constructor crosses private internal slots and throws in production.
+    // Rebuild from its public URL/stream instead; preserve body and abort signal.
+    const init: RequestInit & { duplex?: 'half' } = { method: request.method, headers, signal: request.signal }
+    if (request.body !== null && !['GET', 'HEAD'].includes(request.method)) {
+      init.body = request.body
+      init.duplex = 'half'
+    }
+    const response = await handler(new Request(request.url, init), args)
     const outgoing = response.headers.getSetCookie()
     if (!outgoing.some(cookie => cookie.startsWith(`${staffName}=`))) return response
 

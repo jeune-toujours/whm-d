@@ -4,6 +4,11 @@ import { withAuthContext } from '../src/auth-context'
 
 const settings = Promise.resolve({ cookiePrefix: 'payload', routes: { api: '/api' } })
 const args = { params: Promise.resolve({ slug: ['me'] }) }
+// Next's production runtime proxies Request. It remains instanceof Request,
+// but does not own Node's private Request slots: copying it directly throws.
+const nextRequestProxy = (request: Request) => new Proxy(request, {
+  get(target, key) { const value = Reflect.get(target, key, target); return typeof value === 'function' ? value.bind(target) : value },
+})
 
 test('same-origin client requests cannot consume or overwrite the employee cookie', async () => {
   let received: Request | undefined
@@ -15,9 +20,9 @@ test('same-origin client requests cannot consume or overwrite the employee cooki
     headers.append('Set-Cookie', 'other=value; Path=/')
     return new Response('{"ok":true}', { headers })
   }, settings)
-  const response = await handler(new Request('https://whm.test/api/users/refresh-token', {
+  const response = await handler(nextRequestProxy(new Request('https://whm.test/api/users/refresh-token', {
     method: 'POST', headers: { Cookie: 'payload-token=staff; whm-client-token=client; theme=dark', 'X-WHM-Client': '1', Origin: 'https://whm.test', 'Content-Type': 'application/json' }, body: '{"action":"refresh"}',
-  }), args)
+  })), args)
   assert.equal(received!.headers.get('cookie'), 'theme=dark; payload-token=client')
   assert.equal(received!.headers.get('origin'), 'https://whm.test')
   assert.equal(response.headers.get('cache-control'), 'no-store')

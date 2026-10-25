@@ -2,16 +2,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Gutter } from '@payloadcms/ui'
 import { BarcodeField } from './BarcodeField'
+import { api, createSupportReply } from './warehouse-api'
 import './warehouse.css'
 
 type Mode = 'receive' | 'place' | 'pick' | 'return' | 'support'
 const titles: Record<Mode, string> = { receive: 'Приёмка', place: 'Размещение', pick: 'Подбор', return: 'Выдача', support: 'Обращения клиентов' }
-async function api(path: string, data?: unknown, method = 'POST') {
-  const r = await fetch(`/api${path}`, { method: data === undefined ? 'GET' : method, credentials: 'same-origin', headers: data === undefined ? {} : { 'Content-Type': 'application/json' }, body: data === undefined ? undefined : JSON.stringify(data) })
-  const result = await r.json()
-  if (!r.ok || result.ok === false) throw new Error(result.message || result.errors?.[0]?.message || 'Не удалось выполнить операцию.')
-  return result
-}
 async function upload(file: File, owner: string, purpose: string) {
   const form = new FormData(); form.set('_payload', JSON.stringify({ owner, purpose })); form.set('file', file)
   const r = await fetch('/api/media', { method: 'POST', credentials: 'same-origin', body: form })
@@ -78,8 +73,9 @@ function Handover({ order, busy, perform }: { order: any; busy: boolean; perform
 }
 function Ticket({ ticket, busy, perform }: { ticket: any; busy: boolean; perform: Perform }) {
   const [message, setMessage] = useState('')
+  const [reply] = useState(() => createSupportReply(ticket.id))
   return <section className="whm-order"><h2>{ticket.subject}</h2><p>{ticket.type} · {ticket.status}</p>{ticket.messages.map((m: any, i: number) => <p key={i}><strong>{m.author === 'client' ? 'Клиент' : 'Сотрудник'}</strong> · {m.date}<br />{m.text}</p>)}
     {ticket.attachments?.map((file: any, i: number) => <p key={i}><a href={file.url} target="_blank" rel="noopener noreferrer">{file.filename}</a></p>)}
-    {ticket.status !== 'resolved' && <form onSubmit={e => { e.preventDefault(); void perform(async () => { await api(`/v1/support/${ticket.id}/reply`, { text: message }); setMessage('') }) }}><label>Ответ клиенту<textarea required value={message} onChange={e => setMessage(e.target.value)} /></label><button disabled={busy} type="submit">Ответить</button><button disabled={busy} type="button" onClick={() => void perform(() => api(`/support-tickets/${ticket.id}`, { status: 'resolved' }, 'PATCH'))}>Закрыть обращение</button></form>}
+    {ticket.status !== 'resolved' && <form onSubmit={e => { e.preventDefault(); void perform(async () => { await reply(message); setMessage('') }) }}><label>Ответ клиенту<textarea required disabled={busy} value={message} onChange={e => setMessage(e.target.value)} /></label><button disabled={busy} type="submit">Ответить</button><button disabled={busy} type="button" onClick={() => void perform(() => api(`/support-tickets/${ticket.id}`, { status: 'resolved' }, 'PATCH'))}>Закрыть обращение</button></form>}
   </section>
 }

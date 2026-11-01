@@ -4,6 +4,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { getPayload, createLocalReq, jwtSign, type Payload } from 'payload'
 import { addSessionToUser, generatePayloadCookie } from 'payload/shared'
 import config from '../src/payload.config'
+import type { User } from '../src/payload-types'
 const base = process.env.APP_URL || 'http://localhost:3000'
 async function session(payload: Payload, user: any) {
   const identity = { ...user, collection: 'users' }, req = await createLocalReq({ user: identity }, payload), cfg = payload.collections.users.config
@@ -20,7 +21,7 @@ test('manual three-cell inventory: roles, concurrency, immutable snapshot, progr
   try {
     const admin = await payload.create({ collection: 'users', overrideAccess: true, context: { bootstrapAdmin: true }, data: { email: `inv-admin-${suffix}@test.invalid`, password: randomBytes(32).toString('hex'), role: 'admin', active: true } })
     const adminReq = await createLocalReq({ user: { ...admin, collection: 'users' } }, payload)
-    const people = []
+    const people: User[] = []
     for (const role of ['manager', 'warehouse', 'client'] as const) people.push(await payload.create({ collection: 'users', req: adminReq, overrideAccess: true, data: { email: `inv-${role}-${suffix}@test.invalid`, firstName: role, password: randomBytes(32).toString('hex'), role, active: true } }))
     const [a, m, w, c] = await Promise.all([admin, ...people].map(user => session(payload, user)))
     const warehouse = await payload.create({ collection: 'warehouses', overrideAccess: true, data: { name: `Inventory ${suffix}`, active: true } })

@@ -69,7 +69,8 @@ export async function verifyInventoryFlow({panel,context,backend,itemID}) {
   assert.deepEqual(itemAfter,itemBefore,'Inventory does not alter the stored test item');
   assert.equal((await context.request.get(`${backend}/api/v1/inventory/${id}`,{headers:{...headers,'X-WHM-Client':'1'}})).status(),403,'Client cannot read inventory in the same browser');
   await panel.getByRole('link',{name:'К списку инвентаризаций',exact:true}).click();
-  await panel.getByLabel('Показать',{exact:true}).selectOption('closed');
+  await panel.waitForURL(url=>!url.searchParams.has('session'));
+  await panel.getByRole('combobox',{name:'Показать',exact:true}).selectOption('closed');
   await panel.getByRole('link',{name:detail.operation.number,exact:true}).waitFor();
   await verifyLayout('Inventory history');
   console.log('Inventory: manual three-cell launch, optional real camera, discrepancy, progress, immutable stock, history, client denial; 320/390/768/1440 px in both themes passed.');

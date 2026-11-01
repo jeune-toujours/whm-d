@@ -25,6 +25,7 @@ export default buildConfig({
       pick: { Component: '/admin/WarehouseView#PickView', path: '/warehouse/pick' },
       handover: { Component: '/admin/WarehouseView#ReturnView', path: '/warehouse/return' },
       support: { Component: '/admin/WarehouseView#SupportView', path: '/warehouse/support' },
+      inventory: { Component: '/admin/WarehouseView#InventoryView', path: '/warehouse/inventory' },
     },
   } },
   collections, endpoints, sharp,

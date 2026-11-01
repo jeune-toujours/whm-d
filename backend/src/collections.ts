@@ -1,17 +1,12 @@
-import type { CollectionConfig, Field, SelectField, CollectionAfterChangeHook } from 'payload'
+import type { CollectionConfig, Field, SelectField } from 'payload'
 import { admin, staff, office, owned, officeOwned, self, never, hasRole, userOf, supportOwned, supportOffice, supportMessages } from './access'
 import { DomainError } from './domain'
+import { audit } from './audit'
+import { inventoryCollections } from './inventory-collections'
 
 const owner: Field = { name: 'owner', label: 'Клиент', type: 'relationship', relationTo: 'users', required: true, index: true }
 const name: Field = { name: 'name', label: 'Название', type: 'text', required: true }
 const choice = (field: string, options: string[], defaultValue?: string): SelectField => ({ name: field, type: 'select', options, required: true, defaultValue })
-const audit: CollectionAfterChangeHook = async ({ req, doc, previousDoc, operation, collection }) => {
-  const fields = collection.fields.filter((field): field is Field & { name: string } => 'name' in field).map(f => f.name).filter(k => JSON.stringify(doc[k]) !== JSON.stringify(previousDoc?.[k]))
-  // audit-log has no change hook. Do not mutate the request context: nested context
-  // persists across writes and would suppress the remaining audits in a workflow.
-  await req.payload.create({ collection: 'audit-log', overrideAccess: true, req, data: { actor: req.user?.id, entity: collection.slug, entityID: String(doc.id), action: operation, changedFields: fields.join(',') } })
-  return doc
-}
 const immutableWorkflow: CollectionConfig['hooks'] = {
   beforeChange: [({ data, originalDoc, req, operation }) => {
     if (operation === 'update' && !req.context.workflow) {
@@ -25,6 +20,7 @@ const immutableWorkflow: CollectionConfig['hooks'] = {
 const internal = (slug: string, fields: Field[], read = office): CollectionConfig => ({ slug, admin: { group: 'Системные записи' }, access: { create: never, read, update: never, delete: never }, fields })
 
 export const collections: CollectionConfig[] = [
+  ...inventoryCollections,
   {
     slug: 'users', labels: { singular: 'Пользователь', plural: 'Пользователи' },
     auth: { useSessions: true, tokenExpiration: 60 * 60 * 24 * 7, maxLoginAttempts: 5, lockTime: 900_000, cookies: { sameSite: 'Lax', secure: process.env.APP_URL?.startsWith('https://') || false } },

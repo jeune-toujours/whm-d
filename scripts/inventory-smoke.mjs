@@ -33,12 +33,14 @@ export async function verifyInventoryFlow({panel,context,backend,itemID}) {
   const released=new Promise(resolve=>{releaseStale=resolve;});
   const staleReady=new Promise(resolve=>{markStaleReady=resolve;});
   const detailURL=`${backend}/api/v1/inventory/${id}`;
+  await panel.bringToFront();
+  const nextPoll=panel.waitForRequest(detailURL);
   await panel.route(detailURL,async route=>{
     const response=await route.fetch();
     if(!held){held=true;markStaleReady();await released;}
     await route.fulfill({response});
   });
-  await staleReady;
+  await nextPoll;await staleReady;
   const first=panel.getByRole('region',{name:`Ячейка ${cells[0].name}`,exact:true});
   await scanBarcode(panel,first,'Добавить найденный код',unaccounted);
   await first.getByLabel('Комментарий к проверке').fill('Проверка: обнаружен неучтённый предмет.');

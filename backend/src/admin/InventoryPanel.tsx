@@ -21,9 +21,13 @@ export function InventoryPanel() {
   const [state, setState] = useState('open'), [page, setPage] = useState(1), [pages, setPages] = useState(1)
   const [canCreate, setCanCreate] = useState(false), [creating, setCreating] = useState(false)
   const [error, setError] = useState(''), [loading, setLoading] = useState(true), [revision, setRevision] = useState(0)
+  const activeSession = useRef(sessionID); activeSession.current = sessionID
   // Network responses can arrive out of order. Checks only move forwards;
   // an older poll or concurrent save must never resurrect a pending form.
-  const acceptDetail = useCallback((next: InventoryDetail) => setDetail(current => current?.operation.id === next.operation.id && current.operation.checkedCount > next.operation.checkedCount ? current : next), [])
+  const acceptDetail = useCallback((next: InventoryDetail) => {
+    if (activeSession.current.toLowerCase() !== next.operation.id) return
+    setDetail(current => current?.operation.id === next.operation.id && current.operation.checkedCount > next.operation.checkedCount ? current : next)
+  }, [])
   useEffect(() => {
     let active = true, inFlight = false
     setLoading(true); setError(''); setDetail(null)

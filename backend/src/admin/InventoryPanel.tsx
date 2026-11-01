@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Gutter, useAuth } from '@payloadcms/ui'
@@ -21,6 +21,9 @@ export function InventoryPanel() {
   const [state, setState] = useState('open'), [page, setPage] = useState(1), [pages, setPages] = useState(1)
   const [canCreate, setCanCreate] = useState(false), [creating, setCreating] = useState(false)
   const [error, setError] = useState(''), [loading, setLoading] = useState(true), [revision, setRevision] = useState(0)
+  // Network responses can arrive out of order. Checks only move forwards;
+  // an older poll or concurrent save must never resurrect a pending form.
+  const acceptDetail = useCallback((next: InventoryDetail) => setDetail(current => current?.operation.id === next.operation.id && current.operation.checkedCount > next.operation.checkedCount ? current : next), [])
   useEffect(() => {
     let active = true, inFlight = false
     setLoading(true); setError(''); setDetail(null)
@@ -30,7 +33,7 @@ export function InventoryPanel() {
       try {
         const result = await api(sessionID ? `/v1/inventory/${encodeURIComponent(sessionID)}` : `/v1/inventory?state=${state}&page=${page}`)
         if (!active) return
-        if (sessionID) setDetail(result as InventoryDetail)
+        if (sessionID) acceptDetail(result as InventoryDetail)
         else { setOperations(result.operations); setCanCreate(result.canCreate); setPages(result.totalPages) }
         setError('')
       } catch (e) { if (active) setError(errorMessage(e)) }
@@ -39,7 +42,7 @@ export function InventoryPanel() {
     void load()
     const timer = setInterval(() => { if (!document.hidden) void load() }, 10000)
     return () => { active = false; clearInterval(timer) }
-  }, [sessionID, state, page, revision])
+  }, [sessionID, state, page, revision, acceptDetail])
   return <Gutter><section className="whm-work whm-inventory">
     <div className="inventory-toolbar"><h1>Инвентаризация</h1><button type="button" onClick={() => setRevision(n => n + 1)} aria-label="Обновить инвентаризации"><RefreshCw size={18} aria-hidden="true" /> Обновить</button></div>
     <p>Ручная сверка выбранных ячеек. Результат сохраняется отдельно и не изменяет размещение вещей.</p>
@@ -59,7 +62,7 @@ export function InventoryPanel() {
         {detail.cells.map(check => <section className="whm-order inventory-check" key={check.id} aria-label={`Ячейка ${check.cellLabel}`}>
           <h2>{check.cellLabel}</h2><p>{check.warehouseName}{check.zone ? ` · Зона ${check.zone}` : ''} · {check.cellBarcode}</p>
           <p><strong>{check.statusLabel}</strong> · Ожидалось вещей: {check.expectedItems.length}</p>
-          {check.status === 'pending' ? <CellCheck key={`${check.id}:pending`} sessionID={sessionID} check={check} onSaved={setDetail} /> : <>
+          {check.status === 'pending' ? <CellCheck key={`${check.id}:pending`} sessionID={sessionID} check={check} onSaved={acceptDetail} /> : <>
             <p>Проверил: {check.checkedByID && ['admin', 'manager'].includes(user?.role) ? <Link href={`/admin/collections/users/${check.checkedByID}`}>{check.checkedByName}</Link> : check.checkedByName} · {date(check.checkedAt)}</p>
             {check.accountingChanged && <p className="inventory-note"><TriangleAlert size={18} aria-hidden="true" /> Учёт изменился после запуска. Результат относится к сохранённому снимку; перемещения не исправлялись автоматически.</p>}
             {check.discrepancies.length ? <ul className="inventory-discrepancies">{check.discrepancies.map((d, i) => <li key={`${d.type}:${d.code}:${i}`}><strong>{discrepancyNames[d.type]}</strong>: {d.title} · {d.code}{d.expectedCellID && d.expectedCellID !== check.cellID ? <> · <Link href={`/admin/collections/cells/${d.expectedCellID}`}>Учётная ячейка</Link></> : null}</li>)}</ul> : <p className="inventory-matched"><CheckCircle size={18} aria-hidden="true" /> Содержимое соответствует снимку</p>}
@@ -165,6 +168,7 @@ function CellCheck({ sessionID, check, onSaved }: { sessionID: string; check: In
       <BarcodeField label="Добавить найденный код" value={scan} onChange={setScan} required={false} disabled={busy} onEnter={addCode} />
       <button type="button" disabled={!scan.trim()} onClick={addCode}>Добавить код</button>
       <label>Дополнительные коды — по одному в строке<textarea value={extras} onChange={e => setExtras(e.target.value)} placeholder="Штрихкод или внутренний номер найденной вещи" /></label>
+      <p className="inventory-note">У найденной вещи нет кода? Введите короткое описание вместо кода. Для нескольких предметов используйте разные обозначения, по одному на строку.</p>
       <label>Комментарий к проверке<textarea maxLength={2000} value={comment} onChange={e => setComment(e.target.value)} placeholder="При расхождении укажите, что обнаружено" /></label>
       <p className="inventory-note">Без изменений и дополнительных кодов подтверждается соответствие. Неотмеченные вещи сохранятся как недостача. Для расхождения нужен комментарий.</p>
       {error && <p role="alert" className="whm-error">{error}</p>}

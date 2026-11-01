@@ -63,12 +63,12 @@ function CameraScanner({ label, onCode, onClose }: { label: string; onCode: (cod
   </dialog>, document.body)
 }
 
-export function BarcodeField({ label, value, onChange, disabled = false }: { label: string; value: string; onChange: (value: string) => void; disabled?: boolean }) {
+export function BarcodeField({ label, value, onChange, disabled = false, required = true, onEnter }: { label: string; value: string; onChange: (value: string) => void; disabled?: boolean; required?: boolean; onEnter?: () => void }) {
   const id = useId(), input = useRef<HTMLInputElement>(null)
   const [scanning, setScanning] = useState(false), [scanned, setScanned] = useState('')
   return <div className="whm-barcode-field">
     <label htmlFor={id}>{label}</label>
-    <div className="whm-barcode-input"><input id={id} ref={input} required maxLength={80} autoComplete="off" value={value} disabled={disabled} onChange={e => { onChange(e.target.value); setScanned('') }} /><button type="button" className="whm-camera-button" disabled={disabled} aria-label={`Сканировать камерой: ${label.toLowerCase()}`} title="Сканировать камерой" onClick={() => { setScanned(''); setScanning(true) }}><Camera size={22} aria-hidden="true" /></button></div>
+    <div className="whm-barcode-input"><input id={id} ref={input} required={required} maxLength={80} autoComplete="off" value={value} disabled={disabled} onKeyDown={e => { if (e.key === 'Enter' && onEnter) { e.preventDefault(); onEnter() } }} onChange={e => { onChange(e.target.value); setScanned('') }} /><button type="button" className="whm-camera-button" disabled={disabled} aria-label={`Сканировать камерой: ${label.toLowerCase()}`} title="Сканировать камерой" onClick={() => { setScanned(''); setScanning(true) }}><Camera size={22} aria-hidden="true" /></button></div>
     {scanned && <p className="whm-barcode-result" role="status">Считан код: {scanned}</p>}
     {scanning && <CameraScanner label={label} onClose={() => setScanning(false)} onCode={code => { onChange(code); setScanned(code); setScanning(false); requestAnimationFrame(() => input.current?.focus()) }} />}
   </div>

@@ -3,8 +3,10 @@ import { endpoint, body, json, clientUser } from './http'
 import { text, DomainError } from './domain'
 import { workflowEndpoints } from './workflows'
 import { paymentEndpoints } from './payments'
+import { inventoryEndpoints } from './inventory'
 
 export const endpoints = [
+  ...inventoryEndpoints,
   ...authEndpoints,
   ...workflowEndpoints,
   ...paymentEndpoints,

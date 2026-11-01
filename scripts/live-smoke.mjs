@@ -4,6 +4,7 @@ import { chromium } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { installTestCamera, scanBarcode, verifyCameraLifecycle } from './camera-smoke.mjs';
+import { verifyInventoryFlow } from './inventory-smoke.mjs';
 const base = process.env.WHM_BASE_URL || 'http://localhost:4174', backend = process.env.WHM_API_BASE || base;
 let adminEmail = process.env.WHM_ADMIN_EMAIL, adminPassword = process.env.WHM_ADMIN_PASSWORD;
 if (process.env.WHM_ADMIN_SECRET_SSH === '1') {
@@ -75,6 +76,7 @@ try {
   const place = panel.locator('.whm-order').filter({ hasText:order.number }); await scanBarcode(panel,place,'Скан вещи',barcode);
   const option = place.getByLabel('Ячейка',{ exact:true }).locator('option').filter({ hasText:'TEST-CELL-' }).first(), value = await option.getAttribute('value'), label = await option.textContent(), cellBarcode = label.match(/TEST-CELL-[A-Z]-\d+/)?.[0]; assert.ok(value && cellBarcode);
   await place.getByLabel('Ячейка',{ exact:true }).selectOption(value); await scanBarcode(panel,place,'Скан ячейки',cellBarcode); await place.getByRole('button',{ name:'Разместить',exact:true }).click(); await place.waitFor({ state:'detached' });
+  await verifyInventoryFlow({panel,context:staff,backend,itemID:order.items[0].id});
   await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/home`); await page.getByText(order.items[0].internalID,{exact:false}).first().waitFor();
   for(const width of [320,390,768,1440]) {
     await page.setViewportSize({width,height:844});await page.goto(`${base}/#/item/${order.items[0].id}`);await page.locator('.copy').waitFor();

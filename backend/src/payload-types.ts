@@ -67,6 +67,8 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'inventory-sessions': InventorySession;
+    'inventory-session-cells': InventorySessionCell;
     users: User;
     'storage-items': StorageItem;
     orders: Order;
@@ -90,6 +92,8 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    'inventory-sessions': InventorySessionsSelect<false> | InventorySessionsSelect<true>;
+    'inventory-session-cells': InventorySessionCellsSelect<false> | InventorySessionCellsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     'storage-items': StorageItemsSelect<false> | StorageItemsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
@@ -154,6 +158,27 @@ export interface UserAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inventory-sessions".
+ */
+export interface InventorySession {
+  id: string;
+  number: string;
+  status: 'in_progress' | 'completed' | 'completed_with_discrepancies';
+  initiator: string | User;
+  initiatorName: string;
+  warehouseNames: string;
+  cellCount: number;
+  checkedCount: number;
+  discrepancyCount: number;
+  startedAt: string;
+  completedAt?: string | null;
+  idempotencyKey: string;
+  requestHash: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
@@ -189,25 +214,71 @@ export interface User {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "storage-items".
+ * via the `definition` "inventory-session-cells".
  */
-export interface StorageItem {
+export interface InventorySessionCell {
   id: string;
-  owner: string | User;
-  internalID: string;
-  title: string;
-  type: 'box' | 'item';
-  description?: string | null;
-  contents?: string | null;
-  barcode?: string | null;
-  seal?: string | null;
-  status: 'expected' | 'received' | 'stored' | 'reserved' | 'picked' | 'returned';
-  cell?: (string | null) | Cell;
-  monthlyPrice: number;
-  startedAt?: string | null;
-  returnedAt?: string | null;
-  blockReason?: string | null;
-  media?: (string | Media)[] | null;
+  session: string | InventorySession;
+  cell: string | Cell;
+  cellLabel: string;
+  cellBarcode: string;
+  warehouseID: string;
+  warehouseName: string;
+  zone?: string | null;
+  active: boolean;
+  status: 'pending' | 'matched' | 'discrepancy';
+  expectedItems:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  observedCodes?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  observedItems?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  discrepancies?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  accountingAtCheck?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  accountingChanged?: boolean | null;
+  comment?: string | null;
+  checkedBy?: (string | null) | User;
+  checkedByName?: string | null;
+  checkedAt?: string | null;
+  checkKey?: string | null;
+  checkHash?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -235,6 +306,30 @@ export interface Warehouse {
   name: string;
   address?: string | null;
   active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "storage-items".
+ */
+export interface StorageItem {
+  id: string;
+  owner: string | User;
+  internalID: string;
+  title: string;
+  type: 'box' | 'item';
+  description?: string | null;
+  contents?: string | null;
+  barcode?: string | null;
+  seal?: string | null;
+  status: 'expected' | 'received' | 'stored' | 'reserved' | 'picked' | 'returned';
+  cell?: (string | null) | Cell;
+  monthlyPrice: number;
+  startedAt?: string | null;
+  returnedAt?: string | null;
+  blockReason?: string | null;
+  media?: (string | Media)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -574,6 +669,14 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'inventory-sessions';
+        value: string | InventorySession;
+      } | null)
+    | ({
+        relationTo: 'inventory-session-cells';
+        value: string | InventorySessionCell;
+      } | null)
+    | ({
         relationTo: 'users';
         value: string | User;
       } | null)
@@ -674,6 +777,55 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inventory-sessions_select".
+ */
+export interface InventorySessionsSelect<T extends boolean = true> {
+  number?: T;
+  status?: T;
+  initiator?: T;
+  initiatorName?: T;
+  warehouseNames?: T;
+  cellCount?: T;
+  checkedCount?: T;
+  discrepancyCount?: T;
+  startedAt?: T;
+  completedAt?: T;
+  idempotencyKey?: T;
+  requestHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inventory-session-cells_select".
+ */
+export interface InventorySessionCellsSelect<T extends boolean = true> {
+  session?: T;
+  cell?: T;
+  cellLabel?: T;
+  cellBarcode?: T;
+  warehouseID?: T;
+  warehouseName?: T;
+  zone?: T;
+  active?: T;
+  status?: T;
+  expectedItems?: T;
+  observedCodes?: T;
+  observedItems?: T;
+  discrepancies?: T;
+  accountingAtCheck?: T;
+  accountingChanged?: T;
+  comment?: T;
+  checkedBy?: T;
+  checkedByName?: T;
+  checkedAt?: T;
+  checkKey?: T;
+  checkHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

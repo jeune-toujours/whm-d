@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Gutter } from '@payloadcms/ui'
+import Link from 'next/link'
 import { BarcodeField } from './BarcodeField'
 import { api, createSupportReply } from './warehouse-api'
 import './warehouse.css'
@@ -47,6 +48,7 @@ function ItemOperation({ mode, order, item, cells, busy, perform }: { mode: Mode
     else await api(`/v1/warehouse/orders/${order.id}/pick`, { itemID: item.id, barcode })
   })
   return <form className="whm-operation" onSubmit={e => { e.preventDefault(); void submit() }}><h3>{item.title} · {item.internalID}</h3><p>{item.description} {item.cellName ? `· Ячейка ${item.cellName}` : ''}</p>
+    {mode === 'receive' && <p><Link href={`/admin/warehouse/problems?new=1&orderID=${order.id}&itemID=${item.id}`}>Зафиксировать повреждение при поступлении</Link></p>}
     {mode !== 'receive' && <p>Ожидаемый штрихкод: <code>{item.barcode}</code></p>}
     <BarcodeField label="Скан вещи" value={barcode} onChange={setBarcode} disabled={busy} />
     {mode === 'receive' && <><label>Пломба{item.type === 'box' ? ' (обязательно)' : ''}<input required={item.type === 'box'} value={seal} onChange={e => setSeal(e.target.value)} /></label><label>Опись<textarea value={contents} onChange={e => setContents(e.target.value)} placeholder="Каждая позиция с новой строки" /></label><label>Фото или видео<input required type="file" accept="image/jpeg,image/png,image/webp,video/mp4" onChange={e => setFile(e.target.files?.[0] || null)} /></label></>}

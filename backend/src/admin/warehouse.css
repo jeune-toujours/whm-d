@@ -1,4 +1,9 @@
 .whm-work { max-width: 1120px; padding: 24px 0 64px; }
+.whm-problems { min-width: 0; overflow-wrap: anywhere; }
+.whm-problems fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }
+.whm-problems label, .whm-problems select, .whm-problems input { max-width: 100%; }
+.whm-problems button, .problem-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.problem-action { padding: 12px; border: 1px solid var(--theme-elevation-300); border-radius: 4px; }
 .whm-work h1 { margin: 0 0 16px; }
 .whm-work button { border: 1px solid var(--theme-elevation-300); background: var(--theme-elevation-100); color: var(--theme-text); padding: 12px 18px; border-radius: 4px; cursor: pointer; margin: 8px 8px 8px 0; }
 .whm-work button:disabled { opacity: .5; cursor: wait; }

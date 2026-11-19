@@ -5,6 +5,7 @@ import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { installTestCamera, scanBarcode, verifyCameraLifecycle } from './camera-smoke.mjs';
 import { verifyInventoryFlow } from './inventory-smoke.mjs';
+import { verifyProblemsFlow } from './problems-smoke.mjs';
 const base = process.env.WHM_BASE_URL || 'http://localhost:4174', backend = process.env.WHM_API_BASE || base;
 let adminEmail = process.env.WHM_ADMIN_EMAIL, adminPassword = process.env.WHM_ADMIN_PASSWORD;
 if (process.env.WHM_ADMIN_SECRET_SSH === '1') {
@@ -66,6 +67,7 @@ try {
   const staff = page.context(), login = await staff.request.post(`${backend}/api/users/login`, { data:{ email:adminEmail,password:adminPassword }, headers:{ Origin:backend } }); assert.equal(login.status(),200); adminPassword = undefined;
   assert.equal((await (await page.request.get(`${backend}/api/me`, { headers:{ Origin:base } })).json()).user.id, clientIdentity, 'Staff login preserves the client in the same browser');
   const panel = await staff.newPage(); panel.setDefaultTimeout(20000); panel.on('pageerror', e => errors.push(e.message)); await installTestCamera(panel);
+  await verifyProblemsFlow({panel,page,backend,base,order,image});
   await panel.goto(`${backend}/admin/warehouse/receive`);
   const intake = panel.locator('.whm-order').filter({ hasText:order.number });
   await verifyCameraLifecycle(panel,intake);

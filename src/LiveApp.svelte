@@ -34,7 +34,14 @@
   const legal = 'Это тестовая среда. Юридические документы и коммерческие правила ещё не утверждены. Реальные SMS, платежи и доставки не выполняются.';
   function navigate(path) { location.hash = `/${path}`; route = path; }
   function infoScreen(title, description, back = route) { info = { title, description, back }; navigate('info'); }
-  function openSupport(context = null, type = null) { supportContext = context; supportType = type || (context ? 'incident' : null); navigate('support'); }
+  async function openSupport(context = null, type = null) {
+    if (context?.ticketID) {
+      const latest = await safe(() => api('/v1/dashboard'));
+      if (latest.ok === false) { error = latest.message; return; }
+      data = latest;
+    }
+    supportContext = context; supportType = type || (context ? 'incident' : null); navigate('support');
+  }
   function openOrder(o) { const id = typeof o === 'string' ? o : o.id; const value = data.orders.find(o => o.id === id); navigate(`${value && ['completed','cancelled'].includes(value.backendStatus) ? 'history' : 'order'}/${id}`); }
   function openItem(value, back='home') { archivedItem = null; itemBackRoute = back; navigate(`item/${value.id}`); }
   function openReturn(ids = []) { chosen = ids; navigate('return'); }
@@ -111,7 +118,7 @@
     {:else if root === 'intake' && checkoutConfig}<Intake live={true} config={checkoutConfig} catalog={data.tariffs.filter(t=>t.kind==='storage')} initialTheme={theme} insuranceRate={checkoutConfig.insuranceRate} insuranceMinPremium={checkoutConfig.insuranceMinPremium} customerName={data.profile.firstName} savedAddress="" savedPhone={data.profile.phone} draftKey={`whm-intake:${data.userID}`} demoMode={false} startAtService={true} onCalculateOrder={v=>quoteWizard('intake',v)} onCreateOrder={v=>createWizard('intake',v)} onNavigateOrder={v=>openOrder(v.orderId)} onNavigateHome={()=>navigate('home')} onOversizeRequest={v=>submitTicket('incident',{ operationKey:crypto.randomUUID(),description:'Индивидуальный расчёт негабарита: '+v.description,attachments:v.file?[{file:v.file}]:[] })} onOpenTerms={()=>infoScreen('Условия хранения',legal,'intake')}/>
     {:else if root === 'return' && checkoutConfig}<ReturnItems live={true} config={checkoutConfig} storageUnits={data.units.filter(u=>['stored','reserved','picked'].includes(u.status))} initialSelectedIds={chosen} initialTheme={theme} savedAddress="" savedPhone={data.profile.phone} currentMonthlyPrice={data.profile.monthlyPrice} draftKey={`whm-return:${data.userID}`} onCalculateReturn={async v=>{const r=await quoteWizard('return',v);return r.ok===false?r:{...r,deliveryPrice:r.quote.deliveryPrice};}} onCreateReturn={v=>createWizard('return',v)} onSupport={openSupport} onNavigateToOrder={v=>openOrder(v.orderId)} onNavigateHome={()=>navigate('home')} onExit={()=>navigate('home')}/>
     {:else if root === 'checkout'}<Checkout id={routeID} initialTheme={theme} onBack={() => navigate('payments')} onComplete={async (payment, leave) => { await safe(refresh); if (leave) navigate(payment.orderID ? `order/${payment.orderID}` : 'subscription'); }} />
-    {:else if root === 'item'}{#if item}<ItemDetail {item} initialTheme={theme} live={true} onBack={() => navigate(itemBackRoute)} onReturn={u => openReturn([u.id])} onSupport={openSupport} onOpenDocument={() => infoScreen('Материалы вещи', 'Фото, опись и история доступны в карточке. Юридический шаблон акта ещё не утверждён.')} />{:else}<InfoScreen initialTheme={theme} live={true} title="Вещь не найдена" description="Эта вещь недоступна вашему аккаунту." onBack={() => navigate('home')}/>{/if}
+    {:else if root === 'item'}{#if item}<ItemDetail {item} onLoadProblems={id => api(`/v1/items/${id}/problems`)} initialTheme={theme} live={true} onBack={() => navigate(itemBackRoute)} onReturn={u => openReturn([u.id])} onSupport={openSupport} onOpenDocument={() => infoScreen('Материалы вещи', 'Фото, опись и история доступны в карточке. Юридический шаблон акта ещё не утверждён.')} />{:else}<InfoScreen initialTheme={theme} live={true} title="Вещь не найдена" description="Эта вещь недоступна вашему аккаунту." onBack={() => navigate('home')}/>{/if}
     {:else if root === 'order'}{#if order}
       <ActiveOrder live={true} initialTheme={theme} order={displayedOrder(order)} autoRefreshMs={8000} onRefresh={loadOrder} onCancel={() => safe(async () => { const r = await api(`/v1/orders/${order.id}/cancel`, {}); await refresh(); return r; })} onBack={() => navigate('home')} onHome={() => navigate('home')} onItemOpen={u=>openItem(u,`order/${order.id}`)} onOpenHistory={() => navigate('history')} onSupport={() => openSupport({ orderId:order.id }, 'incident')} onContactCourier={() => infoScreen('Курьер', 'Курьер не назначен. Это тестовая логистическая заявка.')} />
     {:else}<InfoScreen initialTheme={theme} live={true} title="Заказ недоступен" description="Откройте историю и выберите заказ." onBack={() => navigate('history')} />{/if}

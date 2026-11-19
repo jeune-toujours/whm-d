@@ -11,6 +11,7 @@ export function WarehouseNav() {
     <Link href="/admin/warehouse/pick">Подбор</Link>
     <Link href="/admin/warehouse/return">Выдача</Link>
     <Link href="/admin/warehouse/inventory">Инвентаризация</Link>
+    <Link href="/admin/warehouse/problems">Проблемные заказы</Link>
     {user.role !== 'warehouse' && <Link href="/admin/warehouse/support">Обращения клиентов</Link>}
   </nav>
 }

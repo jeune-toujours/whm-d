@@ -4,8 +4,10 @@ import { text, DomainError } from './domain'
 import { workflowEndpoints } from './workflows'
 import { paymentEndpoints } from './payments'
 import { inventoryEndpoints } from './inventory'
+import { problemEndpoints } from './problems'
 
 export const endpoints = [
+  ...problemEndpoints,
   ...inventoryEndpoints,
   ...authEndpoints,
   ...workflowEndpoints,

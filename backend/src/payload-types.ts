@@ -69,6 +69,7 @@ export interface Config {
   collections: {
     'inventory-sessions': InventorySession;
     'inventory-session-cells': InventorySessionCell;
+    'damage-reports': DamageReport;
     users: User;
     'storage-items': StorageItem;
     orders: Order;
@@ -94,6 +95,7 @@ export interface Config {
   collectionsSelect: {
     'inventory-sessions': InventorySessionsSelect<false> | InventorySessionsSelect<true>;
     'inventory-session-cells': InventorySessionCellsSelect<false> | InventorySessionCellsSelect<true>;
+    'damage-reports': DamageReportsSelect<false> | DamageReportsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     'storage-items': StorageItemsSelect<false> | StorageItemsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
@@ -311,6 +313,65 @@ export interface Warehouse {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "damage-reports".
+ */
+export interface DamageReport {
+  id: string;
+  number: string;
+  owner: string | User;
+  order: string | Order;
+  item: string | StorageItem;
+  orderNumber: string;
+  itemLabel: string;
+  description: string;
+  discoveredAtIntake: boolean;
+  evidence?: (string | Media)[] | null;
+  createdBy: string | User;
+  createdByName: string;
+  ticket: string | SupportTicket;
+  idempotencyKey: string;
+  requestHash: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders".
+ */
+export interface Order {
+  id: string;
+  owner: string | User;
+  number: string;
+  type: 'intake' | 'return';
+  status: 'created' | 'received' | 'placed' | 'picking' | 'ready' | 'completed' | 'cancelled';
+  items: (string | StorageItem)[];
+  fulfillment: 'pickup' | 'courier';
+  address?: string | null;
+  slot?: string | null;
+  assignee?: (string | null) | User;
+  picked?: (string | StorageItem)[] | null;
+  signature?: (string | null) | Media;
+  evidence?: (string | Media)[] | null;
+  idempotencyKey: string;
+  requestHash?: string | null;
+  payment?: (string | null) | Payment;
+  details?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  closedAt?: string | null;
+  historySearch?: string | null;
+  hasServices?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "storage-items".
  */
 export interface StorageItem {
@@ -355,42 +416,6 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "orders".
- */
-export interface Order {
-  id: string;
-  owner: string | User;
-  number: string;
-  type: 'intake' | 'return';
-  status: 'created' | 'received' | 'placed' | 'picking' | 'ready' | 'completed' | 'cancelled';
-  items: (string | StorageItem)[];
-  fulfillment: 'pickup' | 'courier';
-  address?: string | null;
-  slot?: string | null;
-  assignee?: (string | null) | User;
-  picked?: (string | StorageItem)[] | null;
-  signature?: (string | null) | Media;
-  evidence?: (string | Media)[] | null;
-  idempotencyKey: string;
-  requestHash?: string | null;
-  payment?: (string | null) | Payment;
-  details?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  closedAt?: string | null;
-  historySearch?: string | null;
-  hasServices?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -440,6 +465,33 @@ export interface Tariff {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "support-tickets".
+ */
+export interface SupportTicket {
+  id: string;
+  owner: string | User;
+  type: 'technical' | 'incident';
+  details?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  idempotencyKey?: string | null;
+  subject: string;
+  status: 'submitted' | 'in_progress' | 'resolved' | 'rejected' | 'answered';
+  closeReason?: string | null;
+  order?: (string | null) | Order;
+  item?: (string | null) | StorageItem;
+  attachments?: (string | Media)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "order-events".
  */
 export interface OrderEvent {
@@ -463,33 +515,6 @@ export interface Subscription {
   status: 'pending' | 'active' | 'paused' | 'cancelled';
   nextChargeAt?: string | null;
   providerCustomerID?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "support-tickets".
- */
-export interface SupportTicket {
-  id: string;
-  owner: string | User;
-  type: 'technical' | 'incident';
-  details?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  idempotencyKey?: string | null;
-  subject: string;
-  status: 'submitted' | 'in_progress' | 'resolved' | 'rejected' | 'answered';
-  closeReason?: string | null;
-  order?: (string | null) | Order;
-  item?: (string | null) | StorageItem;
-  attachments?: (string | Media)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -677,6 +702,10 @@ export interface PayloadLockedDocument {
         value: string | InventorySessionCell;
       } | null)
     | ({
+        relationTo: 'damage-reports';
+        value: string | DamageReport;
+      } | null)
+    | ({
         relationTo: 'users';
         value: string | User;
       } | null)
@@ -824,6 +853,28 @@ export interface InventorySessionCellsSelect<T extends boolean = true> {
   checkedAt?: T;
   checkKey?: T;
   checkHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "damage-reports_select".
+ */
+export interface DamageReportsSelect<T extends boolean = true> {
+  number?: T;
+  owner?: T;
+  order?: T;
+  item?: T;
+  orderNumber?: T;
+  itemLabel?: T;
+  description?: T;
+  discoveredAtIntake?: T;
+  evidence?: T;
+  createdBy?: T;
+  createdByName?: T;
+  ticket?: T;
+  idempotencyKey?: T;
+  requestHash?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -34,7 +34,14 @@
   const legal = 'Это тестовая среда. Юридические документы и коммерческие правила ещё не утверждены. Реальные SMS, платежи и доставки не выполняются.';
   function navigate(path) { location.hash = `/${path}`; route = path; }
   function infoScreen(title, description, back = route) { info = { title, description, back }; navigate('info'); }
-  function openSupport(context = null, type = null) { supportContext = context; supportType = type || (context ? 'incident' : null); navigate('support'); }
+  async function openSupport(context = null, type = null) {
+    if (context?.ticketID) {
+      const latest = await safe(() => api('/v1/dashboard'));
+      if (latest.ok === false) { error = latest.message; return; }
+      data = latest;
+    }
+    supportContext = context; supportType = type || (context ? 'incident' : null); navigate('support');
+  }
   function openOrder(o) { const id = typeof o === 'string' ? o : o.id; const value = data.orders.find(o => o.id === id); navigate(`${value && ['completed','cancelled'].includes(value.backendStatus) ? 'history' : 'order'}/${id}`); }
   function openItem(value, back='home') { archivedItem = null; itemBackRoute = back; navigate(`item/${value.id}`); }
   function openReturn(ids = []) { chosen = ids; navigate('return'); }

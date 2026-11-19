@@ -10,8 +10,10 @@ const actorName = (req: PayloadRequest) => [req.user?.firstName, req.user?.lastN
 const evidenceEnabled = () => process.env.PROBLEM_EVIDENCE_ENABLED !== 'false'
 
 async function detail(req: PayloadRequest, id: string) {
-  const report = await req.payload.findByID({ collection: 'damage-reports', id, req, overrideAccess: false, depth: 1 })
-  return { ok: true, report: { id: report.id, number: report.number, orderID: relationID(report.order), orderNumber: report.orderNumber, itemID: relationID(report.item), itemLabel: report.itemLabel, ownerID: relationID(report.owner), description: report.description, discoveredAtIntake: report.discoveredAtIntake, createdAt: report.createdAt, createdByName: report.createdByName, ticketID: relationID(report.ticket), evidence: (report.evidence || []).filter(m => typeof m === 'object').map(m => ({ id: m.id, filename: m.filename, url: m.url })) } }
+  const report = await req.payload.findByID({ collection: 'damage-reports', id, req, overrideAccess: false, depth: 0 })
+  const ids = (report.evidence || []).map(relationID)
+  const media = ids.length ? await req.payload.find({ collection: 'media', req, overrideAccess: false, depth: 0, pagination: false, where: { id: { in: ids } } }) : { docs: [] }
+  return { ok: true, report: { id: report.id, number: report.number, orderID: relationID(report.order), orderNumber: report.orderNumber, itemID: relationID(report.item), itemLabel: report.itemLabel, ownerID: relationID(report.owner), description: report.description, discoveredAtIntake: report.discoveredAtIntake, createdAt: report.createdAt, createdByName: report.createdByName, ticketID: relationID(report.ticket), evidence: media.docs.map(m => ({ id: m.id, filename: m.filename, url: m.url })) } }
 }
 
 export const problemEndpoints = [

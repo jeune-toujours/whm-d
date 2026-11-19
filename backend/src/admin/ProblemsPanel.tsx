@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Gutter } from '@payloadcms/ui'
+import { Gutter, useAuth } from '@payloadcms/ui'
 import { ArrowLeft, Plus, RefreshCw, TriangleAlert } from 'lucide-react'
 import { api } from './warehouse-api'
 import './warehouse.css'
@@ -45,11 +45,12 @@ export function ProblemsPanel() {
 }
 
 function ReportDetail({ report }: { report: Report }) {
+  const { user } = useAuth()
   return <article className="whm-order"><h2><TriangleAlert size={22} aria-hidden /> {report.number}</h2><p>Зафиксировано {date(report.createdAt)} · {report.createdByName}</p>
     <p><Link href={`/admin/collections/orders/${report.orderID}`}>{report.orderNumber}</Link> · <Link href={`/admin/collections/storage-items/${report.itemID}`}>{report.itemLabel}</Link></p>
     <p><strong>Обнаружено при поступлении</strong></p><p className="inventory-comment">{report.description}</p>
     {report.evidence.length > 0 && <><h3>Материалы</h3><ul>{report.evidence.map(file => <li key={file.id}><a href={file.url} target="_blank" rel="noopener noreferrer">{file.filename}</a></li>)}</ul></>}
-    <p>Уведомление сохранено в личном кабинете клиента. Реальные SMS и email не отправляются.</p><Link href={`/admin/collections/support-tickets/${report.ticketID}`}>Открыть обращение клиента</Link>
+    <p>Уведомление сохранено в личном кабинете клиента. Реальные SMS и email не отправляются.</p>{user?.role !== 'warehouse' && <Link href={`/admin/collections/support-tickets/${report.ticketID}`}>Открыть обращение клиента</Link>}
   </article>
 }
 

@@ -4,6 +4,7 @@ import * as migration_20261004_185503_20261004_archive_alignment from './2026100
 import * as migration_20261004_191637_20261004_support_alignment from './20261004_191637_20261004_support_alignment';
 import * as migration_20261101_143058_manual_inventory from './20261101_143058_manual_inventory';
 import * as migration_20261119_135242_problem_orders from './20261119_135242_problem_orders';
+import * as migration_20261119_145318_problem_confirmation from './20261119_145318_problem_confirmation';
 
 export const migrations = [
   {
@@ -34,6 +35,11 @@ export const migrations = [
   {
     up: migration_20261119_135242_problem_orders.up,
     down: migration_20261119_135242_problem_orders.down,
-    name: '20261119_135242_problem_orders'
+    name: '20261119_135242_problem_orders',
+  },
+  {
+    up: migration_20261119_145318_problem_confirmation.up,
+    down: migration_20261119_145318_problem_confirmation.down,
+    name: '20261119_145318_problem_confirmation'
   },
 ];

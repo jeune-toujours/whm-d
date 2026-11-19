@@ -16,7 +16,7 @@ async function call(path: string, cookie: string, data?: unknown, key = randomUU
   return { status: response.status, data: await response.json() }
 }
 
-test('damage at intake: atomic record, client notification, evidence, ownership, concurrent retry, immutable history and unchanged stock', { timeout: 180000 }, async () => {
+test('damage stays internal until authorized confirmation: visibility, private media, atomic notification, concurrent retries and immutable history', { timeout: 180000 }, async () => {
   const payload = await getPayload({ config }), suffix = randomUUID()
   try {
     const admin = await payload.create({ collection: 'users', overrideAccess: true, context: { bootstrapAdmin: true }, data: { email: `problem-admin-${suffix}@test.invalid`, password: randomBytes(32).toString('hex'), role: 'admin', active: true } })
@@ -43,11 +43,12 @@ test('damage at intake: atomic record, client notification, evidence, ownership,
     assert.equal((await call('/v1/problems', w, { ...input, description: 'Другое описание' }, key)).status, 409)
     assert.equal((await call('/v1/problems', m, input)).data.code, 'REPORT_EXISTS')
     assert.equal((await payload.count({ collection: 'damage-reports', overrideAccess: true, where: { order: { equals: order.id } } })).totalDocs, 1)
-    assert.equal((await payload.count({ collection: 'support-messages', overrideAccess: true, where: { ticket: { equals: report.ticketID } } })).totalDocs, 1, 'Retry sends one in-app notification')
-    assert.equal((await payload.count({ collection: 'order-events', overrideAccess: true, where: { order: { equals: order.id } } })).totalDocs, 1)
-    const tracking = (await call(`/v1/orders/${order.id}`, c)).data.order
-    assert.equal(tracking.history.length, 0, 'Damage is an event, not a new order stage')
-    assert.equal(tracking.events[0].status, 'damage_found'); assert.match(tracking.events[0].note, /DMG-/)
+    assert.equal(report.status, 'pending'); assert.equal(report.ticketID, '')
+    assert.equal((await payload.count({ collection: 'support-tickets', overrideAccess: true, where: { order: { equals: order.id } } })).totalDocs, 0, 'Internal recording creates no customer case')
+    assert.equal((await payload.count({ collection: 'order-events', overrideAccess: true, where: { order: { equals: order.id } } })).totalDocs, 0, 'Internal note does not leak into customer order events')
+    assert.deepEqual((await call(`/v1/items/${items[0].id}/problems`, c)).data.reports, [])
+    assert.equal((await call('/v1/dashboard', c)).data.tickets.length, 0)
+    assert.equal((await call(`/v1/orders/${order.id}`, c)).data.order.events.length, 0)
     assert.deepEqual(await payload.findByID({ collection: 'storage-items', id: items[0].id, depth: 0, overrideAccess: true }), before, 'Recording does not change stock, tariff, owner or status')
     assert.ok((await payload.count({ collection: 'audit-log', overrideAccess: true, where: { entityID: { equals: id } } })).totalDocs)
     for (const cookie of [a, w, m]) {
@@ -55,30 +56,60 @@ test('damage at intake: atomic record, client notification, evidence, ownership,
       assert.equal((await call(`/damage-reports/${id}`, cookie, { description: 'overwritten' }, undefined, 'PATCH')).status, 403)
       assert.equal((await call(`/damage-reports/${id}`, cookie, {}, undefined, 'DELETE')).status, 403)
       assert.equal((await call('/damage-reports', cookie, {})).status, 403)
+      assert.equal((await call(`/damage-reports/${id}`, cookie, { status: 'published', ticket: randomUUID() }, undefined, 'PATCH')).status, 403)
     }
     assert.equal((await call(`/v1/problems/${id}`, c)).status, 403)
     assert.equal((await call(`/v1/items/${items[0].id}/problems`, other)).status, 404)
+    const publishPath = `/v1/problems/${id}/publish`
+    for (const cookie of [w, c, other]) assert.equal((await call(publishPath, cookie, { confirmed: true })).status, 403)
+    assert.equal((await call(publishPath, m, { confirmed: false })).status, 400)
+    const published = await Promise.all([call(publishPath, m, { confirmed: true }), call(publishPath, a, { confirmed: true })])
+    assert.deepEqual(published.map(r => r.status), [200, 200])
+    const confirmed = published[0].data.report
+    assert.equal(confirmed.status, 'published'); assert.ok(confirmed.ticketID); assert.ok(confirmed.publishedAt); assert.ok(confirmed.publishedByName)
+    assert.equal(published[1].data.report.ticketID, confirmed.ticketID)
+    assert.equal((await call(publishPath, m, { confirmed: true })).data.report.publishedAt, confirmed.publishedAt, 'Retry preserves original actor and time')
+    assert.equal((await payload.count({ collection: 'support-tickets', overrideAccess: true, where: { order: { equals: order.id } } })).totalDocs, 1)
+    assert.equal((await payload.count({ collection: 'support-messages', overrideAccess: true, where: { ticket: { equals: confirmed.ticketID } } })).totalDocs, 1)
+    assert.equal((await payload.count({ collection: 'order-events', overrideAccess: true, where: { order: { equals: order.id } } })).totalDocs, 1)
+    const tracking = (await call(`/v1/orders/${order.id}`, c)).data.order
+    assert.equal(tracking.history.length, 0, 'Confirmation is an event, not a new order stage')
+    assert.equal(tracking.events[0].status, 'damage_found'); assert.match(tracking.events[0].note, /DMG-/)
+    assert.deepEqual(await payload.findByID({ collection: 'storage-items', id: items[0].id, depth: 0, overrideAccess: true }), before, 'Confirmation does not modify stock')
     const clientHistory = await call(`/v1/items/${items[0].id}/problems`, c)
     assert.equal(clientHistory.status, 200); assert.equal(clientHistory.data.reports[0].description, input.description)
     assert.equal(clientHistory.data.reports[0].createdByName, undefined, 'Staff details not exposed')
     const dashboard = (await call('/v1/dashboard', c)).data
-    const ticket = dashboard.tickets.find((t: any) => t.id === report.ticketID)
+    const ticket = dashboard.tickets.find((t: any) => t.id === confirmed.ticketID)
     assert.equal(ticket.relatedItemId, items[0].id); assert.equal(ticket.relatedOrderId, order.id)
     assert.match(ticket.messages[0].text, /повреждение/)
-    assert.ok([403, 404].includes((await call(`/support-tickets/${report.ticketID}`, other)).status))
+    assert.ok([403, 404].includes((await call(`/support-tickets/${confirmed.ticketID}`, other)).status))
     assert.equal((await call(`/v1/problems?search=${encodeURIComponent(order.number)}`, m)).data.total, 1)
     // An attachment may only come from this customer's intake process.
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQ1sAAAAASUVORK5CYII=', 'base64')
-    const upload = async (owner: string, purpose: string) => {
-      const form = new FormData(); form.set('_payload', JSON.stringify({ owner, purpose })); form.set('file', new Blob([png], { type: 'image/png' }), `damage-${randomUUID()}.png`)
+    const upload = async (owner: string, purpose: string, internalOnly = true) => {
+      const form = new FormData(); form.set('_payload', JSON.stringify({ owner, purpose, internalOnly })); form.set('file', new Blob([png], { type: 'image/png' }), `damage-${randomUUID()}.png`)
       const response = await fetch(`${base}/api/media`, { method: 'POST', headers: { Cookie: w, Origin: base }, body: form })
       assert.equal(response.status, 201); return (await response.json()).doc.id as string
     }
-    const alien = await upload(people[3].id, 'intake'), wrongPurpose = await upload(people[2].id, 'return'), correct = await upload(people[2].id, 'intake')
-    for (const evidence of [[alien], [wrongPurpose], [correct, correct]]) assert.equal((await call('/v1/problems', w, { ...input, itemID: items[1].id, evidence })).status, 400)
+    const alien = await upload(people[3].id, 'intake'), wrongPurpose = await upload(people[2].id, 'return'), correct = await upload(people[2].id, 'intake'), alreadyVisible = await upload(people[2].id, 'intake', false)
+    for (const evidence of [[alien], [wrongPurpose], [correct, correct], [alreadyVisible]]) assert.equal((await call('/v1/problems', w, { ...input, itemID: items[1].id, evidence })).status, 400)
     const withFile = await call('/v1/problems', w, { ...input, itemID: items[1].id, evidence: [correct] })
     assert.equal(withFile.status, 200); assert.equal(withFile.data.report.evidence[0].id, correct)
-    const media = await call(`/media/${correct}`, c); assert.equal(media.status, 200)
+    assert.ok([403, 404].includes((await call(`/media/${correct}`, c)).status), 'Even owner cannot read pending evidence')
+    const nativeList = await call(`/media?where[id][equals]=${correct}`, c); assert.equal(nativeList.data.docs.length, 0)
+    const material = await payload.findByID({ collection: 'media', id: correct, depth: 0, overrideAccess: true })
+    const fileResponse = await fetch(`${base}/api/media/file/${encodeURIComponent(material.filename!)}`, { headers: { Origin: base, Cookie: c, 'X-WHM-Client': '1' } })
+    assert.ok([403, 404].includes(fileResponse.status), 'Direct file URL cannot bypass private evidence')
+    assert.equal((await call(`/media/${correct}`, c, { internalOnly: false }, undefined, 'PATCH')).status, 403)
+    assert.deepEqual((await call(`/v1/items/${items[1].id}/problems`, c)).data.reports, [])
+    const filePublished = await call(`/v1/problems/${withFile.data.report.id}/publish`, m, { confirmed: true })
+    assert.equal(filePublished.status, 200)
+    assert.equal((await call(`/media/${correct}`, c)).status, 200)
+    assert.ok([403, 404].includes((await call(`/media/${correct}`, other)).status), 'Publishing retains owner isolation')
+    assert.equal((await call(`/v1/items/${items[1].id}/problems`, c)).data.reports.length, 1)
+    assert.equal((await call(`/v1/problems?state=pending&search=${encodeURIComponent(order.number)}`, m)).data.total, 0)
+    assert.equal((await call(`/v1/problems?state=published&search=${encodeURIComponent(order.number)}`, m)).data.total, 2)
     assert.equal((await payload.count({ collection: 'damage-reports', overrideAccess: true, where: { order: { equals: order.id } } })).totalDocs, 2)
   } finally { await payload.destroy() }
 })

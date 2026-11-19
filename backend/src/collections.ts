@@ -1,5 +1,5 @@
 import type { CollectionConfig, Field, SelectField } from 'payload'
-import { admin, staff, office, owned, officeOwned, self, never, hasRole, userOf, supportOwned, supportOffice, supportMessages } from './access'
+import { admin, staff, office, owned, officeOwned, self, never, hasRole, userOf, supportOwned, supportOffice, supportMessages, customerMedia } from './access'
 import { DomainError } from './domain'
 import { audit } from './audit'
 import { inventoryCollections } from './inventory-collections'
@@ -92,13 +92,14 @@ export const collections: CollectionConfig[] = [
   internal('audit-log', [{ name: 'actor', type: 'relationship', relationTo: 'users' }, { name: 'entity', type: 'text', required: true }, { name: 'entityID', type: 'text', required: true }, { name: 'action', type: 'text', required: true }, { name: 'changedFields', type: 'text' }], admin),
   internal('otp-challenges', [{ name: 'phoneKey', type: 'text', required: true, index: true }, { name: 'ipKey', type: 'text', required: true, index: true }, { name: 'hash', type: 'text', required: true }, { name: 'expiresAt', type: 'date', required: true }, { name: 'attempts', type: 'number', defaultValue: 0, required: true }, { name: 'consumed', type: 'checkbox', defaultValue: false }], never),
   {
-    slug: 'media', admin: { group: 'Склад', useAsTitle: 'filename' }, access: { create: ({ req }) => hasRole(req, ['client', 'warehouse', 'manager', 'admin']), read: ({ req }) => hasRole(req, ['warehouse']) ? { purpose: { not_equals: 'support' } } : hasRole(req, ['admin', 'manager']) ? { supportType: { not_equals: 'technical' } } : owned({ req }), update: never, delete: admin },
+    slug: 'media', admin: { group: 'Склад', useAsTitle: 'filename' }, access: { create: ({ req }) => hasRole(req, ['client', 'warehouse', 'manager', 'admin']), read: ({ req }) => hasRole(req, ['warehouse']) ? { purpose: { not_equals: 'support' } } : hasRole(req, ['admin', 'manager']) ? { supportType: { not_equals: 'technical' } } : customerMedia({ req }), update: never, delete: admin },
     upload: { mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'application/pdf'], disableLocalStorage: true, filesRequiredOnCreate: true },
-    fields: [owner, { name: 'supportType', type: 'select', options: ['incident', 'technical'], defaultValue: 'incident' }, { name: 'purpose', type: 'select', options: ['intake', 'return', 'signature', 'document', 'support'], required: true }],
+    fields: [owner, { name: 'internalOnly', label: 'Только для сотрудников', type: 'checkbox', defaultValue: false, access: { create: ({ req }) => hasRole(req, ['admin', 'manager', 'warehouse']), update: () => false } }, { name: 'supportType', type: 'select', options: ['incident', 'technical'], defaultValue: 'incident' }, { name: 'purpose', type: 'select', options: ['intake', 'return', 'signature', 'document', 'support'], required: true }],
     hooks: { beforeValidate: [({ req, data }) => {
       if (req.user?.role === 'client' && data) {
         if (data.purpose !== 'support') throw new DomainError(403, 'SUPPORT_FILES_ONLY', 'Клиент может загружать только вложения обращения.')
         data.owner = req.user.id
+        data.internalOnly = false
       }
       return data
     }] },

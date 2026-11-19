@@ -3,7 +3,15 @@
   import BackButton from '../components/BackButton.svelte';
   import { formatMoney } from '../demo.js';
 
-  let { live = false, item, initialTheme = 'bumblebee', onBack = () => {}, onReturn = () => {}, onSupport = () => {}, onOpenDocument = () => {} } = $props();
+  let { live = false, item, initialTheme = 'bumblebee', onBack = () => {}, onReturn = () => {}, onSupport = () => {}, onOpenDocument = () => {}, onLoadProblems = null } = $props();
+  let problems = $state([]), problemsError = $state(''), problemsLoading = $state(false);
+  $effect(() => {
+    const id = item?.id, load = onLoadProblems;
+    let active = true;
+    problems = []; problemsError = ''; problemsLoading = Boolean(live && id && load);
+    if (live && id && load) Promise.resolve().then(() => load(id)).then(result => { if (active) problems = result.reports; }).catch(() => { if (active) problemsError = 'Не удалось загрузить историю повреждений. Обновите страницу.'; }).finally(() => { if (active) problemsLoading = false; });
+    return () => { active = false; };
+  });
   let copied = $state(false);
   let dark = $derived(initialTheme === 'halloween');
   let archived = $derived(Boolean(item?.archived || item?.currentStatus === 'returned' || item?.status === 'returned'));
@@ -53,6 +61,18 @@
           {#if live && item.media?.length}<div class="media-list">{#each item.media as media}<a href={media.url} target="_blank" rel="noopener">{#if media.mimeType?.startsWith('video/')}<Video />{:else}<Camera />{/if}<strong>{media.filename}</strong><small>Открыть материал</small></a>{/each}</div>{:else}<div class="media-list"><div><Camera aria-hidden="true" /><strong>Фотографии</strong><small>Появятся после фотофиксации</small></div><div><Video aria-hidden="true" /><strong>Видео</strong><small>Появится, если запись была сделана</small></div></div>{/if}
         </section>
 
+        {#if live && (problemsLoading || problemsError || problems.length)}
+          <section class="card" aria-label="Повреждения при поступлении">
+            <div class="section-title"><h2>Повреждения при поступлении</h2></div>
+            {#if problemsLoading}<p role="status" class="muted">Загрузка истории…</p>{/if}
+            {#if problemsError}<p role="alert">{problemsError}</p>{/if}
+            {#each problems as problem (problem.number)}
+              <article class="problem-record"><strong>{problem.number}</strong><p class="muted">Зафиксировано {new Date(problem.createdAt).toLocaleString('ru-RU')}</p><p class="problem-description">{problem.description}</p><button class="text-link" type="button" onclick={() => onSupport({ unitId: item.id, ticketID: problem.ticketID })}>Открыть поддержку <ExternalLink size={16} aria-hidden="true" /></button></article>
+            {/each}
+            <p class="note">Операционная фиксация. Юридическая форма акта ещё не утверждена.</p>
+          </section>
+        {/if}
+
         <section class="card">
           <div class="section-title"><h2>Путь вещи</h2></div>
           <ol class="timeline">
@@ -85,6 +105,9 @@
 </div>
 
 <style>
+  .problem-record { padding:16px 0; overflow-wrap:anywhere; }
+  .problem-record + .problem-record { border-top:1px solid var(--line); }
+  .problem-description { white-space:pre-wrap; }
   .detail-page{--bg:#fff;--surface:#fff;--soft:#f8f8f6;--line:#e8e8e5;--ink:#22221f;--muted:#777873;--yellow:#f5c844;min-height:100dvh;background:var(--bg);color:var(--ink);font:16px/1.5 'Open Sans',sans-serif}
   .detail-page.dark{--bg:#24231f;--surface:#292824;--soft:#313029;--line:#47453d;--ink:#f3f0e8;--muted:#b2afa5;--yellow:#e6aa35}
   .header{height:76px;max-width:1112px;margin:auto;padding:0 24px;display:flex;align-items:center;gap:16px}.brand{display:flex;align-items:center;gap:8px;min-width:0}.header-link{flex:0 0 auto;margin-left:auto;border:0;background:transparent;color:var(--ink);font-weight:700}

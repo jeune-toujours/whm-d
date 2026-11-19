@@ -3,6 +3,7 @@ import { admin, staff, office, owned, officeOwned, self, never, hasRole, userOf,
 import { DomainError } from './domain'
 import { audit } from './audit'
 import { inventoryCollections } from './inventory-collections'
+import { problemCollections } from './problem-collections'
 
 const owner: Field = { name: 'owner', label: 'Клиент', type: 'relationship', relationTo: 'users', required: true, index: true }
 const name: Field = { name: 'name', label: 'Название', type: 'text', required: true }
@@ -21,6 +22,7 @@ const internal = (slug: string, fields: Field[], read = office): CollectionConfi
 
 export const collections: CollectionConfig[] = [
   ...inventoryCollections,
+  ...problemCollections,
   {
     slug: 'users', labels: { singular: 'Пользователь', plural: 'Пользователи' },
     auth: { useSessions: true, tokenExpiration: 60 * 60 * 24 * 7, maxLoginAttempts: 5, lockTime: 900_000, cookies: { sameSite: 'Lax', secure: process.env.APP_URL?.startsWith('https://') || false } },

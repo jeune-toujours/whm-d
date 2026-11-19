@@ -3,6 +3,7 @@ import * as migration_20261004_173013_operational_v1 from './20261004_173013_ope
 import * as migration_20261004_185503_20261004_archive_alignment from './20261004_185503_20261004_archive_alignment';
 import * as migration_20261004_191637_20261004_support_alignment from './20261004_191637_20261004_support_alignment';
 import * as migration_20261101_143058_manual_inventory from './20261101_143058_manual_inventory';
+import * as migration_20261119_135242_problem_orders from './20261119_135242_problem_orders';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20261101_143058_manual_inventory.up,
     down: migration_20261101_143058_manual_inventory.down,
-    name: '20261101_143058_manual_inventory'
+    name: '20261101_143058_manual_inventory',
+  },
+  {
+    up: migration_20261119_135242_problem_orders.up,
+    down: migration_20261119_135242_problem_orders.down,
+    name: '20261119_135242_problem_orders'
   },
 ];

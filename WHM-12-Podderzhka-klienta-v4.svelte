@@ -188,6 +188,9 @@
     theme = initialTheme;
     initialized = true;
 
+    const linkedTicket = initialContext?.ticketID && liveTickets?.find(ticket => ticket.id === initialContext.ticketID);
+    if (linkedTicket) { openTicket(linkedTicket); return; }
+
     if (initialType === 'incident' || initialType === 'technical') {
       ticketType = initialType;
       screen = 'form';

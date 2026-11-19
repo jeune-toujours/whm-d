@@ -318,6 +318,7 @@ export interface Warehouse {
 export interface DamageReport {
   id: string;
   number: string;
+  status: 'pending' | 'published';
   owner: string | User;
   order: string | Order;
   item: string | StorageItem;
@@ -328,7 +329,10 @@ export interface DamageReport {
   evidence?: (string | Media)[] | null;
   createdBy: string | User;
   createdByName: string;
-  ticket: string | SupportTicket;
+  ticket?: (string | null) | SupportTicket;
+  publishedAt?: string | null;
+  publishedBy?: (string | null) | User;
+  publishedByName?: string | null;
   idempotencyKey: string;
   requestHash: string;
   updatedAt: string;
@@ -401,6 +405,7 @@ export interface StorageItem {
 export interface Media {
   id: string;
   owner: string | User;
+  internalOnly?: boolean | null;
   supportType?: ('incident' | 'technical') | null;
   purpose: 'intake' | 'return' | 'signature' | 'document' | 'support';
   prefix?: string | null;
@@ -862,6 +867,7 @@ export interface InventorySessionCellsSelect<T extends boolean = true> {
  */
 export interface DamageReportsSelect<T extends boolean = true> {
   number?: T;
+  status?: T;
   owner?: T;
   order?: T;
   item?: T;
@@ -873,6 +879,9 @@ export interface DamageReportsSelect<T extends boolean = true> {
   createdBy?: T;
   createdByName?: T;
   ticket?: T;
+  publishedAt?: T;
+  publishedBy?: T;
+  publishedByName?: T;
   idempotencyKey?: T;
   requestHash?: T;
   updatedAt?: T;
@@ -1126,6 +1135,7 @@ export interface OtpChallengesSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   owner?: T;
+  internalOnly?: T;
   supportType?: T;
   purpose?: T;
   prefix?: T;

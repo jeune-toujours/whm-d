@@ -21,6 +21,10 @@ export const self: Access = ({ req }) => {
   return user && user.active !== false ? { id: { equals: user.id } } : false
 }
 export const officeOwned: Access = args => hasRole(args.req, ['warehouse']) ? false : owned(args)
+export const customerMedia: Access = async args => {
+  const access = await owned(args)
+  return typeof access === 'object' ? { and: [access, { internalOnly: { not_equals: true } }] } : access
+}
 export const supportOwned: Access = ({ req }) => {
   if (hasRole(req, ['admin', 'manager'])) return { type: { equals: 'incident' } }
   if (hasRole(req, ['warehouse'])) return false

@@ -45,6 +45,9 @@ test('damage at intake: atomic record, client notification, evidence, ownership,
     assert.equal((await payload.count({ collection: 'damage-reports', overrideAccess: true, where: { order: { equals: order.id } } })).totalDocs, 1)
     assert.equal((await payload.count({ collection: 'support-messages', overrideAccess: true, where: { ticket: { equals: report.ticketID } } })).totalDocs, 1, 'Retry sends one in-app notification')
     assert.equal((await payload.count({ collection: 'order-events', overrideAccess: true, where: { order: { equals: order.id } } })).totalDocs, 1)
+    const tracking = (await call(`/v1/orders/${order.id}`, c)).data.order
+    assert.equal(tracking.history.length, 0, 'Damage is an event, not a new order stage')
+    assert.equal(tracking.events[0].status, 'damage_found'); assert.match(tracking.events[0].note, /DMG-/)
     assert.deepEqual(await payload.findByID({ collection: 'storage-items', id: items[0].id, depth: 0, overrideAccess: true }), before, 'Recording does not change stock, tariff, owner or status')
     assert.ok((await payload.count({ collection: 'audit-log', overrideAccess: true, where: { entityID: { equals: id } } })).totalDocs)
     for (const cookie of [a, w, m]) {

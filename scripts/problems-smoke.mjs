@@ -5,8 +5,11 @@ export async function verifyProblemsFlow({ panel, page, backend, base, order, im
   await panel.goto(`${backend}/admin/warehouse/receive`);
   const intake = panel.locator('.whm-order').filter({ hasText:order.number });
   await intake.getByRole('link',{name:'Зафиксировать повреждение при поступлении'}).first().click();
+  const contextResponse = await panel.request.get(`${backend}/api/v1/problems/context?orderID=${order.id}`,{headers:{Origin:backend}});
+  assert.equal(contextResponse.status(),200); const evidenceEnabled = (await contextResponse.json()).evidenceEnabled;
   await panel.getByLabel('Опись повреждения').fill(description);
-  await panel.getByLabel('Фото, видео или документы').setInputFiles(image);
+  if (evidenceEnabled) await panel.getByLabel('Фото, видео или документы').setInputFiles(image);
+  else { await panel.getByText('Материалы временно недоступны. Можно сохранить описание повреждения без файлов.',{exact:true}).waitFor(); assert.equal(await panel.locator('input[type=file]').count(),0); }
   await panel.getByLabel('Повреждение обнаружено при поступлении').check();
   const saved = panel.waitForResponse(r=>new URL(r.url()).pathname==='/api/v1/problems' && r.request().method()==='POST');
   await panel.getByRole('button',{name:'Сохранить и уведомить клиента'}).click();
@@ -34,5 +37,5 @@ export async function verifyProblemsFlow({ panel, page, backend, base, order, im
   await page.getByRole('button',{name:'Открыть поддержку',exact:true}).click();
   await page.locator('.thread-message').filter({hasText:description}).waitFor();
   await page.goto(`${base}/#/order/${order.id}`);
-  console.log('Problem orders: intake shortcut, real attachment, immediate save, search, client history/notification, mobile widths; no approvals passed.');
+  console.log(`Problem orders: intake shortcut, ${evidenceEnabled ? 'real attachment' : 'text-only staging'}, immediate save, search, client history/notification, mobile widths; no approvals passed.`);
 }

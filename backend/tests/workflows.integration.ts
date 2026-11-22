@@ -18,8 +18,8 @@ async function request(path: string, cookie: string, data?: unknown, key?: strin
   const response = await fetch(`${base}/api${path}`, { method:data === undefined ? 'GET' : method, headers:{ Origin:base, Cookie:cookie, 'Content-Type':'application/json', ...(cookie.startsWith('whm-client-token=') ? { 'X-WHM-Client':'1' } : {}), ...(key ? { 'Idempotency-Key':key } : {}) }, body:data === undefined ? undefined : JSON.stringify(data), signal:AbortSignal.timeout(20000) })
   return { status:response.status, data:await response.json() }
 }
-async function upload(cookie: string, owner: string, purpose: string) {
-  const form = new FormData(); form.set('_payload', JSON.stringify({ owner, purpose })); form.set('file', new Blob([png], { type:'image/png' }), `integration-${suffix}-${purpose}.png`)
+async function upload(cookie: string, owner: string, purpose: string, document = false) {
+  const form = new FormData(); form.set('_payload', JSON.stringify({ owner, purpose })); form.set('file', new Blob([document ? Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF') : png], { type:document ? 'application/pdf' : 'image/png' }), `integration-${suffix}-${purpose}.${document ? 'pdf' : 'png'}`)
   const r = await fetch(`${base}/api/media`, { method:'POST', headers:{ Cookie:cookie, Origin:base, ...(cookie.startsWith('whm-client-token=') ? { 'X-WHM-Client':'1' } : {}) }, body:form })
   const data = await r.json(); assert.equal(r.status, 201, `Upload ${purpose}: ${data.errors?.[0]?.message || data.message || ''}`)
   return data.doc.id as string
@@ -65,11 +65,19 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.ok([403,404].includes((await request(`/media/${intakeMedia}`,o)).status),'S3 metadata remains private')
     const receive = { itemID, barcode:`ITEM-${suffix}`, contents:'Books\nClothes', evidence:[intakeMedia] }
     assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,receive)).status,400,'Box needs a seal')
-    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive, seal:'TEST-SEAL' })).status,200)
+    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive, seal:'TEST-SEAL' })).status,400,'Box needs a separate seal photo')
+    const sealPhoto = await upload(w,client.id,'intake'), foreignPhoto = await upload(w,other.id,'intake'), returnPhoto = await upload(w,client.id,'return'), document = await upload(w,client.id,'intake',true)
+    for (const photo of [foreignPhoto,returnPhoto,document]) assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive,seal:'TEST-SEAL',sealPhoto:photo })).status,400,'Seal photo must be an intake image belonging to this client')
+    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive,sealPhoto })).status,400,'Seal photo also requires its number')
+    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive, seal:'TEST-SEAL',sealPhoto })).status,200)
+    const receivedItem = (await request('/v1/dashboard',c)).data.units.find((item:any)=>item.id===itemID)
+    assert.equal(receivedItem.sealPhoto.id,sealPhoto); assert.ok(receivedItem.sealPhoto.url)
+    assert.ok([403,404].includes((await request(`/media/${sealPhoto}`,o)).status),'Seal photo metadata remains private to its owner')
     assert.equal((await request('/v1/warehouse/place',w,{ orderID:order.id,itemID,cellID:cell.id,barcode:receive.barcode,cellBarcode:cell.barcode })).status,409,'Whole intake must be received before placement')
-    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive,itemID:secondID,barcode:`ITEM2-${suffix}`,seal:'TEST-SEAL2' })).status,200)
+    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive,itemID:secondID,barcode:`ITEM2-${suffix}`,seal:'TEST-SEAL2',sealPhoto })).status,200)
     assert.equal((await request(`/v1/orders/${order.id}`,c)).data.order.backendStatus,'received','All received items advance intake to placement')
     assert.equal((await request(`/storage-items/${itemID}`,w,{ status:'returned' },undefined,'PATCH')).status,403,'Native CRUD cannot bypass workflow')
+    assert.equal((await request(`/storage-items/${itemID}`,w,{ sealPhoto:foreignPhoto },undefined,'PATCH')).status,403,'Native CRUD cannot replace the seal photo outside intake')
     const placement = { orderID:order.id,itemID,cellID:cell.id,barcode:receive.barcode,cellBarcode:cell.barcode }
     assert.equal((await request('/v1/warehouse/place',w,{ ...placement,barcode:'wrong' })).status,400)
     const competing = await Promise.all([request('/v1/warehouse/place',w,placement),request('/v1/warehouse/place',w,{ ...placement,itemID:secondID,barcode:`ITEM2-${suffix}` })])
@@ -178,7 +186,7 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal(partial.cancelAllowed,true)
     const partialPayment = (await request('/v1/payments',c,{orderID:partial.id})).data.payment
     await request(`/v1/payments/${partialPayment.id}/simulate`,c,{result:'paid'})
-    assert.equal((await request(`/v1/warehouse/orders/${partial.id}/receive`,w,{itemID:partial.items[0].id,barcode:`PARTIAL-${suffix}`,seal:'PARTIAL-SEAL',evidence:[intakeMedia]})).status,200)
+    assert.equal((await request(`/v1/warehouse/orders/${partial.id}/receive`,w,{itemID:partial.items[0].id,barcode:`PARTIAL-${suffix}`,seal:'PARTIAL-SEAL',sealPhoto,evidence:[intakeMedia]})).status,200)
     const partiallyReceived = (await request(`/v1/orders/${partial.id}`,c)).data.order
     assert.equal(partiallyReceived.backendStatus,'created','Partial reception retains intake stage until every item arrives')
     assert.equal(partiallyReceived.cancelAllowed,false,'Client receives server cancellation eligibility')

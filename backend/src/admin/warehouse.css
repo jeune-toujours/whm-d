@@ -13,6 +13,9 @@
 .whm-work input, .whm-work textarea, .whm-work select { background: var(--theme-elevation-0); color: var(--theme-text); border: 1px solid var(--theme-elevation-300); padding: 12px; border-radius: 4px; font: inherit; min-width: 0; }
 .whm-work textarea { min-height: 90px; }
 .whm-close-reason { white-space: pre-wrap; overflow-wrap: anywhere; }
+.whm-support-form { display: grid; max-width: 640px; min-width: 0; }
+.whm-support-form label { margin-bottom: 8px; }
+.whm-support-form button { justify-self: start; max-width: 100%; }
 .whm-work canvas { background: white; border: 1px solid var(--theme-elevation-400); width: 100%; touch-action: none; }
 .whm-work .whm-checkbox { display: flex; align-items: center; }
 .whm-error { background: var(--theme-error-100); padding: 16px; }

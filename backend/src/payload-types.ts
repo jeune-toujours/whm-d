@@ -388,6 +388,7 @@ export interface StorageItem {
   contents?: string | null;
   barcode?: string | null;
   seal?: string | null;
+  sealPhoto?: (string | null) | Media;
   status: 'expected' | 'received' | 'stored' | 'reserved' | 'picked' | 'returned';
   cell?: (string | null) | Cell;
   monthlyPrice: number;
@@ -932,6 +933,7 @@ export interface StorageItemsSelect<T extends boolean = true> {
   contents?: T;
   barcode?: T;
   seal?: T;
+  sealPhoto?: T;
   status?: T;
   cell?: T;
   monthlyPrice?: T;

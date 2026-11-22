@@ -7,7 +7,7 @@ export async function captureOrder(req: PayloadRequest, order: any) {
   const ids = (order.items || []).map(relationID)
   const items = await req.payload.find({ collection: 'storage-items', req, overrideAccess: true, depth: 0, limit: 50, where: { id: { in: ids } } })
   const previous = order.details as any
-  const details = { ...(previous || {}), units: items.docs.map(i => ({ id: i.id, internalID: i.internalID, title: i.title, type: i.type, description: i.description || '', contents: i.contents || '', monthlyPrice: i.monthlyPrice, startedAt: i.startedAt, returnedAt: i.returnedAt, seal: i.seal || '', barcode: i.barcode || '' })), capturedAt: new Date().toISOString() }
+  const details = { ...(previous || {}), units: items.docs.map(i => ({ id: i.id, internalID: i.internalID, title: i.title, type: i.type, description: i.description || '', contents: i.contents || '', monthlyPrice: i.monthlyPrice, startedAt: i.startedAt, returnedAt: i.returnedAt, seal: i.seal || '', sealPhotoID: relationID(i.sealPhoto), barcode: i.barcode || '' })), capturedAt: new Date().toISOString() }
   await req.payload.update({ collection: 'orders', req, id: order.id, overrideAccess: true, context: { workflow: true }, data: { details } })
 }
 export async function historyDTO(req: PayloadRequest, order: any) {

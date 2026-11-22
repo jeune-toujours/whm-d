@@ -11,7 +11,7 @@ const choice = (field: string, options: string[], defaultValue?: string): Select
 const immutableWorkflow: CollectionConfig['hooks'] = {
   beforeChange: [({ data, originalDoc, req, operation }) => {
     if (operation === 'update' && !req.context.workflow) {
-      for (const key of ['owner', 'status', 'type', 'fulfillment', 'address', 'slot', 'number', 'requestHash', 'idempotencyKey', 'cell', 'items', 'monthlyPrice', 'startedAt', 'returnedAt', 'picked', 'signature', 'evidence', 'payment', 'barcode', 'seal', 'contents', 'media', 'details', 'closedAt', 'historySearch', 'hasServices']) {
+      for (const key of ['owner', 'status', 'type', 'fulfillment', 'address', 'slot', 'number', 'requestHash', 'idempotencyKey', 'cell', 'items', 'monthlyPrice', 'startedAt', 'returnedAt', 'picked', 'signature', 'evidence', 'payment', 'barcode', 'seal', 'sealPhoto', 'contents', 'media', 'details', 'closedAt', 'historySearch', 'hasServices']) {
         if (data[key] !== undefined && JSON.stringify(data[key]) !== JSON.stringify(originalDoc[key])) throw new DomainError(403, 'WORKFLOW_REQUIRED', 'Изменение выполняется через складской процесс.')
       }
     }
@@ -52,7 +52,8 @@ export const collections: CollectionConfig[] = [
     access: { create: never, read: owned, update: staff, delete: never }, hooks: immutableWorkflow,
     fields: [owner, { name: 'internalID', type: 'text', unique: true, required: true }, { name: 'title', type: 'text', required: true },
       choice('type', ['box', 'item'], 'box'), { name: 'description', type: 'textarea' }, { name: 'contents', type: 'textarea' },
-      { name: 'barcode', type: 'text', unique: true, index: true }, { name: 'seal', type: 'text' },
+      { name: 'barcode', type: 'text', unique: true, index: true }, { name: 'seal', label: 'Номер пломбы', type: 'text' },
+      { name: 'sealPhoto', label: 'Фото пломбы', type: 'relationship', relationTo: 'media' },
       choice('status', ['expected', 'received', 'stored', 'reserved', 'picked', 'returned'], 'expected'),
       { name: 'cell', type: 'relationship', relationTo: 'cells' }, { name: 'monthlyPrice', type: 'number', min: 0, required: true, defaultValue: 0 },
       { name: 'startedAt', type: 'date' }, { name: 'returnedAt', type: 'date' }, { name: 'blockReason', type: 'text' }, { name: 'media', type: 'relationship', relationTo: 'media', hasMany: true },

@@ -76,10 +76,15 @@ try {
   const intake = panel.locator('.whm-order').filter({ hasText:order.number });
   await verifyCameraLifecycle(panel,intake);
   const barcode = `SCAN-${Date.now()}`; await scanBarcode(panel,intake,'Скан вещи',barcode);
-  await intake.getByLabel(/^Пломба/).fill(`SEAL-${Date.now()}`); await intake.getByLabel('Опись').fill('Тестовая опись\nПроверка браузером');
+  await intake.getByLabel(/^Номер пломбы/).fill(`SEAL-${Date.now()}`); await intake.getByLabel('Опись').fill('Тестовая опись\nПроверка браузером');
+  const sealInput = intake.getByLabel(/^Фото пломбы/);
+  assert.equal(await sealInput.getAttribute('capture'),'environment','Seal photo offers the phone camera');
+  assert.equal(await sealInput.evaluate(el=>el.required),true,'A box requires a separate seal photo');
+  await sealInput.setInputFiles({...image,name:'seal-verification.png'});
   await intake.getByLabel('Фото или видео',{ exact:true }).setInputFiles(image); await intake.getByRole('button',{ name:'Принять',exact:true }).click(); await intake.waitFor({ state:'detached' });
   await panel.goto(`${backend}/admin/warehouse/place`);
   const place = panel.locator('.whm-order').filter({ hasText:order.number }); await scanBarcode(panel,place,'Скан вещи',barcode);
+  await place.getByRole('link',{name:'Открыть фото пломбы',exact:true}).waitFor();
   const option = place.getByLabel('Ячейка',{ exact:true }).locator('option').filter({ hasText:'TEST-CELL-' }).first(), value = await option.getAttribute('value'), label = await option.textContent(), cellBarcode = label.match(/TEST-CELL-[A-Z]-\d+/)?.[0]; assert.ok(value && cellBarcode);
   await place.getByLabel('Ячейка',{ exact:true }).selectOption(value); await scanBarcode(panel,place,'Скан ячейки',cellBarcode); await place.getByRole('button',{ name:'Разместить',exact:true }).click(); await place.waitFor({ state:'detached' });
   await verifyInventoryFlow({panel,context:staff,backend,itemID:order.items[0].id});
@@ -87,6 +92,8 @@ try {
   for(const width of [320,390,768,1440]) {
     await page.setViewportSize({width,height:844});await page.goto(`${base}/#/item/${order.items[0].id}`);await page.locator('.copy').waitFor();
     assert.equal(await page.locator('.copy').innerText(),order.items[0].internalID,'Item card shows the public number');
+    const sealLink = page.getByRole('link',{name:'Открыть фото пломбы',exact:true}); await sealLink.waitFor();
+    if(width===320){const photo=await page.request.get(await sealLink.getAttribute('href'));assert.equal(photo.status(),200);assert.deepEqual(await photo.body(),image.buffer,'Owner downloads the exact seal photo from private S3');}
     assert.ok(await page.evaluate(()=>{const width=document.documentElement.clientWidth,button=document.querySelector('.navigation-back'),b=button.getBoundingClientRect(),s=button.querySelector('svg').getBoundingClientRect(),main=document.querySelector('.shell'),m=main.getBoundingClientRect();return document.documentElement.scrollWidth<=width&&b.width>=40&&Math.abs(b.y+b.height/2-s.y-s.height/2)<=1&&Math.abs(b.x-m.x-parseFloat(getComputedStyle(main).paddingLeft))<=1}),'Item card header and content grid fit each viewport');
   }
   await page.setViewportSize({width:320,height:740});

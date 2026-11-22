@@ -90,6 +90,7 @@
             <div><dt>Тип</dt><dd>{item?.type === 'box' ? 'Коробка' : 'Отдельный предмет'}</dd></div>
             <div><dt>Габариты</dt><dd>{item?.size || 'Уточняются'}</dd></div>
             <div><dt>Пломба</dt><dd>{item?.seal || 'Уточняется'}</dd></div>
+            {#if live && item?.sealPhoto?.url}<div><dt>Фото пломбы</dt><dd><a href={item.sealPhoto.url} target="_blank" rel="noopener noreferrer">Открыть фото пломбы</a></dd></div>{/if}
             <div><dt>На хранении с</dt><dd>{item?.storedSinceLabel || item?.storedSince || '—'}</dd></div>
           </dl>
           <div class="price"><span>Стоимость хранения</span><strong>{formatMoney(item?.monthlyPrice)}<small>/мес.</small></strong></div>

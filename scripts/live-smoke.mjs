@@ -129,10 +129,16 @@ try {
   await page.reload(); await page.getByText('Заказ завершён',{ exact:true }).first().waitFor(); await page.goto(`${base}/#/history`); await page.getByText(back.number,{ exact:true }).first().waitFor();
   const filteredHistory = page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname.endsWith('/v1/history')&&url.searchParams.get('type')==='return'&&response.status()===200;});
   await page.getByRole('tab',{name:'Возврат',exact:true}).click();await filteredHistory;
+  const delayedDetail = `${backend}/api/v1/history/${order.id}`;
+  await page.route(delayedDetail,async route=>{await new Promise(resolve=>setTimeout(resolve,450));await route.continue();});
   await page.locator('.order-card').filter({hasText:back.number}).click();
   await page.locator('.related-order').filter({hasText:order.number}).waitFor();
   assert.match(await page.locator('.related-order').filter({hasText:order.number}).innerText(),/1 единица/,'Related order summary works without an items array');
   await page.locator('.related-order').filter({hasText:order.number}).click();await page.getByRole('heading',{name:order.number,exact:true}).waitFor();
+  await page.goBack();await page.getByRole('heading',{name:back.number,exact:true}).waitFor();
+  await page.goForward();await page.getByRole('heading',{name:order.number,exact:true}).waitFor();
+  await page.unroute(delayedDetail);
+  console.log('History: filtered return → related intake, delayed detail response and browser Back/Forward passed.');
   await page.goto(`${base}/#/payments`); await page.getByText('Оплачено',{ exact:true }).first().waitFor();
   await page.setViewportSize({ width:390,height:844 });
   for (const route of ['home','intake','return','history','profile','subscription','payments']) { await page.goto(`${base}/#/${route}`); await page.locator('h1').first().waitFor(); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390), `Mobile width: ${route}`); }

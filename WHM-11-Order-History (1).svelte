@@ -520,7 +520,15 @@
       listScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
     }
     selectedOrderId = order.id;
-    if (live) { errorMessage='';try { detailCache[order.id]=await onLoadDetail(order.id); } catch { errorMessage='Не удалось загрузить заказ. Повторите попытку.';return; } onSelectOrder(order.id); }
+    if (live) {
+      // Keep the route and selection in sync before waiting for the network.
+      // Otherwise the route effect can reopen the previous order mid-request.
+      onSelectOrder(order.id);
+      errorMessage='';
+      try { detailCache[order.id]=await onLoadDetail(order.id); }
+      catch { if(selectedOrderId===order.id) errorMessage='Не удалось загрузить заказ. Повторите попытку.';return; }
+      if(selectedOrderId!==order.id) return;
+    }
     detailItemsExpanded = false;
     periodsExpanded = false;
     onTrack('history_order_opened', { orderId: order.id, type: order.type });

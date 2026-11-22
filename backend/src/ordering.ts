@@ -43,11 +43,14 @@ export async function quoteOrder(req: PayloadRequest, kind: 'intake' | 'return',
   if (!['pickup', 'courier'].includes(data.fulfillment)) throw invalid('Выберите способ передачи.')
   const warehouse = config.warehouses.find(w => w.id === data.warehouseID) || (!data.warehouseID ? config.warehouses[0] : null)
   if (!warehouse) throw invalid('Выберите доступный склад.')
-  const date = text(data.date, 10), slot = text(data.slot, 30), address = text(data.address, 500)
+  const date = text(data.date, 10), slot = text(data.slot, 30), address = text(data.address, 500).replace(/\s+/g, ' ').trim()
   const scheduled = kind === 'return' || data.fulfillment === 'courier'
   if (scheduled && (!config.dates.some(d => d.id === date) || !testSlots.includes(slot))) throw invalid('Выберите доступные дату и время.')
   const phone = data.fulfillment === 'courier' ? normalizePhone(data.phone) : ''
-  if (data.fulfillment === 'courier' && !testAddresses.some(a => a.inZone && a.value === address)) throw invalid('Для тестовой доставки выберите адрес из подсказок в зоне обслуживания.')
+  if (data.fulfillment === 'courier' && address.length < 8) throw invalid('Укажите улицу и номер дома целиком.')
+  // Checkout is simulation-only. The sample catalog is not an address registry:
+  // accept manual addresses without claiming a real delivery-zone check.
+  if (data.fulfillment === 'courier' && testAddresses.some(a => !a.inZone && a.value.toLocaleLowerCase('ru-RU') === address.toLocaleLowerCase('ru-RU'))) throw invalid('Адрес вне тестовой зоны доставки.')
   const logistics = { fulfillment: data.fulfillment, warehouse, address: data.fulfillment === 'courier' ? address : warehouse.address, date, slot, visitAt: scheduled ? new Date(`${date}T${slot.slice(0, 5)}:00+03:00`).toISOString() : null, phone, apartment: text(data.apartment, 30), intercom: text(data.intercom, 30), entrance: text(data.entrance, 30), floor: text(data.floor, 30), comment: text(data.comment, 500) }
   const current = await req.payload.find({ collection: 'storage-items', req, overrideAccess: false, depth: 0, limit: 1000, where: { status: { in: ['stored', 'reserved', 'picked'] } } })
   const currentMonthly = current.docs.reduce((n, i) => n + i.monthlyPrice, 0)

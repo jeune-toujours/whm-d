@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { installTestCamera, scanBarcode, verifyCameraLifecycle } from './camera-smoke.mjs';
 import { verifyInventoryFlow } from './inventory-smoke.mjs';
 import { verifyProblemsFlow } from './problems-smoke.mjs';
+import {verifyCourierAddressFields,manualCourierAddress} from './courier-smoke.mjs';
 const base = process.env.WHM_BASE_URL || 'http://localhost:4174', backend = process.env.WHM_API_BASE || base;
 let adminEmail = process.env.WHM_ADMIN_EMAIL, adminPassword = process.env.WHM_ADMIN_PASSWORD;
 if (process.env.WHM_ADMIN_SECRET_SSH === '1') {
@@ -44,8 +45,10 @@ try {
   await page.getByRole('button',{name:'Продолжить',exact:true}).click();
   await page.getByRole('button',{name:'Пропустить',exact:true}).click();
   await page.getByRole('button',{name:'Пропустить',exact:true}).click();
-  await page.getByRole('button',{name:/Я привезу сам/}).click();
-  await page.getByRole('button',{name:'Перейти к проверке',exact:true}).click();
+  await page.getByRole('button',{name:/Курьер заберёт/}).click();
+  await page.locator('.slot-grid button:not([disabled])').first().click();
+  await page.locator('.sticky-bar .primary-button').click();
+  await verifyCourierAddressFields(page);
   await capture('intake-review-desktop');
   await page.locator('.terms-card .custom-checkbox').click();
   await page.setViewportSize({width:320,height:740});
@@ -60,6 +63,7 @@ try {
   await page.waitForURL('**/#/order/*');
   const orderID = page.url().split('/order/')[1], response = await page.request.get(`${backend}/api/v1/orders/${orderID}`, { headers:{ Origin:base, 'X-WHM-Client':'1' } }); assert.equal(response.status(),200);
   const order = (await response.json()).order;
+  assert.equal(order.fulfillment,'courier');assert.equal(order.address,manualCourierAddress,'Courier order persists the manually entered address');
   const clientIdentity = (await (await page.request.get(`${backend}/api/me`, { headers:{Origin:base} })).json()).user.id;
   console.log('Client: OTP, onboarding, catalog, persistent intake, failed payment and successful retry passed.');
   // One browser profile: the regression was the employee and client replacing
@@ -72,10 +76,15 @@ try {
   const intake = panel.locator('.whm-order').filter({ hasText:order.number });
   await verifyCameraLifecycle(panel,intake);
   const barcode = `SCAN-${Date.now()}`; await scanBarcode(panel,intake,'Скан вещи',barcode);
-  await intake.getByLabel(/^Пломба/).fill(`SEAL-${Date.now()}`); await intake.getByLabel('Опись').fill('Тестовая опись\nПроверка браузером');
+  await intake.getByLabel(/^Номер пломбы/).fill(`SEAL-${Date.now()}`); await intake.getByLabel('Опись').fill('Тестовая опись\nПроверка браузером');
+  const sealInput = intake.getByLabel(/^Фото пломбы/);
+  assert.equal(await sealInput.getAttribute('capture'),'environment','Seal photo offers the phone camera');
+  assert.equal(await sealInput.evaluate(el=>el.required),true,'A box requires a separate seal photo');
+  await sealInput.setInputFiles({...image,name:'seal-verification.png'});
   await intake.getByLabel('Фото или видео',{ exact:true }).setInputFiles(image); await intake.getByRole('button',{ name:'Принять',exact:true }).click(); await intake.waitFor({ state:'detached' });
   await panel.goto(`${backend}/admin/warehouse/place`);
   const place = panel.locator('.whm-order').filter({ hasText:order.number }); await scanBarcode(panel,place,'Скан вещи',barcode);
+  await place.getByRole('link',{name:'Открыть фото пломбы',exact:true}).waitFor();
   const option = place.getByLabel('Ячейка',{ exact:true }).locator('option').filter({ hasText:'TEST-CELL-' }).first(), value = await option.getAttribute('value'), label = await option.textContent(), cellBarcode = label.match(/TEST-CELL-[A-Z]-\d+/)?.[0]; assert.ok(value && cellBarcode);
   await place.getByLabel('Ячейка',{ exact:true }).selectOption(value); await scanBarcode(panel,place,'Скан ячейки',cellBarcode); await place.getByRole('button',{ name:'Разместить',exact:true }).click(); await place.waitFor({ state:'detached' });
   await verifyInventoryFlow({panel,context:staff,backend,itemID:order.items[0].id});
@@ -83,6 +92,17 @@ try {
   for(const width of [320,390,768,1440]) {
     await page.setViewportSize({width,height:844});await page.goto(`${base}/#/item/${order.items[0].id}`);await page.locator('.copy').waitFor();
     assert.equal(await page.locator('.copy').innerText(),order.items[0].internalID,'Item card shows the public number');
+    const sealLink = page.getByRole('link',{name:'Открыть фото пломбы',exact:true}); await sealLink.waitFor();
+    if(width===320){
+      const ownerOnly=await browser.newContext(),anonymous=await browser.newContext();
+      await ownerOnly.addCookies((await sharedContext.cookies()).filter(cookie=>cookie.name==='whm-client-token'));
+      const href=await sealLink.getAttribute('href'); let photo;
+      assert.equal(new URL(href).searchParams.get('whm-client'),'1','A client file link selects the client cookie');
+      try{photo=await ownerOnly.request.get(href,{headers:{Origin:base}});}catch{throw new Error('Protected seal photo download failed; URL omitted');}
+      assert.equal(photo.status(),200);assert.deepEqual(await photo.body(),image.buffer,'Owner downloads the exact seal photo without any staff session');
+      assert.ok([403,404].includes((await anonymous.request.get(href,{headers:{Origin:base}})).status()),'Anonymous users cannot download the seal photo');
+      await ownerOnly.close();await anonymous.close();
+    }
     assert.ok(await page.evaluate(()=>{const width=document.documentElement.clientWidth,button=document.querySelector('.navigation-back'),b=button.getBoundingClientRect(),s=button.querySelector('svg').getBoundingClientRect(),main=document.querySelector('.shell'),m=main.getBoundingClientRect();return document.documentElement.scrollWidth<=width&&b.width>=40&&Math.abs(b.y+b.height/2-s.y-s.height/2)<=1&&Math.abs(b.x-m.x-parseFloat(getComputedStyle(main).paddingLeft))<=1}),'Item card header and content grid fit each viewport');
   }
   await page.setViewportSize({width:320,height:740});

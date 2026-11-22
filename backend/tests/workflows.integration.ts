@@ -8,6 +8,14 @@ import config from '../src/payload.config'
 const base = process.env.APP_URL || 'http://localhost:3000'
 const suffix = randomUUID()
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQ1sAAAAASUVORK5CYII=', 'base64')
+const pdf = (() => {
+  const objects = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>', '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Resources << >> >>']
+  let content = '%PDF-1.4\n'; const offsets = [0]
+  objects.forEach((object,index) => { offsets.push(Buffer.byteLength(content)); content += `${index+1} 0 obj\n${object}\nendobj\n` })
+  const xref = Buffer.byteLength(content)
+  content += `xref\n0 4\n0000000000 65535 f \n${offsets.slice(1).map(offset=>`${String(offset).padStart(10,'0')} 00000 n \n`).join('')}trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`
+  return Buffer.from(content)
+})()
 async function session(payload: Payload, user: any) {
   const req = await createLocalReq({ user: { ...user, collection: 'users' } }, payload), cfg = payload.collections.users.config
   const { sid } = await addSessionToUser({ collectionConfig: cfg, payload, req, user: { ...user, collection: 'users' } })
@@ -18,8 +26,8 @@ async function request(path: string, cookie: string, data?: unknown, key?: strin
   const response = await fetch(`${base}/api${path}`, { method:data === undefined ? 'GET' : method, headers:{ Origin:base, Cookie:cookie, 'Content-Type':'application/json', ...(cookie.startsWith('whm-client-token=') ? { 'X-WHM-Client':'1' } : {}), ...(key ? { 'Idempotency-Key':key } : {}) }, body:data === undefined ? undefined : JSON.stringify(data), signal:AbortSignal.timeout(20000) })
   return { status:response.status, data:await response.json() }
 }
-async function upload(cookie: string, owner: string, purpose: string) {
-  const form = new FormData(); form.set('_payload', JSON.stringify({ owner, purpose })); form.set('file', new Blob([png], { type:'image/png' }), `integration-${suffix}-${purpose}.png`)
+async function upload(cookie: string, owner: string, purpose: string, document = false) {
+  const form = new FormData(); form.set('_payload', JSON.stringify({ owner, purpose })); form.set('file', new Blob([document ? pdf : png], { type:document ? 'application/pdf' : 'image/png' }), `integration-${suffix}-${purpose}.${document ? 'pdf' : 'png'}`)
   const r = await fetch(`${base}/api/media`, { method:'POST', headers:{ Cookie:cookie, Origin:base, ...(cookie.startsWith('whm-client-token=') ? { 'X-WHM-Client':'1' } : {}) }, body:form })
   const data = await r.json(); assert.equal(r.status, 201, `Upload ${purpose}: ${data.errors?.[0]?.message || data.message || ''}`)
   return data.doc.id as string
@@ -39,6 +47,10 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     const configuration = (await request('/v1/checkout-config',c)).data.config;
     const schedule = { date:configuration.dates[0].id,slot:configuration.slots[0],consent:true };
     const orderData = { service:'self',consent:true,items:[{ tariffID:tariff.id, quantity:2, description:'Test inventory', price:1 }], fulfillment:'pickup', amount:1 }
+    const manualCourier={...orderData,...schedule,fulfillment:'courier',address:'  Садовническая  набережная 1  ',phone:'8 (999) 000-00-01'}
+    const manualQuote=await request('/v1/intake/quote',c,manualCourier)
+    assert.equal(manualQuote.status,200);assert.equal(manualQuote.data.quote.logistics.address,'Садовническая набережная 1');assert.equal(manualQuote.data.quote.logistics.phone,'+79990000001')
+    for(const address of ['', 'Дом 1', 'химки,  ленинградское шоссе, 5']) assert.equal((await request('/v1/intake/quote',c,{...manualCourier,address})).status,400)
     const requests = await Promise.all([request('/v1/intake',c,orderData,suffix), request('/v1/intake',c,orderData,suffix)])
     assert.deepEqual(requests.map(r => r.status), [200,200]); assert.equal(requests[0].data.order.id, requests[1].data.order.id)
     const order = requests[0].data.order, itemID = order.items[0].id, secondID = order.items[1].id
@@ -61,11 +73,19 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.ok([403,404].includes((await request(`/media/${intakeMedia}`,o)).status),'S3 metadata remains private')
     const receive = { itemID, barcode:`ITEM-${suffix}`, contents:'Books\nClothes', evidence:[intakeMedia] }
     assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,receive)).status,400,'Box needs a seal')
-    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive, seal:'TEST-SEAL' })).status,200)
+    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive, seal:'TEST-SEAL' })).status,400,'Box needs a separate seal photo')
+    const sealPhoto = await upload(w,client.id,'intake'), foreignPhoto = await upload(w,other.id,'intake'), returnPhoto = await upload(w,client.id,'return'), document = await upload(w,client.id,'intake',true)
+    for (const photo of [foreignPhoto,returnPhoto,document]) assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive,seal:'TEST-SEAL',sealPhoto:photo })).status,400,'Seal photo must be an intake image belonging to this client')
+    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive,sealPhoto })).status,400,'Seal photo also requires its number')
+    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive, seal:'TEST-SEAL',sealPhoto })).status,200)
+    const receivedItem = (await request('/v1/dashboard',c)).data.units.find((item:any)=>item.id===itemID)
+    assert.equal(receivedItem.sealPhoto.id,sealPhoto); assert.ok(receivedItem.sealPhoto.url)
+    assert.ok([403,404].includes((await request(`/media/${sealPhoto}`,o)).status),'Seal photo metadata remains private to its owner')
     assert.equal((await request('/v1/warehouse/place',w,{ orderID:order.id,itemID,cellID:cell.id,barcode:receive.barcode,cellBarcode:cell.barcode })).status,409,'Whole intake must be received before placement')
-    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive,itemID:secondID,barcode:`ITEM2-${suffix}`,seal:'TEST-SEAL2' })).status,200)
+    assert.equal((await request(`/v1/warehouse/orders/${order.id}/receive`,w,{ ...receive,itemID:secondID,barcode:`ITEM2-${suffix}`,seal:'TEST-SEAL2',sealPhoto })).status,200)
     assert.equal((await request(`/v1/orders/${order.id}`,c)).data.order.backendStatus,'received','All received items advance intake to placement')
     assert.equal((await request(`/storage-items/${itemID}`,w,{ status:'returned' },undefined,'PATCH')).status,403,'Native CRUD cannot bypass workflow')
+    assert.equal((await request(`/storage-items/${itemID}`,w,{ sealPhoto:foreignPhoto },undefined,'PATCH')).status,403,'Native CRUD cannot replace the seal photo outside intake')
     const placement = { orderID:order.id,itemID,cellID:cell.id,barcode:receive.barcode,cellBarcode:cell.barcode }
     assert.equal((await request('/v1/warehouse/place',w,{ ...placement,barcode:'wrong' })).status,400)
     const competing = await Promise.all([request('/v1/warehouse/place',w,placement),request('/v1/warehouse/place',w,{ ...placement,itemID:secondID,barcode:`ITEM2-${suffix}` })])
@@ -83,7 +103,7 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal((await request(`/v1/history/${order.id}`,o)).status,404);
     await payload.update({collection:'storage-items',id:firstPlaced,overrideAccess:true,data:{title:'Renamed after completion'}});
     assert.equal((await request(`/v1/history/${order.id}`,c)).data.order.items.find((i:any)=>i.id === firstPlaced).title,'Test box','History uses operation snapshot');
-    const courierInput={...schedule,itemIDs:[firstPlaced],fulfillment:'courier',address:configuration.addresses[0].value,phone:'+79990000001'};
+    const courierInput={...schedule,itemIDs:[firstPlaced],fulfillment:'courier',address:'Садовническая набережная 1',phone:'+79990000001'};
     const quote=(await request('/v1/returns/quote',c,courierInput)).data.quote;
     const proposal=await request('/v1/checkouts',c,{kind:'return',input:courierInput,quoteHash:quote.hash},`${suffix}-proposal`);
     assert.equal(proposal.status,200);assert.equal(proposal.data.payment.amount,1490);
@@ -122,6 +142,15 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal((await request(`/v1/support/${tid}/reply`,w,{ text:'forbidden' },`${suffix}-forbidden`)).status,403)
     assert.equal((await request(`/v1/support/${tid}/reply`,a,{ text:'Сотрудник отвечает клиенту' },`${suffix}-reply`)).status,200)
     const dashboard = await request('/v1/dashboard',c); assert.equal(dashboard.status,200); assert.equal(dashboard.data.tickets.find((t:any) => t.id === tid).messages.length,2)
+    for (const closeReason of [undefined, '', '   ']) assert.equal((await request(`/support-tickets/${tid}`,a,{ status:'resolved',closeReason },undefined,'PATCH')).status,400,'Closure requires a nonblank reason')
+    assert.equal((await request(`/support-tickets/${tid}`,c,{ status:'resolved',closeReason:'Client cannot close' },undefined,'PATCH')).status,403)
+    assert.equal((await request(`/support-tickets/${tid}`,w,{ status:'resolved',closeReason:'Warehouse cannot close' },undefined,'PATCH')).status,403)
+    const closeReason = 'Вопрос решён, результат согласован с клиентом.'
+    assert.equal((await request(`/support-tickets/${tid}`,a,{ status:'resolved',closeReason },undefined,'PATCH')).status,200)
+    assert.equal((await request('/v1/warehouse',a)).data.tickets.find((t:any)=>t.id===tid).closeReason,closeReason,'Staff sees the saved reason')
+    const closedTicket = (await request('/v1/dashboard',c)).data.tickets.find((t:any)=>t.id===tid)
+    assert.equal(closedTicket.status,'resolved'); assert.equal(closedTicket.closeReason,closeReason,'Client sees the saved closure result')
+    assert.equal((await request(`/v1/support/${tid}/reply`,a,{ text:'Reply to closed case' },`${suffix}-closed-reply`)).status,409)
     const courierInput2 = {...schedule,itemIDs:[lastID],fulfillment:'courier',address:configuration.addresses[0].value,phone:'+79990000001'}
     const courierQuote2 = (await request('/v1/returns/quote',c,courierInput2)).data.quote
     const checkout2 = await request('/v1/checkouts',c,{kind:'return',input:courierInput2,quoteHash:courierQuote2.hash},`${suffix}-courier-success`)
@@ -165,7 +194,7 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal(partial.cancelAllowed,true)
     const partialPayment = (await request('/v1/payments',c,{orderID:partial.id})).data.payment
     await request(`/v1/payments/${partialPayment.id}/simulate`,c,{result:'paid'})
-    assert.equal((await request(`/v1/warehouse/orders/${partial.id}/receive`,w,{itemID:partial.items[0].id,barcode:`PARTIAL-${suffix}`,seal:'PARTIAL-SEAL',evidence:[intakeMedia]})).status,200)
+    assert.equal((await request(`/v1/warehouse/orders/${partial.id}/receive`,w,{itemID:partial.items[0].id,barcode:`PARTIAL-${suffix}`,seal:'PARTIAL-SEAL',sealPhoto,evidence:[intakeMedia]})).status,200)
     const partiallyReceived = (await request(`/v1/orders/${partial.id}`,c)).data.order
     assert.equal(partiallyReceived.backendStatus,'created','Partial reception retains intake stage until every item arrives')
     assert.equal(partiallyReceived.cancelAllowed,false,'Client receives server cancellation eligibility')

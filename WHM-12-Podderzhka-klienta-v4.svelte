@@ -1,5 +1,6 @@
 <script>
   import { Check, ChevronLeft, Monitor, Moon, Sun, TriangleAlert, Warehouse, X } from '@lucide/svelte';
+  import { clientMediaURL } from './src/api.js';
   /*
    * WHM-12 — Поддержка клиента
    *
@@ -655,7 +656,7 @@
       <button class="link-button standalone" type="button" onclick={() => (screen = 'select')}>Новое обращение</button>
 
     {:else if screen === 'detail' && selectedTicket}
-      {#if live && selectedTicket.attachments?.length}<div class="inline-note">Вложения: {#each selectedTicket.attachments as file}<a href={file.url} target="_blank" rel="noopener">{file.filename}</a> {/each}</div>{/if}
+      {#if live && selectedTicket.attachments?.length}<div class="inline-note">Вложения: {#each selectedTicket.attachments as file}<a href={clientMediaURL(file.url)} target="_blank" rel="noopener">{file.filename}</a> {/each}</div>{/if}
       <div class="page-heading">
         <h1>{selectedTicket.shortDescription}</h1>
         <p>Обращение #{selectedTicket.id} · {selectedTicket.type === 'technical' && selectedTicket.status === 'submitted' ? 'Отправлено' : ticketStatusLabel[selectedTicket.status] ?? selectedTicket.status}</p>

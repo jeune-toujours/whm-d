@@ -5,6 +5,7 @@ dist
 backend
 .env
 .env.*
+s3.env
 *.log
 .codex
 .agents

@@ -75,9 +75,20 @@ function Handover({ order, busy, perform }: { order: any; busy: boolean; perform
 }
 function Ticket({ ticket, busy, perform }: { ticket: any; busy: boolean; perform: Perform }) {
   const [message, setMessage] = useState('')
+  const [closeReason, setCloseReason] = useState('')
   const [reply] = useState(() => createSupportReply(ticket.id))
+  const closed = ['resolved', 'rejected'].includes(ticket.status)
   return <section className="whm-order"><h2>{ticket.subject}</h2><p>{ticket.type} · {ticket.status}</p>{ticket.messages.map((m: any, i: number) => <p key={i}><strong>{m.author === 'client' ? 'Клиент' : 'Сотрудник'}</strong> · {m.date}<br />{m.text}</p>)}
     {ticket.attachments?.map((file: any, i: number) => <p key={i}><a href={file.url} target="_blank" rel="noopener noreferrer">{file.filename}</a></p>)}
-    {ticket.status !== 'resolved' && <form onSubmit={e => { e.preventDefault(); void perform(async () => { await reply(message); setMessage('') }) }}><label>Ответ клиенту<textarea required disabled={busy} value={message} onChange={e => setMessage(e.target.value)} /></label><button disabled={busy} type="submit">Ответить</button><button disabled={busy} type="button" onClick={() => void perform(() => api(`/support-tickets/${ticket.id}`, { status: 'resolved' }, 'PATCH'))}>Закрыть обращение</button></form>}
+    {closed ? <p className="whm-close-reason"><strong>Причина закрытия:</strong> {ticket.closeReason || 'Не указана'}</p> : <>
+      <form onSubmit={e => { e.preventDefault(); void perform(async () => { await reply(message); setMessage('') }) }}>
+        <label>Ответ клиенту<textarea required disabled={busy} value={message} onChange={e => setMessage(e.target.value)} /></label>
+        <button disabled={busy || !message.trim()} type="submit">Ответить</button>
+      </form>
+      <form onSubmit={e => { e.preventDefault(); if (!closeReason.trim()) return; void perform(() => api(`/support-tickets/${ticket.id}`, { status: 'resolved', closeReason: closeReason.trim() }, 'PATCH')) }}>
+        <label>Причина закрытия обращения<textarea required disabled={busy} value={closeReason} onChange={e => setCloseReason(e.target.value)} placeholder="Опишите, почему обращение закрыто" /></label>
+        <button disabled={busy || !closeReason.trim()} type="submit">Закрыть обращение</button>
+      </form>
+    </>}
   </section>
 }

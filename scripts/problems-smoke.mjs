@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { expect } from '@playwright/test';
 
 export async function verifyProblemsFlow({ panel, page, backend, base, order, image }) {
   const item = order.items[0], description = `Повреждение коробки при поступлении · ${Date.now()}`;
@@ -52,6 +53,38 @@ export async function verifyProblemsFlow({ panel, page, backend, base, order, im
   assert.ok(ticket && ticket.messages.some(m=>m.text.includes(description)),'Client receives in-app notification');
   await page.getByRole('button',{name:'Открыть поддержку',exact:true}).click();
   await page.locator('.thread-message').filter({hasText:description}).waitFor();
+  await panel.goto(`${backend}/admin/warehouse/support`);
+  const support = panel.locator('.whm-order').filter({has:panel.getByRole('heading',{name:ticket.shortDescription,exact:true})});
+  const reason = support.getByLabel('Причина закрытия обращения',{exact:true});
+  const close = support.getByRole('button',{name:'Закрыть обращение',exact:true});
+  await expect(reason).toBeVisible(); await expect(close).toBeDisabled();
+  await reason.fill('   '); await expect(close).toBeDisabled();
+  const resolution = `Тестовый кейс разобран, клиент получил ответ · ${Date.now()}`;
+  await reason.fill(resolution);
+  // Reply and close are independent forms: a reason does not block a reply,
+  // and an empty reply must not block closing with a reason.
+  await reason.fill('');
+  const replyText = `Ответ по кейсу · ${Date.now()}`;
+  await support.getByLabel('Ответ клиенту',{exact:true}).fill(replyText);
+  await support.getByRole('button',{name:'Ответить',exact:true}).click();
+  await expect(support.getByText(replyText,{exact:false})).toBeVisible();
+  await expect(support.getByLabel('Ответ клиенту',{exact:true})).toHaveValue('');
+  await reason.fill(resolution);
+  for (const width of [320,390,1440]) {
+    await panel.setViewportSize({width,height:900});
+    await expect(reason).toBeVisible();
+    assert.ok(await panel.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`Support closure form fits ${width}px`);
+  }
+  const closing = panel.waitForResponse(r=>new URL(r.url()).pathname===`/api/support-tickets/${ticket.id}`&&r.request().method()==='PATCH');
+  await close.click(); assert.equal((await closing).status(),200);
+  await expect(support.locator('.whm-close-reason')).toContainText(resolution);
+  await expect(close).toHaveCount(0);
+  await panel.reload();
+  await expect(support.locator('.whm-close-reason')).toContainText(resolution);
+  const afterClose = await page.request.get(`${backend}/api/v1/dashboard`,{headers:clientHeaders});
+  const closedTicket = (await afterClose.json()).tickets.find(t=>t.id===ticket.id);
+  assert.equal(closedTicket.status,'resolved'); assert.equal(closedTicket.closeReason,resolution);
+  console.log('Support: separate reason field, empty/whitespace validation, independent reply, saved closure, client result and 320/390/1440px passed.');
   await page.goto(`${base}/#/order/${order.id}`);
   console.log(`Problem orders: internal capture, ${evidenceEnabled ? 'private attachment' : 'text-only staging'}, hidden client history/support until confirmation, single case publication, search and mobile widths passed.`);
 }

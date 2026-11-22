@@ -1,6 +1,7 @@
 <script>
   import { ArrowRight, Check, ChevronLeft, Lock, Moon, Search, Sun, TriangleAlert, Truck, Warehouse, X } from '@lucide/svelte';
   import { tick } from 'svelte';
+  import { nationalPhone, formatNationalPhone, courierAddress } from './src/courier-fields.js';
 
   /*
    * WHM-9 — Оформление возврата вещей
@@ -158,7 +159,7 @@
   let intercom = $state('');
   let entrance = $state(live ? '' : '2');
   let floor = $state(live ? '' : '5');
-  let rawPhone = $state(live ? savedPhone.replace(/\D/g,'').replace(/^7/,'').slice(0,10) : '9991234567');
+  let rawPhone = $state(live ? nationalPhone(savedPhone) : '9991234567');
   let courierComment = $state('');
   let acceptedReturnTerms = $state(false);
   let formError = $state('');
@@ -209,10 +210,11 @@
   let deliveryPrice = $derived(calculatedPrice?.deliveryPrice ?? baseDeliveryPrice);
   let selectedDateLabel = $derived(availableDates.find((date) => date.id === selectedDate));
   let phoneValid = $derived(rawPhone.length === 10);
-  let formattedPhone = $derived(formatPhone(rawPhone));
+  let formattedPhone = $derived(formatNationalPhone(rawPhone));
+  let addressState = $derived(courierAddress(address, live ? config.addresses : []));
   let scheduleValid = $derived(
     Boolean(selectedDate && selectedSlot) && (!live || (availableDates.some(d=>d.id===selectedDate) && timeSlots.includes(selectedSlot))) &&
-      (method === 'pickup' || (address.trim().length >= 8 && phoneValid && (!live || config.addresses.some(a=>a.inZone && a.value===address))))
+      (method === 'pickup' || (addressState.valid && phoneValid))
   );
   let currentStep = $derived(Math.max(0, steps.findIndex((step) => step.id === screen)));
   let draftExists = $derived(
@@ -220,7 +222,7 @@
   );
   let missingSelection = $derived(selectAttempted && selectedIds.length === 0);
   let missingMethod = $derived(methodAttempted && !method);
-  let missingAddress = $derived(scheduleAttempted && method === 'courier' && address.trim().length < 8);
+  let missingAddress = $derived(scheduleAttempted && method === 'courier' && !addressState.valid);
   let missingPhone = $derived(scheduleAttempted && method === 'courier' && !phoneValid);
   let missingDate = $derived(scheduleAttempted && !selectedDate);
   let missingSlot = $derived(scheduleAttempted && !selectedSlot);
@@ -236,7 +238,7 @@
     const raw = sessionStorage.getItem(draftKey);
     if (raw && !draftRestored) {
       draftRestored = true;
-      try { const d = JSON.parse(raw); operationKey = d.operationKey || operationKey; selectedIds = initialSelectedIds.length ? [...initialSelectedIds] : (d.selectedIds || []); method = d.method || ''; selectedDate = d.selectedDate || ''; selectedSlot = d.selectedSlot || ''; address = d.address || ''; apartment = d.apartment || ''; intercom = d.intercom || ''; entrance = d.entrance || ''; floor = d.floor || ''; rawPhone = d.rawPhone || rawPhone; courierComment = d.courierComment || ''; } catch {}
+      try { const d = JSON.parse(raw); operationKey = d.operationKey || operationKey; selectedIds = initialSelectedIds.length ? [...initialSelectedIds] : (d.selectedIds || []); method = d.method || ''; selectedDate = d.selectedDate || ''; selectedSlot = d.selectedSlot || ''; address = d.address || ''; apartment = d.apartment || ''; intercom = d.intercom || ''; entrance = d.entrance || ''; floor = d.floor || ''; rawPhone = nationalPhone(d.rawPhone || rawPhone); courierComment = d.courierComment || ''; } catch {}
     }
   });
   let draftRestored = $state(false);
@@ -250,19 +252,9 @@
     return new Intl.NumberFormat('ru-RU').format(value) + ' ₽';
   }
 
-  function formatPhone(value) {
-    const digits = value.replace(/\D/g, '').slice(0, 10);
-    const parts = [
-      digits.slice(0, 3),
-      digits.slice(3, 6),
-      digits.slice(6, 8),
-      digits.slice(8, 10)
-    ].filter(Boolean);
-    return parts.join(' ');
-  }
-
   function handlePhoneInput(event) {
-    rawPhone = event.currentTarget.value.replace(/\D/g, '').slice(0, 10);
+    rawPhone = nationalPhone(event.currentTarget.value);
+    event.currentTarget.value = formatNationalPhone(rawPhone);
     formError = '';
   }
 
@@ -363,7 +355,7 @@
         tripCount,
         address: method === 'courier'
           ? {
-              address,
+              address: addressState.address,
               apartment,
               intercom,
               entrance,
@@ -784,12 +776,14 @@
                         list={live ? "return-addresses" : undefined}
                         autocomplete="street-address"
                         placeholder="Начните вводить адрес"
+                        maxlength="500"
                         bind:value={address}
                         oninput={() => (formError = '')}
                       />
                       {#if live}<datalist id="return-addresses">{#each config.addresses as a}<option value={a.value}>{a.inZone ? "Тестовая зона доставки" : "Вне зоны"}</option>{/each}</datalist>{/if}
                       {#if missingAddress}<small class="field-error">Укажите адрес доставки</small>{/if}
-                      {#if live && config.addresses.some(a=>!a.inZone && a.value===address)}<small class="field-error">Адрес вне тестовой зоны доставки.</small><button class="text-button" type="button" onclick={()=>onSupport({unitId:selectedIds[0],note:'Возврат: адрес вне зоны доставки'})}>Обратиться в поддержку</button>{/if}
+                      {#if live && addressState.blocked}<small class="field-error">Адрес вне тестовой зоны доставки.</small><button class="text-button" type="button" onclick={()=>onSupport({unitId:selectedIds[0],note:'Возврат: адрес вне зоны доставки'})}>Обратиться в поддержку</button>{/if}
+                      {#if live && addressState.valid && addressState.manual}<small>Адрес введён вручную. В тестовом контуре зона доставки не проверяется.</small>{/if}
                     </label>
 
                     <div class="address-fields">

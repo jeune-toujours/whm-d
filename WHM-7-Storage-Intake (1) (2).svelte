@@ -1,6 +1,7 @@
 <script>
   import { Archive, ArrowRight, Check, ChevronLeft, ChevronRight, CircleHelp, Copy, MapPin, Minus, Moon, Plus, Search, Sun, User, Warehouse, X } from '@lucide/svelte';
   import { onMount } from 'svelte';
+  import { nationalPhone, courierAddress } from './src/courier-fields.js';
 
   /*
    * WHM-7 — Оформление: Сдача на хранение
@@ -197,12 +198,7 @@
   let intercom = $state('');
   let entrance = $state('');
   let floor = $state('');
-  let contactPhone = $state(
-    String(savedPhone || '')
-      .replace(/\D/g, '')
-      .replace(/^7/, '')
-      .slice(0, 10)
-  );
+  let contactPhone = $state(nationalPhone(savedPhone));
   let courierComment = $state('');
   let showSuggestions = $state(false);
   let addressError = $state('');
@@ -224,6 +220,7 @@
   let toastTimer;
 
   let isDark = $derived(theme === 'halloween');
+  let addressState = $derived(courierAddress(addressQuery, addressCatalog));
   let selectedDate = $derived(dates[selectedDateIndex]);
   let addressSuggestions = $derived(
     addressQuery.trim().length < 3
@@ -408,10 +405,7 @@
     intercom = '';
     entrance = '';
     floor = '';
-    contactPhone = String(savedPhone || '')
-      .replace(/\D/g, '')
-      .replace(/^7/, '')
-      .slice(0, 10);
+    contactPhone = nationalPhone(savedPhone);
     courierComment = '';
     addressError = '';
     notifyEmail = '';
@@ -453,12 +447,12 @@
       selectedSlot = draft.selectedSlot || '';
       if (dateExpired) selectedSlot = '';
       addressQuery = draft.addressQuery || '';
-      selectedAddress = draft.selectedAddress || '';
+      selectedAddress = courierAddress(addressQuery, addressCatalog).valid ? courierAddress(addressQuery, addressCatalog).address : '';
       apartment = draft.apartment || '';
       intercom = draft.intercom || '';
       entrance = draft.entrance || '';
       floor = draft.floor || '';
-      contactPhone = draft.contactPhone || '';
+      contactPhone = nationalPhone(draft.contactPhone);
       courierComment = draft.courierComment || '';
       acceptedTerms = Boolean(draft.acceptedTerms);
       if (draft.view === 'review') acceptedTerms = false;
@@ -568,7 +562,8 @@
   }
 
   function handlePhoneInput(event) {
-    contactPhone = event.currentTarget.value.replace(/\D/g, '').slice(0, 10);
+    contactPhone = nationalPhone(event.currentTarget.value);
+    event.currentTarget.value = contactPhone;
   }
 
   function selectAddress(item) {
@@ -597,14 +592,15 @@
   }
 
   function continueFromAddress() {
-    if (!selectedAddress) {
-      addressError = 'Выберите адрес из подсказки';
+    if (!addressState.valid) {
+      addressError = addressState.blocked ? 'Мы пока не работаем в этом районе' : 'Укажите улицу и номер дома целиком';
       return;
     }
     if (contactPhone.length !== 10) {
       showToast('Укажите телефон для связи');
       return;
     }
+    selectedAddress = addressState.address;
     go('review');
   }
 
@@ -1511,6 +1507,8 @@
                       oninput={handleAddressInput}
                       onfocus={() => (showSuggestions = true)}
                       autocomplete="off"
+                      maxlength="500"
+                      aria-describedby="courier-address-hint"
                     />
                   </div>
                   {#if showSuggestions && addressSuggestions.length > 0}
@@ -1531,6 +1529,9 @@
                   {#if addressError}
                     <p class="field-error">{addressError}</p>
                   {/if}
+                  <p id="courier-address-hint" class="field-caption">Можно выбрать подсказку или ввести улицу и номер дома вручную.</p>
+                  {#if addressState.blocked && !addressError}<p class="field-error">Мы пока не работаем в этом районе</p>{/if}
+                  {#if live && addressState.valid && addressState.manual}<p class="field-caption">Адрес введён вручную. В тестовом контуре зона доставки не проверяется.</p>{/if}
                 </div>
 
                 {#if addressError === 'Мы пока не работаем в этом районе'}
@@ -1624,7 +1625,7 @@
                 <button
                   type="button"
                   class="primary-button"
-                  disabled={!selectedAddress || contactPhone.length !== 10}
+                  disabled={!addressState.valid || contactPhone.length !== 10}
                   onclick={continueFromAddress}
                 >
                   Продолжить
@@ -3436,6 +3437,7 @@
     height: 1.15rem;
   }
 
+  .field-caption { color: color-mix(in oklab, var(--color-base-content) 70%, transparent); font-size: .875rem; line-height: 1.5; margin: 8px 0 0; }
   .field-error {
     margin-top: 0.35rem;
     color: var(--color-error);

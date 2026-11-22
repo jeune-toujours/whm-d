@@ -39,6 +39,10 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     const configuration = (await request('/v1/checkout-config',c)).data.config;
     const schedule = { date:configuration.dates[0].id,slot:configuration.slots[0],consent:true };
     const orderData = { service:'self',consent:true,items:[{ tariffID:tariff.id, quantity:2, description:'Test inventory', price:1 }], fulfillment:'pickup', amount:1 }
+    const manualCourier={...orderData,...schedule,fulfillment:'courier',address:'  Садовническая  набережная 1  ',phone:'8 (999) 000-00-01'}
+    const manualQuote=await request('/v1/intake/quote',c,manualCourier)
+    assert.equal(manualQuote.status,200);assert.equal(manualQuote.data.quote.logistics.address,'Садовническая набережная 1');assert.equal(manualQuote.data.quote.logistics.phone,'+79990000001')
+    for(const address of ['', 'Дом 1', 'химки,  ленинградское шоссе, 5']) assert.equal((await request('/v1/intake/quote',c,{...manualCourier,address})).status,400)
     const requests = await Promise.all([request('/v1/intake',c,orderData,suffix), request('/v1/intake',c,orderData,suffix)])
     assert.deepEqual(requests.map(r => r.status), [200,200]); assert.equal(requests[0].data.order.id, requests[1].data.order.id)
     const order = requests[0].data.order, itemID = order.items[0].id, secondID = order.items[1].id
@@ -83,7 +87,7 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal((await request(`/v1/history/${order.id}`,o)).status,404);
     await payload.update({collection:'storage-items',id:firstPlaced,overrideAccess:true,data:{title:'Renamed after completion'}});
     assert.equal((await request(`/v1/history/${order.id}`,c)).data.order.items.find((i:any)=>i.id === firstPlaced).title,'Test box','History uses operation snapshot');
-    const courierInput={...schedule,itemIDs:[firstPlaced],fulfillment:'courier',address:configuration.addresses[0].value,phone:'+79990000001'};
+    const courierInput={...schedule,itemIDs:[firstPlaced],fulfillment:'courier',address:'Садовническая набережная 1',phone:'+79990000001'};
     const quote=(await request('/v1/returns/quote',c,courierInput)).data.quote;
     const proposal=await request('/v1/checkouts',c,{kind:'return',input:courierInput,quoteHash:quote.hash},`${suffix}-proposal`);
     assert.equal(proposal.status,200);assert.equal(proposal.data.payment.amount,1490);
@@ -122,6 +126,15 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal((await request(`/v1/support/${tid}/reply`,w,{ text:'forbidden' },`${suffix}-forbidden`)).status,403)
     assert.equal((await request(`/v1/support/${tid}/reply`,a,{ text:'Сотрудник отвечает клиенту' },`${suffix}-reply`)).status,200)
     const dashboard = await request('/v1/dashboard',c); assert.equal(dashboard.status,200); assert.equal(dashboard.data.tickets.find((t:any) => t.id === tid).messages.length,2)
+    for (const closeReason of [undefined, '', '   ']) assert.equal((await request(`/support-tickets/${tid}`,a,{ status:'resolved',closeReason },undefined,'PATCH')).status,400,'Closure requires a nonblank reason')
+    assert.equal((await request(`/support-tickets/${tid}`,c,{ status:'resolved',closeReason:'Client cannot close' },undefined,'PATCH')).status,403)
+    assert.equal((await request(`/support-tickets/${tid}`,w,{ status:'resolved',closeReason:'Warehouse cannot close' },undefined,'PATCH')).status,403)
+    const closeReason = 'Вопрос решён, результат согласован с клиентом.'
+    assert.equal((await request(`/support-tickets/${tid}`,a,{ status:'resolved',closeReason },undefined,'PATCH')).status,200)
+    assert.equal((await request('/v1/warehouse',a)).data.tickets.find((t:any)=>t.id===tid).closeReason,closeReason,'Staff sees the saved reason')
+    const closedTicket = (await request('/v1/dashboard',c)).data.tickets.find((t:any)=>t.id===tid)
+    assert.equal(closedTicket.status,'resolved'); assert.equal(closedTicket.closeReason,closeReason,'Client sees the saved closure result')
+    assert.equal((await request(`/v1/support/${tid}/reply`,a,{ text:'Reply to closed case' },`${suffix}-closed-reply`)).status,409)
     const courierInput2 = {...schedule,itemIDs:[lastID],fulfillment:'courier',address:configuration.addresses[0].value,phone:'+79990000001'}
     const courierQuote2 = (await request('/v1/returns/quote',c,courierInput2)).data.quote
     const checkout2 = await request('/v1/checkouts',c,{kind:'return',input:courierInput2,quoteHash:courierQuote2.hash},`${suffix}-courier-success`)

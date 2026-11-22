@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { installTestCamera, scanBarcode, verifyCameraLifecycle } from './camera-smoke.mjs';
 import { verifyInventoryFlow } from './inventory-smoke.mjs';
 import { verifyProblemsFlow } from './problems-smoke.mjs';
+import {verifyCourierAddressFields,manualCourierAddress} from './courier-smoke.mjs';
 const base = process.env.WHM_BASE_URL || 'http://localhost:4174', backend = process.env.WHM_API_BASE || base;
 let adminEmail = process.env.WHM_ADMIN_EMAIL, adminPassword = process.env.WHM_ADMIN_PASSWORD;
 if (process.env.WHM_ADMIN_SECRET_SSH === '1') {
@@ -44,8 +45,10 @@ try {
   await page.getByRole('button',{name:'Продолжить',exact:true}).click();
   await page.getByRole('button',{name:'Пропустить',exact:true}).click();
   await page.getByRole('button',{name:'Пропустить',exact:true}).click();
-  await page.getByRole('button',{name:/Я привезу сам/}).click();
-  await page.getByRole('button',{name:'Перейти к проверке',exact:true}).click();
+  await page.getByRole('button',{name:/Курьер заберёт/}).click();
+  await page.locator('.slot-grid button:not([disabled])').first().click();
+  await page.locator('.sticky-bar .primary-button').click();
+  await verifyCourierAddressFields(page);
   await capture('intake-review-desktop');
   await page.locator('.terms-card .custom-checkbox').click();
   await page.setViewportSize({width:320,height:740});
@@ -60,6 +63,7 @@ try {
   await page.waitForURL('**/#/order/*');
   const orderID = page.url().split('/order/')[1], response = await page.request.get(`${backend}/api/v1/orders/${orderID}`, { headers:{ Origin:base, 'X-WHM-Client':'1' } }); assert.equal(response.status(),200);
   const order = (await response.json()).order;
+  assert.equal(order.fulfillment,'courier');assert.equal(order.address,manualCourierAddress,'Courier order persists the manually entered address');
   const clientIdentity = (await (await page.request.get(`${backend}/api/me`, { headers:{Origin:base} })).json()).user.id;
   console.log('Client: OTP, onboarding, catalog, persistent intake, failed payment and successful retry passed.');
   // One browser profile: the regression was the employee and client replacing

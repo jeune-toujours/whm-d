@@ -8,6 +8,14 @@ import config from '../src/payload.config'
 const base = process.env.APP_URL || 'http://localhost:3000'
 const suffix = randomUUID()
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQ1sAAAAASUVORK5CYII=', 'base64')
+const pdf = (() => {
+  const objects = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>', '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Resources << >> >>']
+  let content = '%PDF-1.4\n'; const offsets = [0]
+  objects.forEach((object,index) => { offsets.push(Buffer.byteLength(content)); content += `${index+1} 0 obj\n${object}\nendobj\n` })
+  const xref = Buffer.byteLength(content)
+  content += `xref\n0 4\n0000000000 65535 f \n${offsets.slice(1).map(offset=>`${String(offset).padStart(10,'0')} 00000 n \n`).join('')}trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`
+  return Buffer.from(content)
+})()
 async function session(payload: Payload, user: any) {
   const req = await createLocalReq({ user: { ...user, collection: 'users' } }, payload), cfg = payload.collections.users.config
   const { sid } = await addSessionToUser({ collectionConfig: cfg, payload, req, user: { ...user, collection: 'users' } })
@@ -19,7 +27,7 @@ async function request(path: string, cookie: string, data?: unknown, key?: strin
   return { status:response.status, data:await response.json() }
 }
 async function upload(cookie: string, owner: string, purpose: string, document = false) {
-  const form = new FormData(); form.set('_payload', JSON.stringify({ owner, purpose })); form.set('file', new Blob([document ? Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF') : png], { type:document ? 'application/pdf' : 'image/png' }), `integration-${suffix}-${purpose}.${document ? 'pdf' : 'png'}`)
+  const form = new FormData(); form.set('_payload', JSON.stringify({ owner, purpose })); form.set('file', new Blob([document ? pdf : png], { type:document ? 'application/pdf' : 'image/png' }), `integration-${suffix}-${purpose}.${document ? 'pdf' : 'png'}`)
   const r = await fetch(`${base}/api/media`, { method:'POST', headers:{ Cookie:cookie, Origin:base, ...(cookie.startsWith('whm-client-token=') ? { 'X-WHM-Client':'1' } : {}) }, body:form })
   const data = await r.json(); assert.equal(r.status, 201, `Upload ${purpose}: ${data.errors?.[0]?.message || data.message || ''}`)
   return data.doc.id as string

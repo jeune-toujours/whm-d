@@ -137,7 +137,7 @@ try {
   await page.locator('.related-order').filter({hasText:order.number}).click();await page.getByRole('heading',{name:order.number,exact:true}).waitFor();
   await page.goBack();await page.getByRole('heading',{name:back.number,exact:true}).waitFor();
   await page.goForward();await page.getByRole('heading',{name:order.number,exact:true}).waitFor();
-  await page.unroute(delayedDetail);
+  await page.unrouteAll({behavior:'wait'});
   console.log('History: filtered return → related intake, delayed detail response and browser Back/Forward passed.');
   await page.goto(`${base}/#/payments`); await page.getByText('Оплачено',{ exact:true }).first().waitFor();
   await page.setViewportSize({ width:390,height:844 });

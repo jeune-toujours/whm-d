@@ -93,7 +93,16 @@ try {
     await page.setViewportSize({width,height:844});await page.goto(`${base}/#/item/${order.items[0].id}`);await page.locator('.copy').waitFor();
     assert.equal(await page.locator('.copy').innerText(),order.items[0].internalID,'Item card shows the public number');
     const sealLink = page.getByRole('link',{name:'Открыть фото пломбы',exact:true}); await sealLink.waitFor();
-    if(width===320){const photo=await page.request.get(await sealLink.getAttribute('href'));assert.equal(photo.status(),200);assert.deepEqual(await photo.body(),image.buffer,'Owner downloads the exact seal photo from private S3');}
+    if(width===320){
+      const ownerOnly=await browser.newContext(),anonymous=await browser.newContext();
+      await ownerOnly.addCookies((await sharedContext.cookies()).filter(cookie=>cookie.name==='whm-client-token'));
+      const href=await sealLink.getAttribute('href'); let photo;
+      assert.equal(new URL(href).searchParams.get('whm-client'),'1','A client file link selects the client cookie');
+      try{photo=await ownerOnly.request.get(href,{headers:{Origin:base}});}catch{throw new Error('Protected seal photo download failed; URL omitted');}
+      assert.equal(photo.status(),200);assert.deepEqual(await photo.body(),image.buffer,'Owner downloads the exact seal photo without any staff session');
+      assert.ok([403,404].includes((await anonymous.request.get(href,{headers:{Origin:base}})).status()),'Anonymous users cannot download the seal photo');
+      await ownerOnly.close();await anonymous.close();
+    }
     assert.ok(await page.evaluate(()=>{const width=document.documentElement.clientWidth,button=document.querySelector('.navigation-back'),b=button.getBoundingClientRect(),s=button.querySelector('svg').getBoundingClientRect(),main=document.querySelector('.shell'),m=main.getBoundingClientRect();return document.documentElement.scrollWidth<=width&&b.width>=40&&Math.abs(b.y+b.height/2-s.y-s.height/2)<=1&&Math.abs(b.x-m.x-parseFloat(getComputedStyle(main).paddingLeft))<=1}),'Item card header and content grid fit each viewport');
   }
   await page.setViewportSize({width:320,height:740});

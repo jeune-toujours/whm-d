@@ -2,6 +2,7 @@
   import { Check, Copy, ExternalLink, Camera, Image, Video } from '@lucide/svelte';
   import BackButton from '../components/BackButton.svelte';
   import { formatMoney } from '../demo.js';
+  import { clientMediaURL } from '../api.js';
 
   let { live = false, item, initialTheme = 'bumblebee', onBack = () => {}, onReturn = () => {}, onSupport = () => {}, onOpenDocument = () => {}, onLoadProblems = null } = $props();
   let problems = $state([]), problemsError = $state(''), problemsLoading = $state(false);
@@ -58,7 +59,7 @@
 
         <section class="card">
           <div class="section-title"><h2>Материалы приёмки</h2></div>
-          {#if live && item.media?.length}<div class="media-list">{#each item.media as media}<a href={media.url} target="_blank" rel="noopener">{#if media.mimeType?.startsWith('video/')}<Video />{:else}<Camera />{/if}<strong>{media.filename}</strong><small>Открыть материал</small></a>{/each}</div>{:else}<div class="media-list"><div><Camera aria-hidden="true" /><strong>Фотографии</strong><small>Появятся после фотофиксации</small></div><div><Video aria-hidden="true" /><strong>Видео</strong><small>Появится, если запись была сделана</small></div></div>{/if}
+          {#if live && item.media?.length}<div class="media-list">{#each item.media as media}<a href={clientMediaURL(media.url)} target="_blank" rel="noopener">{#if media.mimeType?.startsWith('video/')}<Video />{:else}<Camera />{/if}<strong>{media.filename}</strong><small>Открыть материал</small></a>{/each}</div>{:else}<div class="media-list"><div><Camera aria-hidden="true" /><strong>Фотографии</strong><small>Появятся после фотофиксации</small></div><div><Video aria-hidden="true" /><strong>Видео</strong><small>Появится, если запись была сделана</small></div></div>{/if}
         </section>
 
         {#if live && (problemsLoading || problemsError || problems.length)}
@@ -90,7 +91,7 @@
             <div><dt>Тип</dt><dd>{item?.type === 'box' ? 'Коробка' : 'Отдельный предмет'}</dd></div>
             <div><dt>Габариты</dt><dd>{item?.size || 'Уточняются'}</dd></div>
             <div><dt>Пломба</dt><dd>{item?.seal || 'Уточняется'}</dd></div>
-            {#if live && item?.sealPhoto?.url}<div><dt>Фото пломбы</dt><dd><a href={item.sealPhoto.url} target="_blank" rel="noopener noreferrer">Открыть фото пломбы</a></dd></div>{/if}
+            {#if live && item?.sealPhoto?.url}<div><dt>Фото пломбы</dt><dd><a href={clientMediaURL(item.sealPhoto.url)} target="_blank" rel="noopener noreferrer">Открыть фото пломбы</a></dd></div>{/if}
             <div><dt>На хранении с</dt><dd>{item?.storedSinceLabel || item?.storedSince || '—'}</dd></div>
           </dl>
           <div class="price"><span>Стоимость хранения</span><strong>{formatMoney(item?.monthlyPrice)}<small>/мес.</small></strong></div>

@@ -20,6 +20,14 @@ export function download(path) {
   url.searchParams.set('whm-client', '1');
   window.open(url.href, '_blank', 'noopener');
 }
+export function clientMediaURL(value) {
+  const apiURL = new URL(base, window.location.origin);
+  const url = new URL(value, apiURL.origin);
+  // File links cannot send X-WHM-Client. Select the client's cookie explicitly,
+  // without changing signed URLs served directly by external object storage.
+  if (url.origin === apiURL.origin && url.pathname.startsWith(`${apiURL.pathname}/media/`)) url.searchParams.set('whm-client', '1');
+  return url.href;
+}
 export async function uploadSupport(file, supportType = 'incident') {
   const form = new FormData(); form.set('_payload', JSON.stringify({ purpose:'support', supportType })); form.set('file', file);
   const r = await fetch(`${base}/media`, { method:'POST', credentials:'include', headers:{ 'X-WHM-Client':'1' }, body:form, signal:AbortSignal.timeout(60000) });

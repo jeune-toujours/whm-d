@@ -80,7 +80,7 @@ export function dashboardFrom(demo) {
     activeOrders: order && order.status !== 'completed' && order.status !== 'cancelled' ? [{
       id: order.id, type: order.type === 'return' ? 'return' : 'storage',
       stage: order.status === 'courier' ? 'Курьер в пути' : order.status === 'assembling' ? 'Сборка на складе' : 'Заявка создана',
-      nextEventLabel: order.visitWindow ? `Визит ${order.visitWindow}` : 'Подробности в заказе'
+      nextEventLabel: order.visitWindow ? `Визит ${order.visitWindow}` : ''
     }] : [],
     nextChargeDate: demo.profile.nextChargeDate
   };

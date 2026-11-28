@@ -1219,14 +1219,14 @@
             </section>
           {:else if view === 'options'}
             <section class="screen-content with-sticky" aria-labelledby="options-title">
-              <div class="screen-heading split-heading">
-                <div>
-                  <h1 id="options-title">Дополнительные услуги</h1>
+              <div class="screen-heading optional-step-heading">
+                <h1 id="options-title">Дополнительные услуги</h1>
+                <div class="optional-step-intro">
                   <p>Добавьте по необходимости.</p>
+                  <button type="button" data-slot="button" class={buttonVariants({ variant: 'outline' })} onclick={continueFromOptions}>
+                    Пропустить
+                  </button>
                 </div>
-                <button type="button" data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" onclick={continueFromOptions}>
-                  Пропустить
-                </button>
               </div>
 
               <div class="option-list">
@@ -1263,9 +1263,9 @@
             </section>
           {:else if view === 'insurance'}
             <section class="screen-content with-sticky" aria-labelledby="insurance-title">
-              <div class="screen-heading insurance-heading">
+              <div class="screen-heading optional-step-heading">
                 <h1 id="insurance-title">Страхование вещей</h1>
-                <div class="insurance-intro">
+                <div class="optional-step-intro">
                   <p>Укажите общую стоимость имущества, которое передаёте на хранение.</p>
                   <button type="button" data-slot="button" class={buttonVariants({ variant: 'outline' })} onclick={skipInsurance}>
                     Пропустить
@@ -2545,12 +2545,12 @@
     color: var(--soft-content);
   }
 
-  .insurance-heading {
+  .optional-step-heading {
     gap: 1rem;
     margin-block-end: 0.25rem;
   }
 
-  .insurance-intro {
+  .optional-step-intro {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -2558,7 +2558,7 @@
     gap: 0.75rem 1.5rem;
   }
 
-  .insurance-intro p {
+  .optional-step-intro p {
     flex: 1 1 28rem;
   }
 
@@ -3410,7 +3410,7 @@
   }
 
   .review-heading h2,
-  .insurance-heading h1 {
+  .optional-step-heading h1 {
     text-wrap: balance;
   }
 

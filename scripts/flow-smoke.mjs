@@ -37,6 +37,14 @@ try {
     await page.close();
   }
   {
+    const { page, errors } = await pageFor('home');
+    await page.getByRole('region', { name: 'Хранение сейчас' }).getByText(/^Следующее списание \d/).waitFor();
+    await page.getByRole('button', { name: /Сдача.*Курьер в пути.*Детали/ }).click();
+    await page.waitForURL('**/#/order');
+    assert.deepEqual(errors, []);
+    await page.close();
+  }
+  {
     const { page, errors } = await pageFor('profile');
     const footer = page.getByRole('contentinfo');
     await footer.getByRole('link', { name: 'Помощь', exact: true }).click();
@@ -77,7 +85,11 @@ try {
     await page.locator('.service-card').filter({hasText:'Я упакую сам'}).getByRole('button',{name:'Выбрать',exact:true}).click();
     await page.getByRole('button',{name:/Увеличить количество/}).first().click();
     await page.locator('.sticky-bar .primary-button').click();
-    await page.getByRole('button',{name:'Пропустить',exact:true}).click();await page.getByRole('button',{name:'Пропустить',exact:true}).click();
+    const skip = page.getByRole('button', { name: 'Пропустить', exact: true });
+    const skipStyle = await skip.getAttribute('class');
+    await skip.click();
+    assert.equal(await skip.getAttribute('class'), skipStyle);
+    await skip.click();
     await page.getByRole('button',{name:/Курьер заберёт/}).click();
     await page.locator('.slot-grid button:not([disabled])').first().click();await page.locator('.sticky-bar .primary-button').click();
     const address = page.getByRole('combobox', { name: 'Новый адрес' });

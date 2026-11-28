@@ -130,13 +130,24 @@
   }
   :is(h1, h2, h3) { text-wrap: balance; }
   :is(button, a, input, select, textarea) { touch-action: manipulation; }
-  :is(button, a, input, select, textarea, summary):focus-visible {
-    outline: 3px solid var(--ui-ring);
-    outline-offset: 3px;
-  }
-  :is(.phone-field, .search-field):focus-within {
+  :focus-visible, :is(input, select, textarea):focus {
     outline: 2px solid var(--ui-ring);
     outline-offset: 2px;
+  }
+  :is(input, select, textarea):focus { box-shadow: none; }
+  :is(.field-group, .phone-field, .phone-input, .money-input, .search-field):has(input:focus) {
+    outline: 2px solid var(--ui-ring);
+    outline-offset: 2px;
+  }
+  :is(.field-group, .phone-field, .phone-input, .money-input, .search-field):has(input:focus) input:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  :is(input, select, textarea)[aria-invalid="true"]:focus,
+  .invalid :is(input, select, textarea):focus,
+  .field-group.invalid:has(input:focus),
+  .invalid :is(.phone-field, .phone-input):has(input:focus) {
+    outline-color: var(--ui-danger);
   }
   button:disabled { cursor: not-allowed; }
   select { color-scheme: inherit; color: var(--ui-foreground); background-color: var(--ui-card); }

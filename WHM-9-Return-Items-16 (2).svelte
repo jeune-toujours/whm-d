@@ -1,4 +1,5 @@
 <script>
+  import AddressInput from './src/components/AddressInput.svelte';
   import DialogFrame from '$lib/components/ui/dialog.svelte';
   import Brand from '$lib/components/Brand.svelte';
   import { buttonVariants } from '$lib/components/ui/button/index.js';
@@ -126,6 +127,7 @@
   }
 
   let {
+    suggestAddress,
     live = false, config = null, savedAddress = demoSavedAddress, savedPhone = '', currentMonthlyPrice = null, draftKey = '',
     storageUnits = demoStorageUnits,
     initialSelectedIds = [],
@@ -772,22 +774,15 @@
                       <button class:active={addressMode === 'new'} type="button" onclick={() => { addressMode = 'new'; address = ''; }}>Новый адрес</button>
                     </div>{/if}
 
-                    <label class="text-field full-field" class:invalid={missingAddress}>
-                      <span>Адрес доставки</span>
-                      <input
-                        type="text"
-                        list={live ? "return-addresses" : undefined}
-                        autocomplete="street-address"
-                        placeholder="Начните вводить адрес"
-                        maxlength="500"
-                        bind:value={address}
-                        oninput={() => (formError = '')}
-                      />
-                      {#if live}<datalist id="return-addresses">{#each config.addresses as a}<option value={a.value}>{a.inZone ? "Тестовая зона доставки" : "Вне зоны"}</option>{/each}</datalist>{/if}
+                    <div class="text-field full-field" class:invalid={missingAddress || addressState.blocked}>
+                      <label for="return-address">Адрес доставки</label>
+                      <AddressInput id="return-address" value={address} suggest={suggestAddress}
+                        onChange={(value) => { address = value; formError = ''; }}
+                        invalid={missingAddress || addressState.blocked} describedBy="return-address-hint" />
+                      <small id="return-address-hint">Укажите город, улицу и дом. Квартиру и подъезд заполните ниже.</small>
                       {#if missingAddress}<small class="field-error">Укажите адрес доставки</small>{/if}
                       {#if live && addressState.blocked}<small class="field-error">Адрес вне тестовой зоны доставки.</small><button data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={()=>onSupport({unitId:selectedIds[0],note:'Возврат: адрес вне зоны доставки'})}>Обратиться в поддержку</button>{/if}
-                      {#if live && addressState.valid && addressState.manual}<small>Адрес введён вручную. В тестовом контуре зона доставки не проверяется.</small>{/if}
-                    </label>
+                    </div>
 
                     <div class="address-fields">
                       <label class="text-field">
@@ -1417,10 +1412,7 @@
     transition: border-color 180ms ease, box-shadow 180ms ease;
   }
 
-  .search-field:focus-within {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--primary-faint);
-  }
+
 
   .search-field :global(svg) {
     width: 1.1rem;
@@ -2007,19 +1999,11 @@
     transition: border-color 180ms ease, box-shadow 180ms ease;
   }
 
-  .text-field.invalid > input,
-  .text-field.invalid textarea,
   .text-field.invalid .phone-field {
     border-color: var(--color-error);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-error) 16%, transparent);
   }
 
-  .text-field > input:focus,
-  .text-field textarea:focus,
-  .phone-field:focus-within {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--primary-faint);
-  }
+
 
   .text-field input::placeholder,
   .text-field textarea::placeholder {
@@ -2597,13 +2581,7 @@
     to { transform: rotate(360deg); }
   }
 
-  :global(button:focus-visible),
-  :global(input:focus-visible),
-  :global(textarea:focus-visible),
-  :global(a:focus-visible) {
-    outline: 3px solid color-mix(in oklab, var(--color-primary) 45%, transparent);
-    outline-offset: 3px;
-  }
+
 
   @media (max-width: 1080px) {
     .storage-grid,

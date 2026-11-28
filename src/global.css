@@ -28,7 +28,6 @@ button { cursor: pointer; }
 }
 .skip-link { position: fixed; inset: .5rem auto auto .5rem; z-index: 1100; padding: .75rem 1rem; border: 0; border-radius: .5rem; background: var(--ui-card); color: var(--ui-foreground); }
 .skip-link:not(:focus) { clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; padding: 0; }
-html :focus-visible { outline: 3px solid var(--ui-ring); outline-offset: 3px; }
 
 /* WHM-7: service selection cards only; delivery cards use buttons, not articles. */
 .whm-app .service-stack > article.service-card { position: relative; }

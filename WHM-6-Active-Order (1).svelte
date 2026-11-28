@@ -695,7 +695,7 @@
   .danger-fill { border: 0; background: var(--error); color: white; }
   .stay { border: 0; background: transparent; color: var(--ink); }
 
-  :global(button:focus-visible) { outline: 3px solid color-mix(in oklab, var(--primary) 48%, transparent); outline-offset: 3px; }
+
   @media (max-width: 390px) { .item { grid-template-columns: 2.2rem minmax(0, 1fr) .9rem; } .item-state { display: none; } .storage-impact { grid-template-columns: 1fr; } .storage-impact > div:last-child { text-align: left; } .storage-arrow { transform: rotate(90deg); justify-self: start; } }
   @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 

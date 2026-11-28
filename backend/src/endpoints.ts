@@ -5,8 +5,10 @@ import { workflowEndpoints } from './workflows'
 import { paymentEndpoints } from './payments'
 import { inventoryEndpoints } from './inventory'
 import { problemEndpoints } from './problems'
+import { addressSuggestionsEndpoint } from './address-suggestions'
 
 export const endpoints = [
+  addressSuggestionsEndpoint,
   ...problemEndpoints,
   ...inventoryEndpoints,
   ...authEndpoints,

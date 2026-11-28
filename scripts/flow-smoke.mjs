@@ -114,7 +114,7 @@ try {
     await page.locator('.panel-actions .primary-button').click();
     await page.locator('.method-select').first().click();
     await page.locator('.panel-actions .primary-button').click();
-    await page.locator('input[autocomplete="street-address"]').fill('Садовническая набережная 1');
+    await page.getByRole('combobox', { name: 'Адрес доставки' }).fill('Садовническая набережная 1');
     await page.locator('.phone-field input').fill('8 (999) 000-00-01');
     assert.equal(await page.locator('.phone-field input').inputValue(),'999 000 00 01');
     await page.locator('.date-row button').first().click();

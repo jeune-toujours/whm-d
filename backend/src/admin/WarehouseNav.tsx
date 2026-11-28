@@ -1,17 +1,31 @@
 'use client'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { Archive, ClipboardList, Headphones, PackageCheck, PackageMinus, ScanBarcode, TriangleAlert } from 'lucide-react'
 import { useAuth } from '@payloadcms/ui'
+import './warehouse.css'
+
+const destinations = [
+  { path: 'receive', label: 'Приёмка', icon: PackageCheck },
+  { path: 'place', label: 'Размещение', icon: Archive },
+  { path: 'pick', label: 'Подбор', icon: ScanBarcode },
+  { path: 'return', label: 'Выдача', icon: PackageMinus },
+  { path: 'inventory', label: 'Инвентаризация', icon: ClipboardList },
+  { path: 'problems', label: 'Проблемные заказы', icon: TriangleAlert },
+  { path: 'support', label: 'Обращения клиентов', icon: Headphones }
+]
+
 export function WarehouseNav() {
   const { user } = useAuth()
+  const pathname = usePathname()
   if (!user || !['admin', 'manager', 'warehouse'].includes(user.role)) return null
-  return <nav aria-label="Складские процессы" style={{ display: 'grid', gap: 12, padding: '24px 0' }}>
+  return <nav className="whm-navigation" aria-label="Складские процессы">
     <strong>Операции WHM</strong>
-    <Link href="/admin/warehouse/receive">Приёмка</Link>
-    <Link href="/admin/warehouse/place">Размещение</Link>
-    <Link href="/admin/warehouse/pick">Подбор</Link>
-    <Link href="/admin/warehouse/return">Выдача</Link>
-    <Link href="/admin/warehouse/inventory">Инвентаризация</Link>
-    <Link href="/admin/warehouse/problems">Проблемные заказы</Link>
-    {user.role !== 'warehouse' && <Link href="/admin/warehouse/support">Обращения клиентов</Link>}
+    {destinations.filter(item => item.path !== 'support' || user.role !== 'warehouse').map(({ path, label, icon: Icon }) => {
+      const href = `/admin/warehouse/${path}`
+      return <Link key={path} href={href} aria-current={pathname === href ? 'page' : undefined}>
+        <Icon size={17} aria-hidden="true" />{label}
+      </Link>
+    })}
   </nav>
 }

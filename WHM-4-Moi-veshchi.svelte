@@ -1,4 +1,8 @@
 <script>
+  import StorageSummary from './src/components/StorageSummary.svelte';
+  import { Image as ImageIcon } from '@lucide/svelte';
+  import Brand from '$lib/components/Brand.svelte';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { ArrowRight, ChevronRight, CircleHelp, Moon, RefreshCw, Search, Sun, TriangleAlert, User, Warehouse } from '@lucide/svelte';
   import { tick, onMount } from 'svelte';
 
@@ -227,15 +231,15 @@
 
   <header class="app-header">
     <div class="brand" aria-label="Клиентский интерфейс">
-      <span class="system-label">Клиентский интерфейс</span>
+      <Brand />
     </div>
 
     <div class="header-actions">
-      <button class="icon-button" type="button" aria-label="Поддержка" onclick={onOpenSupport}>
+      <button data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Поддержка" onclick={onOpenSupport}>
         <CircleHelp aria-hidden="true" />
       </button>
       <button
-        class="icon-button"
+        data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}"
         type="button"
         aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
         onclick={toggleTheme}
@@ -246,7 +250,7 @@
           <Moon aria-hidden="true" />
         {/if}
       </button>
-      <button class="icon-button" type="button" aria-label="Профиль и биллинг" onclick={onOpenProfile}>
+      <button data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Профиль и биллинг" onclick={onOpenProfile}>
         <User aria-hidden="true" />
       </button>
     </div>
@@ -254,15 +258,15 @@
 
   <main class="dashboard-shell">
     <div class="page-heading">
-      <h1>{greeting}</h1>
-      <p>Вещи на хранении, статусы и стоимость — в одном месте.</p>
+      {#if userName}<p class="greeting">{greeting}</p>{/if}
+      <h1>Мои вещи</h1>
     </div>
 
     {#if loadError}
       <div class="error-banner" role="alert">
         <TriangleAlert aria-hidden="true" />
         <span>Не удалось загрузить данные.</span>
-        <button class="link-button" type="button" onclick={fetchDashboard}>Повторить</button>
+        <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={fetchDashboard}>Повторить</button>
       </div>
     {/if}
 
@@ -281,34 +285,13 @@
         <h2>{currentMonthly > 0 ? 'Вещи участвуют в активной заявке' : 'У вас пока нет вещей на хранении'}</h2>
         {#if currentMonthly > 0}<p>Хранение сейчас: {formatMoney(currentMonthly)}/мес. Стоимость изменится после передачи вещей.</p>{/if}
         <p>{currentMonthly > 0 ? 'Статус и состав заявки доступны в активном заказе.' : 'Сдайте вещи на хранение — мы заберём их и разместим на складе.'}</p>
-        <button class="primary-button" type="button" onclick={onGoToHandover}>
+        <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={onGoToHandover}>
           <span>Сдать вещи</span>
           <ArrowRight aria-hidden="true" />
         </button>
       </section>
     {:else}
-      <section class="summary-card">
-        <div class="summary-main">
-          <span class="summary-label">Хранение сейчас</span>
-          <strong class="summary-value">{formatMoney(currentMonthly)}/мес.</strong>
-          <span class="summary-caption">{units.length} {units.length === 1 ? 'вещь' : 'вещи'} на хранении</span>
-        </div>
-        <div class="summary-side">
-          {#if nextChargeDate}
-            <span class="summary-caption">Следующее списание: {nextChargeDate}</span>
-          {/if}
-          <button class="link-button" type="button" onclick={onOpenHistory}>История заказов</button>
-        </div>
-        <button
-          class="refresh-button"
-          type="button"
-          aria-label="Обновить"
-          disabled={refreshing}
-          onclick={refresh}
-        >
-          <RefreshCw class={refreshing ? 'spinning' : ''} aria-hidden="true" />
-        </button>
-      </section>
+      <StorageSummary amount={formatMoney(currentMonthly)} count={units.length} {nextChargeDate} {refreshing} onRefresh={refresh} {onOpenHistory} />
 
       {#if visibleActiveOrders.length > 0}
         <div class="active-orders">
@@ -329,12 +312,12 @@
       {/if}
 
       <div class="action-row">
-        <button class="primary-button" type="button" onclick={onGoToHandover}>
+        <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={onGoToHandover}>
           <span>Сдать вещи</span>
           <ArrowRight aria-hidden="true" />
         </button>
         <button
-          class="secondary-button"
+          data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}"
           type="button"
           disabled={!hasUnits}
           title={!hasUnits ? 'Нет вещей на хранении для возврата' : undefined}
@@ -356,20 +339,19 @@
             />
           </label>
           <div class="segmented-control" aria-label="Фильтр вещей">
-            <button class:active={activeFilter === 'all'} type="button" onclick={() => (activeFilter = 'all')}>Все</button>
-            <button class:active={activeFilter === 'box'} type="button" onclick={() => (activeFilter = 'box')}>Коробки</button>
-            <button class:active={activeFilter === 'item'} type="button" onclick={() => (activeFilter = 'item')}>Предметы</button>
+            <button aria-pressed={activeFilter === 'all'} class:active={activeFilter === 'all'} type="button" onclick={() => (activeFilter = 'all')}>Все</button>
+            <button aria-pressed={activeFilter === 'box'} class:active={activeFilter === 'box'} type="button" onclick={() => (activeFilter = 'box')}>Коробки</button>
+            <button aria-pressed={activeFilter === 'item'} class:active={activeFilter === 'item'} type="button" onclick={() => (activeFilter = 'item')}>Предметы</button>
           </div>
         </div>
       {/if}
 
       <div class="unit-grid">
         {#each filteredUnits as unit}
-          <article class="unit-card">
+          <article data-slot="card" class="unit-card">
             <button class="unit-main" type="button" onclick={() => openItemDetails(unit)}>
               <span class="media-placeholder item-placeholder" role="img" aria-label="Плейсхолдер фотографии">
-                <span class="placeholder-glyph" aria-hidden="true"></span>
-                <span class="placeholder-label">Фото</span>
+                <ImageIcon size={23} strokeWidth={1.5} aria-hidden="true" />
               </span>
               <span class="unit-copy">
                 <span class="unit-title-row">
@@ -382,15 +364,15 @@
               </span>
             </button>
             <div class="unit-actions">
-              <button class="link-button" type="button" onclick={() => openItemDetails(unit)}>Подробнее</button>
-              <button class="link-button" type="button" disabled={Boolean(unit.lockReason)} onclick={() => quickReturn(unit)}>Вернуть эту вещь</button>
+              <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={() => openItemDetails(unit)}>Подробнее</button>
+              <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" disabled={Boolean(unit.lockReason)} onclick={() => quickReturn(unit)}>Вернуть эту вещь</button>
             </div>
           </article>
         {/each}
         {#if filteredUnits.length === 0}
           <div class="empty-search">
             <p>Ничего не найдено. Проверьте название или номер.</p>
-            <button class="link-button" type="button" onclick={() => { searchQuery = ''; activeFilter = 'all'; }}>Сбросить поиск</button>
+            <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={() => { searchQuery = ''; activeFilter = 'all'; }}>Сбросить поиск</button>
           </div>
         {/if}
       </div>
@@ -399,6 +381,7 @@
 </div>
 
 <style>
+@layer screens {
   :global(*, *::before, *::after) {
     box-sizing: border-box;
   }
@@ -450,35 +433,7 @@
     transition: background-color 200ms ease, color 200ms ease;
   }
 
-  .whm-app[data-theme='bumblebee'] {
-    color-scheme: light;
-    --color-base-100: oklch(100% 0 0);
-    --color-base-200: oklch(97% 0 0);
-    --color-base-content: oklch(20% 0 0);
-    --color-primary: oklch(85% 0.199 91.936);
-    --color-primary-content: oklch(42% 0.095 57.708);
-    --color-secondary: oklch(75% 0.183 55.934);
-    --color-warning: oklch(82% 0.189 84.429);
-    --color-error: oklch(70% 0.191 22.216);
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
-  .whm-app[data-theme='halloween'] {
-    color-scheme: dark;
-    --color-base-100: oklch(21% 0.006 56.043);
-    --color-base-200: oklch(14% 0.004 49.25);
-    --color-base-content: oklch(84.955% 0 0);
-    --color-primary: oklch(76% 0.188 70.08);
-    --color-primary-content: oklch(19.693% 0.004 196.779);
-    --color-secondary: oklch(45.98% 0.248 305.03);
-    --color-warning: oklch(66.584% 0.157 58.318);
-    --color-error: oklch(65.72% 0.199 27.33);
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
   .ambient {
     position: fixed;
@@ -634,64 +589,14 @@
     animation: shimmer 1.4s ease infinite;
   }
 
-  .summary-main {
-    display: grid;
-    gap: 0.25rem;
-  }
 
-  .summary-label {
-    color: var(--soft-content);
-    font-size: var(--type-caption);
-  }
 
-  .summary-value {
-    font-size: var(--type-heading);
-    font-weight: 800;
-  }
 
-  .summary-caption {
-    color: var(--faint-content);
-    font-size: var(--type-caption);
-  }
 
-  .summary-side {
-    margin-left: auto;
-    display: grid;
-    gap: 0.4rem;
-    justify-items: end;
-    text-align: right;
-  }
 
-  .refresh-button {
-    width: 2.6rem;
-    height: 2.6rem;
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    border: var(--border) solid var(--soft-border);
-    border-radius: 50%;
-    background: transparent;
-    color: var(--color-base-content);
-    cursor: pointer;
-  }
 
-  .refresh-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 
-  .refresh-button :global(svg) {
-    width: 1.1rem;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
 
-  .refresh-button :global(svg.spinning) {
-    animation: spin 900ms linear infinite;
-  }
 
   .active-orders {
     margin-top: 1rem;
@@ -909,22 +814,7 @@
     color: color-mix(in oklab, var(--color-base-content) 48%, transparent);
   }
 
-  .placeholder-glyph {
-    position: relative;
-    width: 1.9rem;
-    height: 1.4rem;
-    border: 1.5px solid currentColor;
-    border-radius: 0.3rem;
-    opacity: 0.7;
-  }
 
-  .placeholder-label {
-    position: absolute;
-    right: 0.4rem;
-    bottom: 0.3rem;
-    font-weight: 650;
-    font-size: 0.65rem;
-  }
 
   .item-placeholder {
     width: 5.4rem;
@@ -1069,12 +959,6 @@
       flex-wrap: wrap;
     }
 
-    .summary-side {
-      margin-left: 0;
-      align-items: flex-start;
-      justify-items: start;
-      text-align: left;
-    }
 
     .action-row {
       grid-template-columns: 1fr;
@@ -1103,4 +987,5 @@
 
 
 
+}
 </style>

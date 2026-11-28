@@ -1,4 +1,6 @@
 <script>
+  import Brand from '$lib/components/Brand.svelte';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { onMount } from 'svelte';
   import { CreditCard, CheckCircle, XCircle } from '@lucide/svelte';
   import BackButton from '../components/BackButton.svelte';
@@ -16,13 +18,15 @@
   }
 </script>
 <svelte:head><title>Тестовая оплата · WHM</title></svelte:head>
-<div class:dark={initialTheme === 'halloween'} class:embedded class="live-page"><header><BackButton {onBack} label={embedded ? 'Отменить оплату' : 'Назад'} /><strong class="system-label">Клиентский интерфейс</strong></header>
+<div class:dark={initialTheme === 'halloween'} class:embedded class="live-page"><header><BackButton {onBack} label={embedded ? 'Отменить оплату' : 'Назад'} /><Brand /></header>
   <main class="live-shell" style="max-width:720px"><span class="eyebrow">ОПЛАТА</span><h1>Подтверждение платежа</h1>
-    {#if payment}<section class="card"><CreditCard size={32} /><h2>{new Intl.NumberFormat('ru-RU', { style:'currency', currency:'RUB', maximumFractionDigits:0 }).format(payment.amount)}</h2><p class="muted">{payment.checkoutKind === 'return' ? 'Обратная доставка вещей' : payment.checkoutKind === 'intake' || payment.orderID ? 'Оформление сдачи на хранение' : 'Изменение тарифа подписки'}</p>
-      {#if ['paid','refunded'].includes(payment.status)}<p role="status"><CheckCircle size={20} /> {payment.status === 'refunded' ? 'Тестовый платёж возвращён' : 'Тестовый платёж подтверждён'}</p><div class="actions"><button class="primary" onclick={() => onComplete(payment, true)}>Продолжить</button><button class="secondary" onclick={() => download(`/v1/payments/${id}/receipt`)}>Тестовая квитанция</button></div>
-      {:else}<p class="muted">Симулятор платёжного провайдера. Выберите результат. Реквизиты карты не нужны, деньги не списываются.</p>{#if payment.status === 'failed'}<p class="error" role="alert"><XCircle size={18} /> Оплата отклонена. Можно повторить попытку.</p>{/if}<div class="actions"><button class="primary" disabled={busy || !simulation} onclick={() => result('paid')}>{busy ? 'Подтверждаем…' : 'Симулировать успешную оплату'}</button><button class="secondary" disabled={busy || !simulation} onclick={() => result('failed')}>Симулировать отказ</button></div>{/if}
+    {#if payment}<section data-slot="card" class="card"><CreditCard size={32} /><h2>{new Intl.NumberFormat('ru-RU', { style:'currency', currency:'RUB', maximumFractionDigits:0 }).format(payment.amount)}</h2><p class="muted">{payment.checkoutKind === 'return' ? 'Обратная доставка вещей' : payment.checkoutKind === 'intake' || payment.orderID ? 'Оформление сдачи на хранение' : 'Изменение тарифа подписки'}</p>
+      {#if ['paid','refunded'].includes(payment.status)}<p role="status"><CheckCircle size={20} /> {payment.status === 'refunded' ? 'Тестовый платёж возвращён' : 'Тестовый платёж подтверждён'}</p><div class="actions"><button data-slot="button" class="primary {buttonVariants()}" onclick={() => onComplete(payment, true)}>Продолжить</button><button data-slot="button" class="secondary {buttonVariants({ variant: 'outline' })}" onclick={() => download(`/v1/payments/${id}/receipt`)}>Тестовая квитанция</button></div>
+      {:else}<p class="muted">Симулятор платёжного провайдера. Выберите результат. Реквизиты карты не нужны, деньги не списываются.</p>{#if payment.status === 'failed'}<p class="error" role="alert"><XCircle size={18} /> Оплата отклонена. Можно повторить попытку.</p>{/if}<div class="actions"><button data-slot="button" class="primary {buttonVariants()}" disabled={busy || !simulation} onclick={() => result('paid')}>{busy ? 'Подтверждаем…' : 'Симулировать успешную оплату'}</button><button data-slot="button" class="secondary {buttonVariants({ variant: 'outline' })}" disabled={busy || !simulation} onclick={() => result('failed')}>Симулировать отказ</button></div>{/if}
     </section>{:else if !error}<p role="status">Загрузка платежа…</p>{/if}
-    {#if error}<p class="error" role="alert">{error}</p><button class="secondary" onclick={load}>Повторить загрузку</button>{/if}
+    {#if error}<p class="error" role="alert">{error}</p><button data-slot="button" class="secondary {buttonVariants({ variant: 'outline' })}" onclick={load}>Повторить загрузку</button>{/if}
   </main>
 </div>
-<style>header { max-width:720px; } .embedded { min-height:0; } .embedded .live-shell { padding:20px; } .embedded header { padding:16px 20px; } .embedded .card { margin:0; }</style>
+<style>
+@layer screens {header { max-width:720px; } .embedded { min-height:0; } .embedded .live-shell { padding:20px; } .embedded header { padding:16px 20px; } .embedded .card { margin:0; }}
+</style>

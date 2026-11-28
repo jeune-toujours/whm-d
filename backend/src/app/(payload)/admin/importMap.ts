@@ -1,3 +1,5 @@
+import { Icon as Icon_d4751384a7cf3b09ce46117cb8895da1 } from '../../../admin/Brand'
+import { Logo as Logo_d4751384a7cf3b09ce46117cb8895da1 } from '../../../admin/Brand'
 import { WarehouseNav as WarehouseNav_22c14bdaeeb5d5ba3ce19c34a510c013 } from '../../../admin/WarehouseNav'
 import { ReceiveView as ReceiveView_ff5722f59c0a3985fad96f1661e42f6e } from '../../../admin/WarehouseView'
 import { PlaceView as PlaceView_ff5722f59c0a3985fad96f1661e42f6e } from '../../../admin/WarehouseView'
@@ -11,6 +13,8 @@ import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc056
 
 /** @type import('payload').ImportMap */
 export const importMap = {
+  "/admin/Brand#Icon": Icon_d4751384a7cf3b09ce46117cb8895da1,
+  "/admin/Brand#Logo": Logo_d4751384a7cf3b09ce46117cb8895da1,
   "/admin/WarehouseNav#WarehouseNav": WarehouseNav_22c14bdaeeb5d5ba3ce19c34a510c013,
   "/admin/WarehouseView#ReceiveView": ReceiveView_ff5722f59c0a3985fad96f1661e42f6e,
   "/admin/WarehouseView#PlaceView": PlaceView_ff5722f59c0a3985fad96f1661e42f6e,

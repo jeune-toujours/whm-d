@@ -1,4 +1,7 @@
 <script>
+  import Input from '$lib/components/ui/input.svelte';
+  import Brand from '$lib/components/Brand.svelte';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { ChevronLeft, Mic, Monitor, Moon, Sun, Truck, Warehouse } from '@lucide/svelte';
   /*
    * WHM-3 — Авторизация и Онбординг
@@ -236,19 +239,16 @@
   }
 
   function handleOtpInput(index, event) {
-    const digit = event.currentTarget.value.replace(/\D/g, '').slice(-1);
+    const field = event.currentTarget;
+    const digits = field.value.replace(/\D/g, '').slice(0, otpDigits.length - index);
     const next = [...otpDigits];
-    next[index] = digit;
+    next[index] = '';
+    Array.from(digits).forEach((digit, offset) => { next[index + offset] = digit; });
+    field.value = next[index];
     otpDigits = next;
     otpError = '';
-
-    if (digit && index < otpDigits.length - 1) {
-      const nextInput = document.getElementById(`otp-cell-${index + 1}`);
-      nextInput?.focus();
-    }
-    if (next.every((value) => value.length === 1)) {
-      verifyOtp();
-    }
+    if (digits) document.getElementById('otp-cell-' + Math.min(index + digits.length, next.length - 1))?.focus();
+    if (next.every(Boolean)) void verifyOtp();
   }
 
   function handleOtpKeydown(index, event) {
@@ -384,13 +384,13 @@
   <meta name="description" content="Авторизация и онбординг клиента" />
 </svelte:head>
 
-<div class="whm-app" data-theme={theme}>
+<div class="whm-app auth-page" data-theme={theme}>
   <div class="ambient ambient-one"></div>
   <div class="ambient ambient-two"></div>
 
   {#if screen !== 'splash'}
     <button
-      class="theme-toggle"
+      data-slot="button" class="theme-toggle {buttonVariants({ variant: 'outline', size: 'icon' })}"
       type="button"
       aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
       onclick={toggleTheme}
@@ -406,30 +406,31 @@
   <main class="page-shell">
     {#if screen === 'splash'}
       <div class="splash">
-        <strong class="system-label">Клиентский интерфейс</strong>
+        <Brand />
         <span class="tagline">Хранение вещей — просто и удобно</span>
         <span class="splash-spinner" aria-hidden="true"></span>
       </div>
 
     {:else if screen === 'welcome'}
       <div class="welcome">
-        <div class="hero-glyph" aria-hidden="true">
-          <Warehouse aria-hidden="true" />
+        <div class="welcome-cover">
+          <Brand />
+          <div class="hero-glyph" aria-hidden="true"><Warehouse aria-hidden="true" /></div>
         </div>
         <h1>Хранение личных вещей — просто и удобно</h1>
         <div class="welcome-actions">
-          <button class="primary-button" type="button" onclick={startRegister}>Начать хранение</button>
-          <button class="link-button standalone" type="button" onclick={startLogin}>Войти</button>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={startRegister}>Начать хранение</button>
+          <button data-slot="button" class="link-button standalone {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={startLogin}>Войти</button>
         </div>
         <p class="legal-links">
-          <button class="link-button" type="button" onclick={onOpenPrivacy}>Политика конфиденциальности</button>
+          <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={onOpenPrivacy}>Политика конфиденциальности</button>
           ·
-          <button class="link-button" type="button" onclick={onOpenTerms}>Условия использования</button>
+          <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={onOpenTerms}>Условия использования</button>
         </p>
       </div>
 
     {:else if screen === 'phone'}
-      <button class="back-button" type="button" aria-label="Назад" onclick={() => (screen = 'welcome')}>
+      <button data-slot="button" class="back-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Назад" onclick={() => (screen = 'welcome')}>
         <ChevronLeft aria-hidden="true" />
       </button>
       <div class="page-heading">
@@ -444,7 +445,7 @@
           <input
             type="tel"
             inputmode="numeric"
-            placeholder="999 123 45 67"
+            name="phone" autocomplete="tel-national" placeholder="999 123 45 67"
             value={formattedPhone}
             oninput={handlePhoneInput}
           />
@@ -455,7 +456,7 @@
       {#if alreadyRegisteredNotice}
         <div class="inline-note warning">
           <p>Этот номер уже используется.</p>
-          <button class="link-button" type="button" onclick={startLogin}>Войти</button>
+          <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={startLogin}>Войти</button>
         </div>
       {/if}
       {#if phoneError}
@@ -463,17 +464,17 @@
       {/if}
 
       <div class="form-actions">
-        <button class="primary-button" type="button" disabled={requestingOtp} onclick={submitPhone}>
+        <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={requestingOtp} onclick={submitPhone}>
           {requestingOtp ? 'Отправляем…' : 'Получить код'}
         </button>
       </div>
 
       {#if mode === 'register'}
-        <button class="link-button standalone center" type="button" onclick={startLogin}>Уже есть аккаунт? Войти</button>
+        <button data-slot="button" class="link-button standalone center {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={startLogin}>Уже есть аккаунт? Войти</button>
       {/if}
 
     {:else if screen === 'otp'}
-      <button class="back-button" type="button" aria-label="Назад" onclick={changePhoneNumber}>
+      <button data-slot="button" class="back-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Назад" onclick={changePhoneNumber}>
         <ChevronLeft aria-hidden="true" />
       </button>
       <div class="page-heading">
@@ -487,9 +488,13 @@
           <input
             id={`otp-cell-${index}`}
             class="otp-cell"
+            aria-label={`Цифра ${index + 1} из ${otpDigits.length}`}
             type="tel"
             inputmode="numeric"
-            maxlength="1"
+            name={'otp-' + (index + 1)}
+            autocomplete={index === 0 ? 'one-time-code' : 'off'}
+            maxlength={otpDigits.length - index}
+            onfocus={(event) => event.currentTarget.select()}
             value={digit}
             disabled={isOtpLocked || otpBusy}
             oninput={(event) => handleOtpInput(index, event)}
@@ -505,13 +510,13 @@
       {/if}
 
       <div class="otp-actions">
-        <button class="link-button" type="button" disabled={resendCooldown > 0 || otpBusy || isOtpLocked} onclick={resendOtp}>
+        <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" disabled={resendCooldown > 0 || otpBusy || isOtpLocked} onclick={resendOtp}>
           {resendCooldown > 0 ? `Выслать код повторно через 0:${String(resendCooldown).padStart(2, '0')}` : 'Выслать код повторно'}
         </button>
         {#if showCallOption}
           <span class="field-caption">Не получили код? Позвоним с кодом на ваш номер.</span>
         {/if}
-        <button class="link-button standalone" type="button" onclick={changePhoneNumber}>Изменить номер</button>
+        <button data-slot="button" class="link-button standalone {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={changePhoneNumber}>Изменить номер</button>
       </div>
 
     {:else if screen === 'profile'}
@@ -520,19 +525,19 @@
         <p>Это нужно для оформления документов и чека.</p>
       </div>
 
-      <label class="text-field" class:invalid={profileFirstNameMissing}>
+      <label for="field-firstName" class="text-field" class:invalid={profileFirstNameMissing}>
         <span>Имя</span>
-        <input type="text" bind:value={firstName} />
+        <Input id="field-firstName" type="text" name="firstName" autocomplete="given-name" bind:value={firstName} />
         {#if profileFirstNameMissing}<small class="field-error">Укажите имя.</small>{/if}
       </label>
-      <label class="text-field" class:invalid={profileLastNameMissing}>
+      <label for="field-lastName" class="text-field" class:invalid={profileLastNameMissing}>
         <span>Фамилия</span>
-        <input type="text" bind:value={lastName} />
+        <Input id="field-lastName" type="text" name="lastName" autocomplete="family-name" bind:value={lastName} />
         {#if profileLastNameMissing}<small class="field-error">Укажите фамилию.</small>{/if}
       </label>
 
       <div class="form-actions">
-        <button class="primary-button" type="button" disabled={profileBusy} onclick={submitProfile}>
+        <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={profileBusy} onclick={submitProfile}>
           {profileBusy ? 'Сохраняем…' : 'Продолжить'}
         </button>
       </div>
@@ -558,13 +563,13 @@
         </div>
 
         <div class="form-actions">
-          <button class="primary-button" type="button" onclick={nextSlide}>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={nextSlide}>
             {slideIndex === onboardingSlides.length - 1 ? 'Начать' : 'Далее'}
           </button>
         </div>
 
         {#if slideIndex < onboardingSlides.length - 1}
-          <button class="link-button standalone center" type="button" onclick={skipOnboarding}>Пропустить</button>
+          <button data-slot="button" class="link-button standalone center {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={skipOnboarding}>Пропустить</button>
         {/if}
       </div>
 
@@ -581,10 +586,10 @@
         {/if}
 
         <div class="welcome-actions">
-          <button class="primary-button" type="button" disabled={biometricBusy} onclick={tryBiometric}>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={biometricBusy} onclick={tryBiometric}>
             {biometricBusy ? 'Проверяем…' : 'Использовать Face ID'}
           </button>
-          <button class="link-button standalone" type="button" onclick={fallbackToOtp}>Войти по коду из SMS</button>
+          <button data-slot="button" class="link-button standalone {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={fallbackToOtp}>Войти по коду из SMS</button>
         </div>
       </div>
     {/if}
@@ -592,6 +597,7 @@
 </div>
 
 <style>
+@layer screens {
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(html) { min-width: 320px; background: var(--color-base-100, white); }
   :global(body) { margin: 0; font-family: 'Open Sans', sans-serif; }
@@ -621,31 +627,7 @@
     transition: background-color 200ms ease, color 200ms ease;
   }
 
-  .whm-app[data-theme='bumblebee'] {
-    color-scheme: light;
-    --color-base-100: oklch(100% 0 0);
-    --color-base-200: oklch(97% 0 0);
-    --color-base-content: oklch(20% 0 0);
-    --color-primary: oklch(85% 0.199 91.936);
-    --color-secondary: oklch(75% 0.183 55.934);
-    --color-error: oklch(70% 0.191 22.216);
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
-  .whm-app[data-theme='halloween'] {
-    color-scheme: dark;
-    --color-base-100: oklch(21% 0.006 56.043);
-    --color-base-200: oklch(14% 0.004 49.25);
-    --color-base-content: oklch(84.955% 0 0);
-    --color-primary: oklch(76% 0.188 70.08);
-    --color-secondary: oklch(45.98% 0.248 305.03);
-    --color-error: oklch(65.72% 0.199 27.33);
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
   .ambient { position: fixed; z-index: -1; border-radius: 999px; pointer-events: none; opacity: 0.5; }
   .ambient-one { top: -14rem; right: -12rem; width: 30rem; height: 30rem; background: radial-gradient(circle, var(--primary-faint), transparent 68%); }
@@ -797,4 +779,5 @@
 
 
 
+}
 </style>

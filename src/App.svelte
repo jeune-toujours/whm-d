@@ -1,4 +1,5 @@
 <script>
+  import { applyTheme } from '$lib/theme.js';
   import LiveApp from './LiveApp.svelte';
   const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
   import { ExternalLink } from '@lucide/svelte';
@@ -36,6 +37,8 @@
   let infoBackRoute = $state('home');
   let theme = $state('bumblebee');
 
+  $effect(() => { if (demoMode) applyTheme(theme); });
+
   let root = $derived(route.split('/')[0]);
   let routeItemId = $derived(route.startsWith('item/') ? route.split('/')[1] : '');
   let item = $derived(selectedItem?.id === routeItemId ? selectedItem : demo.units.find(unit => unit.id === routeItemId));
@@ -58,6 +61,14 @@
     const destination = path.replace(/^\//, '');
     if (location.hash !== `#/${destination}`) location.hash = `/${destination}`;
     else { route = destination; window.scrollTo({ top: 0, behavior: 'instant' }); }
+  }
+
+  function focusContent() {
+    const content = document.querySelector('main, .success-screen');
+    if (content instanceof HTMLElement) {
+      content.tabIndex = -1;
+      content.focus();
+    }
   }
 
   function updateDemo(next) { demo = next; saveDemo(next); }
@@ -126,18 +137,19 @@
   }
 </script>
 
+<button type="button" class="skip-link" onclick={focusContent}>Перейти к содержимому</button>
 {#if !demoMode}
   <LiveApp />
 {:else}
 
 <div class="review-bar" role="region" aria-label="Навигация по демо-контру">
   <span><strong>Клиентский демо-контур</strong><i></i>Без бэкенда</span>
-  <div><button type="button" onclick={() => navigate('home')}>Главная</button><button type="button" onclick={() => navigate('preview')}>Все экраны <ExternalLink size={14} aria-hidden="true" /></button></div>
+  <div><a href="#/home">Главная</a><a href="#/preview">Все экраны <ExternalLink size={13} aria-hidden="true" /></a></div>
 </div>
 
 {#key route}
   {#if root === 'preview'}
-    <Preview {demo} onNavigate={navigate} onScenario={setScenario} onStage={setOrderStage} />
+    <Preview {demo} onScenario={setScenario} onStage={setOrderStage} />
   {:else if root === 'signin'}
     <Auth initialTheme={theme} onCheckSession={() => ({ active: false, biometricEnabled: false })} onRequestOtp={() => ({ ok: true })} onVerifyOtp={(code) => code === '0000' ? { ok: false, message: 'Неверный код' } : { ok: true }} onSaveProfile={updateProfile} onOpenTerms={() => openInfo('Публичная оферта', 'Текст оферты ещё не утверждён. В демо-контуре не заключаются договоры и не проводятся платежи.', 'signin')} onOpenPrivacy={() => openInfo('Политика конфиденциальности', 'Текст политики ещё не утверждён. Демо-контур не отправляет введённые данные на сервер.', 'signin')} onComplete={() => navigate('home')} />
   {:else if root === 'home'}
@@ -147,7 +159,7 @@
   {:else if root === 'order'}
     {#if demo.activeOrder}<ActiveOrder initialTheme={theme} order={demo.activeOrder} autoRefreshMs={0} onRefresh={() => demo.activeOrder} onCancel={cancelOrder} onContactCourier={() => openInfo('Связь с курьером', 'Контакт курьера появится после назначения исполнителя в реальной системе.', 'order')} onSupport={(context) => openSupport(context, 'incident')} onBack={() => navigate('home')} onHome={() => navigate('home')} onItemOpen={(unit) => openItem(unit, 'order')} onOpenHistory={() => navigate('history')} onDownloadDocument={() => openInfo('Акт по заказу', 'В демо-контуре документ не формируется. После подключения бэкенда здесь появится акт заказа.', 'order')} />{:else}<InfoScreen initialTheme={theme} title="Активных заказов нет" description="Оформите сдачу вещей или возврат, чтобы увидеть отслеживание заказа." onBack={() => navigate('home')} />{/if}
   {:else if root === 'intake'}
-    <Intake customerName={demo.profile.firstName} savedPhone={demo.profile.phone} demoMode={true} startAtService={true} onCreateOrder={createIntakeOrder} onNavigateOrder={() => navigate('order')} onNavigateHome={() => navigate('home')} onOpenTerms={(kind) => openInfo(kind === 'storage' ? 'Условия хранения' : 'Публичная оферта', 'Текст документа ещё не утверждён. В демо-контуре согласие не фиксируется и платежи не проводятся.', 'intake')} />
+    <Intake initialTheme={theme} customerName={demo.profile.firstName} savedPhone={demo.profile.phone} demoMode={true} startAtService={true} onCreateOrder={createIntakeOrder} onNavigateOrder={() => navigate('order')} onNavigateHome={() => navigate('home')} onOpenTerms={(kind) => openInfo(kind === 'storage' ? 'Условия хранения' : 'Публичная оферта', 'Текст документа ещё не утверждён. В демо-контуре согласие не фиксируется и платежи не проводятся.', 'intake')} />
   {:else if root === 'return'}
     <ReturnItems storageUnits={demo.units} initialSelectedIds={selectedForReturn} initialTheme={theme} demoMode={true} onOpenPayment={() => ({ ok: true })} onCreateReturn={createReturnOrder} onNavigateToOrder={() => navigate('order')} onNavigateHome={() => navigate('home')} onExit={() => navigate('home')} />
   {:else if root === 'history'}
@@ -168,5 +180,5 @@
 {/if}
 
 <style>
-  .review-bar{height:38px;padding:0 clamp(12px,3vw,30px);display:flex;align-items:center;justify-content:space-between;gap:12px;background:#292922;color:#e8e8df;font:11px/1 'Open Sans', sans-serif}.review-bar span{display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.review-bar strong{color:#f4c84a;letter-spacing:.08em}.review-bar i{width:4px;height:4px;border-radius:50%;background:#9c9c8c}.review-bar div{display:flex;gap:3px;flex:0 0 auto}.review-bar button{border:0;background:transparent;color:#f1f1ea;font-size:11px;font-weight:700;padding:8px}.review-bar button:hover{color:#f4c84a}@media(max-width:520px){.review-bar span{font-size:0}.review-bar strong{font-size:11px}.review-bar i{display:none}}
+  .review-bar{height:38px;padding:0 clamp(12px,3vw,30px);display:flex;align-items:center;justify-content:space-between;gap:12px;background:#292922;color:#e8e8df;font:11px/1 'Open Sans', sans-serif}.review-bar span{display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.review-bar strong{color:#f4c84a;letter-spacing:.08em}.review-bar i{width:4px;height:4px;border-radius:50%;background:#9c9c8c}.review-bar div{display:flex;gap:3px;flex:0 0 auto}.review-bar a{display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:#f1f1ea;font-size:11px;font-weight:700;padding:8px}.review-bar a:hover{color:#f4c84a}@media(max-width:520px){.review-bar span{font-size:0}.review-bar strong{font-size:11px}.review-bar i{display:none}}
 </style>

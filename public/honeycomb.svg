@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="188" viewBox="0 0 320 188" fill="none">
+  <defs>
+    <pattern id="cells" width="60" height="34.64" patternUnits="userSpaceOnUse">
+      <path d="M0 17.32 10 0h20l10 17.32-10 17.32H10L0 17.32h-20m60 0h20" stroke="#bc9749" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="fade" x1="0" y1="1" x2="1" y2="0" gradientUnits="objectBoundingBox">
+      <stop stop-color="white" stop-opacity="0"/><stop offset=".55" stop-color="white" stop-opacity=".11"/><stop offset="1" stop-color="white" stop-opacity=".42"/>
+    </linearGradient>
+    <mask id="edge"><path fill="url(#fade)" d="M0 0h320v188H0z"/></mask>
+  </defs>
+  <path fill="url(#cells)" mask="url(#edge)" d="M0 0h320v188H0z"/>
+</svg>

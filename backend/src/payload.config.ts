@@ -18,6 +18,7 @@ const sourceDir = path.dirname(fileURLToPath(import.meta.url))
 export default buildConfig({
   secret, serverURL: origin, cors: { origins: [client, origin], headers: ['Idempotency-Key', 'X-WHM-Client'] }, csrf: [client, origin],
   admin: { user: 'users', autoRefresh: true, importMap: { baseDir: sourceDir, importMapFile: path.resolve(sourceDir, 'app/(payload)/admin/importMap.ts') }, meta: { titleSuffix: ' · WHM' }, components: {
+    graphics: { Icon: '/admin/Brand#Icon', Logo: '/admin/Brand#Logo' },
     afterNavLinks: ['/admin/WarehouseNav#WarehouseNav'],
     views: {
       receive: { Component: '/admin/WarehouseView#ReceiveView', path: '/warehouse/receive' },

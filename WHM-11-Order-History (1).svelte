@@ -1,4 +1,7 @@
 <script>
+  import DialogFrame from '$lib/components/ui/dialog.svelte';
+  import Brand from '$lib/components/Brand.svelte';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, FileText, ListFilter, Moon, Package, Search, SearchX, Sun, TriangleAlert, Truck, X } from '@lucide/svelte';
   import { tick, onMount } from 'svelte';
 
@@ -546,13 +549,6 @@
     if (typeof window !== 'undefined') window.scrollTo({ top: listScrollY, behavior: 'instant' });
   }
 
-  function handleCardKeydown(event, order) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      openOrder(order);
-    }
-  }
-
   function openActiveOrder() {
     onTrack('history_active_order_opened', { orderId: activeOrder?.id });
     if (typeof onOpenActiveOrder === 'function') onOpenActiveOrder(activeOrder);
@@ -624,13 +620,13 @@
   <div class="ambient ambient-two"></div>
 
   <header class="app-header">
-    <button class="brand" type="button" aria-label="На главный экран" onclick={onBack}>
-      <span class="system-label">Клиентский интерфейс</span>
+    <button class="brand" type="button" aria-label="WHM D — на главный экран" onclick={onBack}>
+      <Brand />
     </button>
 
     <div class="header-actions">
       <button
-        class="theme-toggle"
+        data-slot="button" class="theme-toggle {buttonVariants({ variant: 'outline', size: 'icon' })}"
         type="button"
         aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
         title={isDark ? 'Светлая тема' : 'Тёмная тема'}
@@ -642,7 +638,7 @@
           <Moon aria-hidden="true" />
         {/if}
       </button>
-      <button class="profile-button" type="button" aria-label="Профиль" onclick={onOpenProfile}>{userInitials}</button>
+      <button class="profile-button" type="button" aria-label={userInitials + ' — профиль'} onclick={onOpenProfile}>{userInitials}</button>
     </div>
   </header>
 
@@ -650,29 +646,29 @@
     {#if live && financialView}
       <section class="list-view screen-enter" aria-labelledby="payments-title">
         <div class="page-heading"><div><h1 id="payments-title">История платежей</h1><p>Тестовые оплаты и возвраты. Реальных списаний нет.</p></div></div>
-        <button class="text-button" type="button" onclick={onShowOrders}>История заказов</button>
+        <button data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={onShowOrders}>История заказов</button>
         <div class="payment-filters" aria-label="Фильтр платежей">
           {#each [['all','Все'],['paid','Оплачено'],['refunded','Возврат'],['pending','Ожидает оплаты'],['failed','Ошибка']] as filter}
-            <button class="secondary-button" aria-pressed={paymentFilter===filter[0]} type="button" onclick={()=>paymentFilter=filter[0]}>{filter[1]}</button>
+            <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" aria-pressed={paymentFilter===filter[0]} type="button" onclick={()=>paymentFilter=filter[0]}>{filter[1]}</button>
           {/each}
         </div>
-        {#if paymentError}<p role="alert">{paymentError}</p><button class="secondary-button" onclick={()=>loadPayments()}>Повторить</button>{/if}
+        {#if paymentError}<p role="alert">{paymentError}</p><button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" onclick={()=>loadPayments()}>Повторить</button>{/if}
         {#each paymentRows as payment (payment.id)}
-          <article class="detail-card">
+          <article data-slot="card" class="detail-card">
             <h2>{payment.title}</h2><p>{new Date(payment.date).toLocaleDateString('ru-RU')} · {payment.orderNumber}</p>
             <div class="finance-line"><span>{({paid:'Оплачено',refunded:'Возврат',pending:'Ожидает оплаты',failed:'Ошибка'})[payment.status]}</span><strong>{formatMoney(payment.amount)}</strong></div>
-            {#if payment.hasReceipt}<button class="text-button" onclick={()=>onPaymentReceipt(payment)}>Тестовая квитанция</button>{/if}
-            {#if ['pending','failed'].includes(payment.status)}<button class="secondary-button" onclick={()=>onPaymentRetry(payment)}>Продолжить оплату</button>{/if}
+            {#if payment.hasReceipt}<button data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" onclick={()=>onPaymentReceipt(payment)}>Тестовая квитанция</button>{/if}
+            {#if ['pending','failed'].includes(payment.status)}<button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" onclick={()=>onPaymentRetry(payment)}>Продолжить оплату</button>{/if}
           </article>
         {:else}{#if !paymentLoading && !paymentError}<p>Платежей пока нет.</p>{/if}{/each}
-        {#if paymentLoading}<p role="status">Загружаем платежи…</p>{:else if nextPaymentPage}<button class="secondary-button" onclick={()=>loadPayments(paymentFilter,true)}>Загрузить ещё</button>{/if}
+        {#if paymentLoading}<p role="status">Загружаем платежи…</p>{:else if nextPaymentPage}<button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" onclick={()=>loadPayments(paymentFilter,true)}>Загрузить ещё</button>{/if}
         <p>Квитанции тестовые, не являются фискальными чеками.</p>
       </section>
     {:else if selectedOrder}
       <section class="detail-view screen-enter" aria-labelledby="detail-title">
         {#if live && !selectedOrder.snapshotAvailable}<p class="inline-note">Для этого раннего тестового заказа снимок не сохранялся. Некоторые сведения восстановлены из текущих данных.</p>{/if}
         <div class="detail-topbar">
-          <button class="back-button" type="button" aria-label="Назад к истории" onclick={closeOrder}>
+          <button data-slot="button" class="back-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Назад к истории" onclick={closeOrder}>
             <ChevronLeft aria-hidden="true" />
           </button>
           <span>История заказов</span>
@@ -785,7 +781,7 @@
                   </span>
                   <span class="service-price">{formatMoney(service.price)}</span>
                   {#if service.material || service.document}
-                    <button class="small-link" type="button" onclick={() => openService(service, selectedOrder)}>
+                    <button data-slot="button" class="small-link {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={() => openService(service, selectedOrder)}>
                       {service.document ? 'Документ' : 'Материалы'}
                     </button>
                   {/if}
@@ -855,7 +851,7 @@
             <strong>{selectedOrder.financial.paid > 0 ? formatMoney(selectedOrder.financial.paid) : selectedOrder.financial.paymentStatus === 'refunded' ? 'Возвращено полностью' : ['pending','failed'].includes(selectedOrder.financial.paymentStatus) ? 'Не оплачено' : 'Без оплаты'}</strong>
           </div>
           {#if selectedOrder.financial.receiptAvailable || selectedOrder.financial.simulationReceipt}
-            <button class="secondary-button receipt-button" type="button" onclick={() => openReceipt(selectedOrder)}>
+            <button data-slot="button" class="secondary-button receipt-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={() => openReceipt(selectedOrder)}>
               <FileText aria-hidden="true" />
               {live ? "Тестовая квитанция" : "Открыть документ оплаты"}
             </button>
@@ -889,10 +885,10 @@
         {/if}
 
         <div class="detail-actions">
-          <button class="secondary-button" type="button" onclick={() => openSupport(selectedOrder)}>
+          <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={() => openSupport(selectedOrder)}>
             Нужна помощь по заказу
           </button>
-          <button class="text-button" type="button" onclick={closeOrder}>Вернуться к истории</button>
+          <button data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={closeOrder}>Вернуться к истории</button>
         </div>
       </section>
     {:else}
@@ -901,7 +897,7 @@
           <div>
             <p class="page-kicker">Ваши заказы</p>
             <h1 id="history-title">История заказов</h1>
-            {#if live}<button class="text-button" type="button" onclick={onShowPayments}>Все платежи</button>{/if}
+            {#if live}<button data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={onShowPayments}>Все платежи</button>{/if}
             <p>Сдача, хранение, возвраты и оплата в одном месте.</p>
           </div>
           <div class="order-count"><strong>{orders.length}</strong><span>всего</span></div>
@@ -993,31 +989,31 @@
             {/each}
           </div>
         {:else if errorMessage}
-          <div class="state-card">
+          <div data-slot="card" class="state-card">
             <span class="state-icon error" aria-hidden="true">
               <TriangleAlert aria-hidden="true" />
             </span>
             <h2>Не удалось загрузить историю</h2>
             <p>{errorMessage}</p>
-            <button class="primary-button" type="button" onclick={onRetry}>Повторить</button>
+            <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={onRetry}>Повторить</button>
           </div>
         {:else if orders.length === 0}
-          <div class="state-card">
+          <div data-slot="card" class="state-card">
             <span class="state-icon" aria-hidden="true">
               <FileText aria-hidden="true" />
             </span>
             <h2>Здесь появятся завершённые заказы</h2>
             <p>После сдачи или возврата вещей вы сможете посмотреть состав, даты и оплату.</p>
-            <button class="primary-button" type="button" onclick={onBack}>На главный экран</button>
+            <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={onBack}>На главный экран</button>
           </div>
         {:else if filteredOrders.length === 0}
-          <div class="state-card compact-state">
+          <div data-slot="card" class="state-card compact-state">
             <span class="state-icon" aria-hidden="true">
               <SearchX aria-hidden="true" />
             </span>
             <h2>Заказы не найдены</h2>
             <p>Измените запрос или сбросьте выбранные фильтры.</p>
-            <button class="secondary-button" type="button" onclick={resetAllFilters}>Сбросить фильтры</button>
+            <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={resetAllFilters}>Сбросить фильтры</button>
           </div>
         {:else}
           <div class="year-groups">
@@ -1032,11 +1028,6 @@
                     <div
                       class:cancelled={order.status === 'cancelled'}
                       class="order-card"
-                      role="button"
-                      tabindex="0"
-                      aria-label={`Открыть заказ ${order.number}`}
-                      onclick={() => openOrder(order)}
-                      onkeydown={(event) => handleCardKeydown(event, order)}
                     >
                       <div class="order-card-head">
                         <div>
@@ -1044,11 +1035,11 @@
                             <Package aria-hidden="true" />
                             {orderTypeLabel(order)}
                           </span>
-                          <h3>{order.number}</h3>
+                          <h3><button type="button" class="open-order-card" aria-label={'Открыть заказ ' + order.number} onclick={() => openOrder(order)}>{order.number}</button></h3>
                           <p>{dateLabel(order)}</p>
                         </div>
                         <span class:cancelled={order.status === 'cancelled'} class="status-pill small">
-                          <X aria-hidden="true" />
+                          {#if order.status === 'completed'}<Check aria-hidden="true" />{:else}<X aria-hidden="true" />{/if}
                           {order.status === 'completed' ? 'Завершён' : 'Отменён'}
                         </span>
                       </div>
@@ -1109,16 +1100,17 @@
         {/if}
       </section>
     {/if}
-    {#if live && pageCursor && !selectedOrderId}<button class="secondary-button" type="button" disabled={loading} onclick={moreHistory}>Загрузить ещё</button>{/if}
+    {#if live && pageCursor && !selectedOrderId}<button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" disabled={loading} onclick={moreHistory}>Загрузить ещё</button>{/if}
   </main>
 
   {#if filterSheetOpen}
-    <div class="modal-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (filterSheetOpen = false)}>
-      <div class="filter-sheet" role="dialog" aria-modal="true" aria-labelledby="filter-title">
+    <DialogFrame onDismiss={() => (filterSheetOpen = false)}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps} class="filter-sheet" role="dialog" aria-modal="true" aria-labelledby="filter-title">
         <div class="sheet-handle" aria-hidden="true"></div>
         <div class="modal-head">
           <div><h2 id="filter-title">Фильтры</h2><p>Уточните историю заказов</p></div>
-          <button class="icon-button" type="button" aria-label="Закрыть" onclick={() => (filterSheetOpen = false)}>
+          <button data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={() => (filterSheetOpen = false)}>
             <X aria-hidden="true" />
           </button>
         </div>
@@ -1157,19 +1149,21 @@
         </label>
 
         <div class="sheet-actions">
-          <button class="secondary-button" type="button" onclick={resetAdvancedFilters}>Сбросить</button>
-          <button class="primary-button" type="button" onclick={applyFilters}>Показать заказы</button>
+          <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={resetAdvancedFilters}>Сбросить</button>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={applyFilters}>Показать заказы</button>
         </div>
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if itemPreview}
-    <div class="modal-backdrop centered" role="presentation" onclick={(event) => event.target === event.currentTarget && (itemPreview = null)}>
-      <div class="preview-modal" role="dialog" aria-modal="true" aria-labelledby="item-preview-title">
+    <DialogFrame onDismiss={() => (itemPreview = null)}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps} class="preview-modal" role="dialog" aria-modal="true" aria-labelledby="item-preview-title">
         <div class="modal-head">
           <div><h2 id="item-preview-title">{itemPreview.item.title}</h2><p>{itemPreview.item.id}</p></div>
-          <button class="icon-button" type="button" aria-label="Закрыть" onclick={() => (itemPreview = null)}>
+          <button data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={() => (itemPreview = null)}>
             <X aria-hidden="true" />
           </button>
         </div>
@@ -1191,17 +1185,19 @@
           <TriangleAlert aria-hidden="true" />
           <p>{itemPreview.item.archived ? 'Карточка доступна только для просмотра. Данные сохранены на момент возврата.' : 'Это актуальная карточка вещи на хранении.'}</p>
         </div>
-        <button class="primary-button full" type="button" onclick={() => (itemPreview = null)}>Понятно</button>
+        <button data-slot="button" class="primary-button full {buttonVariants()}" type="button" onclick={() => (itemPreview = null)}>Понятно</button>
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if receiptPreview}
-    <div class="modal-backdrop centered" role="presentation" onclick={(event) => event.target === event.currentTarget && (receiptPreview = null)}>
-      <div class="preview-modal receipt-modal" role="dialog" aria-modal="true" aria-labelledby="receipt-title">
+    <DialogFrame onDismiss={() => (receiptPreview = null)}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps} class="preview-modal receipt-modal" role="dialog" aria-modal="true" aria-labelledby="receipt-title">
         <div class="modal-head">
           <div><h2 id="receipt-title">Чек по заказу</h2><p>{receiptPreview.number}</p></div>
-          <button class="icon-button" type="button" aria-label="Закрыть" onclick={() => (receiptPreview = null)}><X aria-hidden="true" /></button>
+          <button data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={() => (receiptPreview = null)}><X aria-hidden="true" /></button>
         </div>
         <div class="receipt-paper">
           <div class="receipt-brand"><strong>Демо-чек клиентского сервиса</strong></div>
@@ -1212,17 +1208,19 @@
           {#if receiptPreview.financial.refund > 0}<div><span>Возвращено</span><strong>{formatMoney(receiptPreview.financial.refund)}</strong></div>{/if}
           <small>Фискальный документ будет открыт через интеграцию приложения.</small>
         </div>
-        <button class="primary-button full" type="button" onclick={() => showToast('Чек подготовлен к скачиванию')}>Скачать PDF</button>
+        <button data-slot="button" class="primary-button full {buttonVariants()}" type="button" onclick={() => showToast('Чек подготовлен к скачиванию')}>Скачать PDF</button>
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if documentPreview}
-    <div class="modal-backdrop centered" role="presentation" onclick={(event) => event.target === event.currentTarget && (documentPreview = null)}>
-      <div class="preview-modal" role="dialog" aria-modal="true" aria-labelledby="document-title">
+    <DialogFrame onDismiss={() => (documentPreview = null)}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps} class="preview-modal" role="dialog" aria-modal="true" aria-labelledby="document-title">
         <div class="modal-head">
           <div><h2 id="document-title">{documentPreview.service.title}</h2><p>{documentPreview.order.number}</p></div>
-          <button class="icon-button" type="button" aria-label="Закрыть" onclick={() => (documentPreview = null)}><X aria-hidden="true" /></button>
+          <button data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={() => (documentPreview = null)}><X aria-hidden="true" /></button>
         </div>
         <div class="document-placeholder" aria-hidden="true">
           <FileText aria-hidden="true" />
@@ -1232,9 +1230,10 @@
             ? `Страховой документ на сумму ${formatMoney(documentPreview.service.insuredValue)}`
             : 'Материалы услуги доступны в карточках связанных единиц хранения.'}
         </p>
-        <button class="primary-button full" type="button" onclick={() => (documentPreview = null)}>Закрыть</button>
+        <button data-slot="button" class="primary-button full {buttonVariants()}" type="button" onclick={() => (documentPreview = null)}>Закрыть</button>
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if toastMessage}
@@ -1246,6 +1245,7 @@
 </div>
 
 <style>
+@layer screens {
   :global(*) { box-sizing: border-box; }
   :global(html) { min-width: 320px; background: var(--color-base-100, white); }
   :global(body) { margin: 0; font-family: 'Open Sans', sans-serif; }
@@ -1279,47 +1279,7 @@
     transition: background-color 200ms ease, color 200ms ease;
   }
 
-  .whm-app[data-theme='bumblebee'] {
-    color-scheme: light;
-    --color-base-100: oklch(100% 0 0);
-    --color-base-200: oklch(97% 0 0);
-    --color-base-300: oklch(92% 0 0);
-    --color-base-content: oklch(20% 0 0);
-    --color-primary: oklch(85% 0.199 91.936);
-    --color-primary-content: oklch(42% 0.095 57.708);
-    --color-secondary: oklch(75% 0.183 55.934);
-    --color-secondary-content: oklch(40% 0.123 38.172);
-    --color-success: oklch(76% 0.177 163.223);
-    --color-success-content: oklch(37% 0.077 168.94);
-    --color-warning: oklch(82% 0.189 84.429);
-    --color-error: oklch(70% 0.191 22.216);
-    --color-error-content: oklch(39% 0.141 25.723);
-    --radius-selector: 1rem;
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
-  .whm-app[data-theme='halloween'] {
-    color-scheme: dark;
-    --color-base-100: oklch(21% 0.006 56.043);
-    --color-base-200: oklch(14% 0.004 49.25);
-    --color-base-300: oklch(0% 0 0);
-    --color-base-content: oklch(84.955% 0 0);
-    --color-primary: oklch(76% 0.188 70.08);
-    --color-primary-content: oklch(19.693% 0.004 196.779);
-    --color-secondary: oklch(45.98% 0.248 305.03);
-    --color-secondary-content: oklch(89.196% 0.049 305.03);
-    --color-success: oklch(62.705% 0.169 149.213);
-    --color-success-content: oklch(12.541% 0.033 149.213);
-    --color-warning: oklch(66.584% 0.157 58.318);
-    --color-error: oklch(65.72% 0.199 27.33);
-    --color-error-content: oklch(13.144% 0.039 27.33);
-    --radius-selector: 1rem;
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
   h1, h2, h3, p { margin: 0; }
   button, input, select { color: inherit; }
@@ -1433,14 +1393,17 @@
   .order-card { position: relative; padding: clamp(1rem, 2.2vw, 1.45rem); border: var(--border) solid var(--soft-border); border-radius: var(--radius-box); background: color-mix(in oklab, var(--color-base-100) 94%, transparent); cursor: pointer; transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
   .order-card:hover { transform: translateY(-2px); border-color: color-mix(in oklab, var(--color-primary) 60%, var(--soft-border)); box-shadow: 0 16px 42px color-mix(in oklab, var(--color-base-content) 8%, transparent); }
   .order-card.cancelled { background: color-mix(in oklab, var(--color-base-200) 75%, transparent); }
+  .open-order-card { padding: 0; border: 0; font: inherit; letter-spacing: inherit; color: inherit; background: transparent; }
+  .open-order-card::after { content: ''; position: absolute; inset: 0; border-radius: var(--radius-box); }
+  .show-more-inline { position: relative; z-index: 1; }
   .order-card-head { justify-content: space-between; align-items: flex-start; gap: 1rem; }
   .order-card-head h3 { margin-top: 0.42rem; font-size: 1.38rem; letter-spacing: -0.035em; }
   .order-card-head p { margin-top: 0.16rem; color: var(--soft-content); font-size: 0.86rem; }
   .type-badge { width: max-content; gap: 0.38rem; padding: 0.3rem 0.58rem; border-radius: 999px; background: color-mix(in oklab, var(--color-secondary) 15%, var(--color-base-100)); font-size: 0.76rem; font-weight: 800; }
   .type-badge.intake { background: var(--primary-faint); }
   .type-badge :global(svg) { width: 0.95rem; height: 0.95rem; }
-  .status-pill { width: max-content; gap: 0.38rem; padding: 0.42rem 0.65rem; border-radius: 999px; background: color-mix(in oklab, var(--color-success) 20%, var(--color-base-100)); color: color-mix(in oklab, var(--color-success-content) 82%, var(--color-base-content)); font-size: 0.78rem; font-weight: 800; }
-  .status-pill.cancelled { background: color-mix(in oklab, var(--color-error) 14%, var(--color-base-100)); color: color-mix(in oklab, var(--color-error) 72%, var(--color-base-content)); }
+  .status-pill { width: max-content; gap: 0.38rem; padding: 0.42rem 0.65rem; border-radius: 999px; background: color-mix(in oklab, var(--color-success) 20%, var(--color-base-100)); color: var(--ui-success); font-size: 0.78rem; font-weight: 800; }
+  .status-pill.cancelled { background: color-mix(in oklab, var(--color-error) 14%, var(--color-base-100)); color: var(--ui-danger); }
   .status-pill :global(svg) { width: 0.95rem; height: 0.95rem; stroke-width: 2.2; }
   .status-pill.small { flex: 0 0 auto; }
 
@@ -1578,8 +1541,7 @@
   .primary-button:active, .secondary-button:active, .text-button:active { transform: scale(0.985); }
   .primary-button.full { width: 100%; }
 
-  .modal-backdrop { position: fixed; z-index: 80; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 1rem; background: color-mix(in oklab, black 48%, transparent); backdrop-filter: blur(8px); }
-  .modal-backdrop.centered { align-items: center; }
+
   .filter-sheet, .preview-modal { width: min(100%, 38rem); max-height: calc(100dvh - 2rem); overflow-y: auto; border: var(--border) solid var(--soft-border); background: var(--color-base-100); box-shadow: 0 28px 80px rgba(0,0,0,.28); }
   .filter-sheet { padding: 0 1.25rem 1.25rem; border-radius: 1.25rem 1.25rem var(--radius-box) var(--radius-box); animation: sheet-in 240ms cubic-bezier(.2,.8,.2,1); }
   @keyframes sheet-in { from { transform: translateY(2rem); opacity: 0; } }
@@ -1662,8 +1624,8 @@
     .service-row .small-link { grid-column: 2 / 4; justify-self: start; margin-top: -0.65rem; }
     .info-grid, .preview-grid { grid-template-columns: 1fr; }
     .choice-grid.three { grid-template-columns: 1fr; }
-    .modal-backdrop { padding: 0; }
-    .modal-backdrop.centered { padding: 0.75rem; }
+
+
     .filter-sheet { width: 100%; border-radius: 1.25rem 1.25rem 0 0; border-bottom: 0; }
     .preview-modal { max-height: calc(100dvh - 1.5rem); }
   }
@@ -1691,4 +1653,5 @@
 
 
 
+}
 </style>

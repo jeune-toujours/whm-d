@@ -1,7 +1,10 @@
 <script>
-  import { ArrowRight, ExternalLink } from '@lucide/svelte';
+  import Brand from '$lib/components/Brand.svelte';
+  import Card from '$lib/components/ui/card.svelte';
+  import { Button } from '$lib/components/ui/button/index.js';
+  import { ArrowRight, ArrowUpRight } from '@lucide/svelte';
   import { formatMoney } from '../demo.js';
-  let { demo, onNavigate = () => {}, onScenario = () => {}, onStage = () => {} } = $props();
+  let { demo, onScenario = () => {}, onStage = () => {} } = $props();
   const screens = [
     { id: 'signin', code: 'WHM-3', title: 'Авторизация и онбординг', group: 'Начало' },
     { id: 'home', code: 'WHM-4', title: 'Мои вещи', group: 'Хранение' },
@@ -17,32 +20,66 @@
   ];
   const groups = ['Начало', 'Хранение', 'Заказы', 'Аккаунт'];
   let total = $derived(demo.units.reduce((sum, unit) => sum + unit.monthlyPrice, 0));
+
+  const stages = {
+    created: 'Заявка создана', courier: 'Курьер в пути', warehouse_received: 'Принято на складе',
+    storing: 'Размещаем', completed: 'Завершён'
+  };
 </script>
 
-<svelte:head><title>Карта клиентских экранов</title></svelte:head>
+<svelte:head><title>Карта клиентских экранов · WHM D</title></svelte:head>
 
 <main class="preview">
-  <header><div class="brand">Клиентский демо-контур</div><button type="button" onclick={() => onNavigate('home')}>В приложение <ArrowRight size={16} aria-hidden="true" /></button></header>
-  <div class="hero"><span class="eyebrow">ОБЗОР ПРОДУКТА</span><h1>Все клиентские экраны<br />в одном месте</h1><p>Пройдите сценарии сдачи и возврата, изучите состояния и навигацию. Данные демонстрационные: сервер, SMS и реальные платежи не подключены.</p></div>
+  <header><Brand /><Button href="#/home" variant="outline" size="sm">В приложение <ArrowRight size={16} aria-hidden="true" /></Button></header>
+  <div class="hero"><h1>Карта клиентских экранов</h1><p>Выберите экран или смените сценарий, чтобы посмотреть, как работает хранение.</p></div>
   <div class="layout">
     <div>
       {#each groups as group}
         <section class="group"><h2>{group}</h2><div class="screen-grid">
           {#each screens.filter(screen => screen.group === group) as screen}
-            <button class="screen-card" type="button" onclick={() => onNavigate(screen.id)}><span>{screen.code}</span><strong>{screen.title}</strong><b aria-hidden="true"><ExternalLink size={17} /></b></button>
+            <a class="screen-card" href={'#/' + screen.id}><small>{screen.code}</small><strong>{screen.title}</strong><ArrowUpRight size={16} aria-hidden="true" /></a>
           {/each}
         </div></section>
       {/each}
     </div>
     <aside>
-      <section class="demo-card"><span class="eyebrow">ДАННЫЕ ДЛЯ ПРОСМОТРА</span><h2>Сценарий</h2><div class="scenario-switch"><button class:active={demo.scenario === 'standard'} type="button" onclick={() => onScenario('standard')}>С вещами</button><button class:active={demo.scenario === 'empty'} type="button" onclick={() => onScenario('empty')}>Первый вход</button></div><div class="stat"><span>Вещей на хранении</span><strong>{demo.units.length}</strong></div><div class="stat"><span>Стоимость / месяц</span><strong>{formatMoney(total)}</strong></div><div class="stat"><span>Активный заказ</span><strong>{demo.activeOrder?.id || 'Нет'}</strong></div></section>
-      <section class="demo-card"><span class="eyebrow">ПРОВЕРКА СТАТУСОВ</span><h2>Активный заказ</h2><p>Выберите этап, чтобы посмотреть ленту заказа.</p><div class="stage-list">{#each ['created', 'courier', 'warehouse_received', 'storing', 'completed'] as stage}<button type="button" disabled={!demo.activeOrder} class:active={demo.activeOrder?.status === stage} onclick={() => onStage(stage)}>{({ created: 'Заявка создана', courier: 'Курьер в пути', warehouse_received: 'Принято на складе', storing: 'Размещаем', completed: 'Завершён' })[stage]}</button>{/each}</div><button class="open-order" type="button" onclick={() => onNavigate('order')}>Открыть заказ <ArrowRight size={16} aria-hidden="true" /></button></section>
-      <p class="sidebar-note">Действия в этом контуре сохраняются только в браузере. Переключение сценария сбрасывает демо-данные.</p>
+      <Card as="section" class="demo-card">
+        <h2>Сценарий</h2>
+        <div class="switch">{#each [['standard','С вещами'],['empty','Первый вход']] as [value,label]}<Button size="sm" variant={demo.scenario === value ? 'default' : 'ghost'} aria-pressed={demo.scenario === value} onclick={() => onScenario(value)}>{label}</Button>{/each}</div>
+        <dl><div><dt>Вещей на хранении</dt><dd>{demo.units.length}</dd></div><div><dt>Стоимость / месяц</dt><dd>{formatMoney(total)}</dd></div><div><dt>Активный заказ</dt><dd>{demo.activeOrder?.id || 'Нет'}</dd></div></dl>
+        <p>Переключение сценария сбрасывает демо-данные в этом браузере.</p>
+      </Card>
+      <Card as="section" class="demo-card">
+        <h2>Этап заказа</h2>
+        <div class="stage-list">{#each Object.entries(stages) as [value,label]}<Button variant={demo.activeOrder?.status === value ? 'default' : 'outline'} size="sm" aria-pressed={demo.activeOrder?.status === value} disabled={!demo.activeOrder} onclick={() => onStage(value)}>{label}</Button>{/each}</div>
+        <Button href="#/order" variant="link">Открыть заказ <ArrowRight size={15} aria-hidden="true" /></Button>
+      </Card>
     </aside>
   </div>
 </main>
 
 <style>
-  .preview{min-height:100dvh;background:#f7f7f4;color:#24241f;font:16px/1.5 'Open Sans',sans-serif;padding-bottom:70px}.preview>header{display:flex;align-items:center;justify-content:space-between;gap:15px;max-width:1200px;margin:auto;padding:26px 25px}.brand{font-size:20px;font-weight:800;letter-spacing:.1em;display:flex;align-items:center;gap:8px}.preview>header button,.open-order{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;background:#f4c84a;border-radius:10px;padding:12px 17px;font-weight:800;color:#24241f}.hero{max-width:1200px;margin:35px auto 45px;padding:0 25px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;color:#8b731f}.hero h1{font-size:clamp(35px,5.5vw,66px);letter-spacing:-.05em;line-height:1.08;margin:14px 0}.hero p{max-width:640px;color:#777873;font-size:15px}.layout{max-width:1200px;margin:auto;padding:0 25px;display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:35px}.group{margin-bottom:35px}.group h2{font-size:18px;margin:0 0 13px}.screen-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.screen-card{position:relative;min-height:105px;text-align:left;background:#fff;border:1px solid #e7e7e3;border-radius:15px;padding:18px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;color:#24241f;transition:border-color .2s,transform .2s}.screen-card:hover{border-color:#e1b735;transform:translateY(-2px)}.screen-card span{font-size:11px;color:#8b731f;font-weight:800;letter-spacing:.05em}.screen-card strong{font-size:16px}.screen-card b{position:absolute;right:18px;top:16px;font-size:17px}aside{display:grid;align-content:start;gap:16px}.demo-card{background:#fff;border:1px solid #e7e7e3;border-radius:16px;padding:21px}.demo-card h2{font-size:20px;margin:8px 0 15px}.demo-card p{font-size:12px;color:#777873}.scenario-switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;background:#f3f3ee;border-radius:10px;padding:4px;margin-bottom:18px}.scenario-switch button{border:0;background:transparent;border-radius:7px;min-height:35px;font-size:12px;font-weight:700}.scenario-switch button.active{background:#f4c84a;color:#24241f}.stat{border-top:1px solid #ededeb;padding:12px 0;display:flex;justify-content:space-between;gap:8px;font-size:12px}.stat span{color:#777873}.stat strong{text-align:right}.stage-list{display:grid;gap:5px}.stage-list button{text-align:left;border:1px solid #ebebe7;background:#fafaf8;border-radius:7px;padding:8px 10px;font-size:12px}.stage-list button.active{background:#fff3c7;border-color:#e5c45c;font-weight:800}.stage-list button:disabled{opacity:.5}.open-order{width:100%;margin-top:13px}.sidebar-note{font-size:11px;color:#777873;margin:0 5px}
-  @media(max-width:850px){.layout{grid-template-columns:1fr}aside{grid-row:1;grid-template-columns:repeat(2,1fr)}.sidebar-note{grid-column:1/-1}}@media(max-width:570px){.preview>header,.hero,.layout{padding-left:16px;padding-right:16px}.screen-grid,aside{grid-template-columns:1fr}.sidebar-note{grid-column:auto}}
+  .preview { min-height: 100dvh; padding: 0 max(1rem, calc((100vw - 72rem) / 2)) 4rem; }
+  header { min-height: 4.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--ui-line); }
+  .hero { padding: clamp(2rem, 5vw, 4rem) 0; }
+  h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -.055em; line-height: 1.12; }
+  h2 { margin: 0 0 .85rem; font-size: 1.15rem; }
+  p, dt, small { color: var(--ui-muted-foreground); }
+  .hero p { max-width: 38rem; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, .45fr); gap: 2rem; }
+  .group + .group { margin-top: 1.75rem; }
+  .screen-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .65rem; }
+  .screen-card { position: relative; padding: 1.1rem; display: grid; gap: .55rem; border: 1px solid var(--ui-line); border-radius: .8rem; background: var(--ui-card); color: inherit; text-decoration: none; }
+  .screen-card:hover { border-color: var(--ui-ring); }
+  .screen-card :global(svg) { position: absolute; right: 1rem; top: 1rem; }
+  small { font-size: .72rem; font-weight: 650; }
+  aside, .stage-list { display: grid; align-content: start; gap: .6rem; }
+  :global(.demo-card[data-slot="card"]) { padding: 1.25rem; }
+  .switch { display: flex; gap: .25rem; }
+  dl { margin: .75rem 0; }
+  dl div { display: flex; justify-content: space-between; gap: .6rem; border-bottom: 1px solid var(--ui-line); padding: .6rem 0; font-size: .82rem; }
+  dd { margin: 0; font-weight: 650; }
+  aside p { font-size: .8rem; line-height: 1.5; }
+  @media(max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+  @media(max-width: 450px) { .screen-grid { grid-template-columns: 1fr; } }
 </style>

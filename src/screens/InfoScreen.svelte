@@ -1,14 +1,17 @@
 <script>
+  import Brand from '$lib/components/Brand.svelte';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
   import BackButton from '../components/BackButton.svelte';
   let { title = 'Документ', description = 'Информация пока недоступна в демонстрационном контуре.', initialTheme = 'bumblebee', live = false, onBack = () => {} } = $props();
 </script>
 
 <svelte:head><title>{title} · Клиентский интерфейс</title></svelte:head>
 <main class:dark={initialTheme === 'halloween'} class="info">
-  <header><BackButton {onBack} /><strong class="system-label">Клиентский интерфейс</strong></header>
-  <div class="content"><span>{live ? 'ТЕСТОВЫЙ КОНТУР' : 'ДЕМО-КОНТУР'}</span><h1>{title}</h1><p>{description}</p><button class="primary" type="button" onclick={onBack}>Вернуться назад</button></div>
+  <header><BackButton {onBack} /><Brand /></header>
+  <div class="content"><span>{live ? 'ТЕСТОВЫЙ КОНТУР' : 'ДЕМО-КОНТУР'}</span><h1>{title}</h1><p>{description}</p><button data-slot="button" class="primary {buttonVariants()}" type="button" onclick={onBack}>Вернуться назад</button></div>
 </main>
 <style>
+@layer screens {
   .info { --bg:#fff; --surface:#fff; --line:#e8e8e5; --ink:#22221f; --muted:#777873; --yellow:#f5c844; min-height:100dvh; background:var(--bg); color:var(--ink); font:16px/1.5 'Open Sans',sans-serif; }
   .info.dark { --bg:#24231f; --surface:#292824; --line:#47453d; --ink:#f3f0e8; --muted:#b2afa5; --yellow:#e6aa35; }
   .info header { max-width:800px; margin:auto; min-height:76px; padding:12px 24px; display:flex; align-items:center; gap:16px; }
@@ -18,4 +21,5 @@
   .content p { color:var(--muted); max-width:550px; overflow-wrap:anywhere; }
   .primary { margin-top:22px; padding:15px 22px; border:0; border-radius:10px; background:var(--yellow); color:#171717; font-weight:800; }
   @media(max-width:760px) { .info header { min-height:66px; padding:11px 16px; } .content { padding:0 16px; } }
+}
 </style>

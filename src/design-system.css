@@ -1,0 +1,195 @@
+@layer theme, base, screens, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "./lib";
+@source "./components";
+@source "./screens/Preview.svelte";
+
+@theme inline {
+  --color-background: var(--ui-background);
+  --color-foreground: var(--ui-foreground);
+  --color-card: var(--ui-card);
+  --color-primary: var(--ui-primary);
+  --color-primary-foreground: #211c10;
+  --color-muted: var(--ui-muted);
+  --color-muted-foreground: var(--ui-muted-foreground);
+  --color-border: var(--ui-line);
+  --color-ring: var(--ui-ring);
+}
+
+:root {
+  color-scheme: light;
+  --ui-background: #f8f8f5;
+  --ui-card: #fff;
+  --ui-foreground: #24231f;
+  --ui-muted: #efefea;
+  --ui-muted-foreground: #62625a;
+  --ui-line: #deded6;
+  --ui-ring: #916700;
+  --ui-danger: #a8322f;
+  --ui-success: #21613d;
+  --ui-primary: oklch(85% .199 91.936);
+  --ui-shadow: 0 1px 2px rgb(36 32 16 / 5%);
+}
+
+:root[data-whm-theme="halloween"] {
+  color-scheme: dark;
+  --ui-background: oklch(21% .006 56.043);
+  --ui-card: #2a2825;
+  --ui-foreground: #f1eee8;
+  --ui-muted: #33312d;
+  --ui-muted-foreground: #bab6ac;
+  --ui-line: #4b4740;
+  --ui-ring: #ffbc59;
+  --ui-danger: #ffaca6;
+  --ui-success: #a8e7b8;
+  --ui-primary: oklch(76% .188 70.08);
+  --ui-shadow: 0 1px 2px rgb(0 0 0 / 18%);
+}
+
+@layer base {
+  .whm-app {
+    --radius-selector: 1rem;
+    --radius-field: 0.5rem;
+    --radius-box: 1rem;
+    --border: 1px;
+  }
+  .whm-app[data-theme="bumblebee"] {
+    --color-base-100: var(--ui-card);
+    --color-base-200: oklch(97% 0 0);
+    --color-base-300: oklch(92% 0 0);
+    --color-base-content: var(--ui-foreground);
+    --color-primary: var(--ui-primary);
+    --color-primary-content: oklch(42% 0.095 57.708);
+    --color-secondary: oklch(75% 0.183 55.934);
+    --color-secondary-content: oklch(40% 0.123 38.172);
+    --color-success: oklch(76% 0.177 163.223);
+    --color-success-content: oklch(37% 0.077 168.94);
+    --color-warning: oklch(82% 0.189 84.429);
+    --color-error: oklch(70% 0.191 22.216);
+    --color-error-content: oklch(39% 0.141 25.723);
+    --color-accent: oklch(0% 0 0);
+    --color-accent-content: oklch(100% 0 0);
+    --color-neutral: oklch(37% 0.01 67.558);
+    --color-neutral-content: oklch(92% 0.003 48.717);
+    --color-info: oklch(74% 0.16 232.661);
+    --color-info-content: oklch(39% 0.09 240.876);
+    --color-warning-content: oklch(41% 0.112 45.904);
+  }
+  .whm-app[data-theme="halloween"] {
+    --color-base-100: var(--ui-card);
+    --color-base-200: oklch(14% 0.004 49.25);
+    --color-base-300: oklch(0% 0 0);
+    --color-base-content: var(--ui-foreground);
+    --color-primary: var(--ui-primary);
+    --color-primary-content: oklch(19.693% 0.004 196.779);
+    --color-secondary: oklch(45.98% 0.248 305.03);
+    --color-secondary-content: oklch(89.196% 0.049 305.03);
+    --color-success: oklch(62.705% 0.169 149.213);
+    --color-success-content: oklch(12.541% 0.033 149.213);
+    --color-warning: oklch(66.584% 0.157 58.318);
+    --color-error: oklch(65.72% 0.199 27.33);
+    --color-error-content: oklch(13.144% 0.039 27.33);
+    --color-accent: oklch(64.8% 0.223 136.073);
+    --color-accent-content: oklch(0% 0 0);
+    --color-neutral: oklch(24.371% 0.046 65.681);
+    --color-neutral-content: oklch(84.874% 0.009 65.681);
+    --color-info: oklch(54.615% 0.215 262.88);
+    --color-info-content: oklch(90.923% 0.043 262.88);
+    --color-warning-content: oklch(13.316% 0.031 58.318);
+  }
+}
+
+@layer components {
+  .whm-app[data-theme], .live-page, .detail-page, .subscription-page, .page, .info, .preview {
+    background: var(--ui-background);
+    color: var(--ui-foreground);
+    --soft-content: var(--ui-muted-foreground);
+    --faint-content: var(--ui-muted-foreground);
+    --soft-border: var(--ui-line);
+    --line: var(--ui-line);
+    --ink: var(--ui-foreground);
+    --muted: var(--ui-muted-foreground);
+    --surface: var(--ui-card);
+    --yellow: var(--ui-primary);
+  }
+
+  .whm-app :is(.ambient, .glow) { display: none; }
+  :where(.whm-app, .detail-page, .subscription-page, .page, .info, .live-page) header:first-of-type:is(.app-header, .topbar, .header),
+  .info > header, .page > header, .live-page > header {
+    border-bottom: 1px solid var(--ui-line);
+  }
+  [data-slot="card"] {
+    border: 1px solid var(--ui-line);
+    border-radius: 1rem;
+    background-color: var(--ui-card);
+    box-shadow: var(--ui-shadow);
+  }
+  :is(h1, h2, h3) { text-wrap: balance; }
+  :is(button, a, input, select, textarea) { touch-action: manipulation; }
+  :is(button, a, input, select, textarea, summary):focus-visible {
+    outline: 3px solid var(--ui-ring);
+    outline-offset: 3px;
+  }
+  :is(.phone-field, .search-field):focus-within {
+    outline: 2px solid var(--ui-ring);
+    outline-offset: 2px;
+  }
+  button:disabled { cursor: not-allowed; }
+  select { color-scheme: inherit; color: var(--ui-foreground); background-color: var(--ui-card); }
+  [role="dialog"], dialog { overscroll-behavior: contain; }
+  .auth-page .page-shell {
+    min-height: 0; margin-block: clamp(4.5rem, 11vh, 7rem); padding: clamp(1.25rem, 4vw, 2rem);
+    border: 1px solid var(--ui-line); border-radius: 1.25rem; background: var(--ui-card); box-shadow: var(--ui-shadow);
+  }
+  .auth-page .welcome { align-items: stretch; text-align: left; gap: 1.25rem; }
+  .auth-page .welcome-cover {
+    display: flex; align-items: start; justify-content: space-between;
+    min-height: 8.5rem; padding: 1.25rem; overflow: hidden; border-radius: .85rem;
+    background: #282720 url('/honeycomb.svg') right top no-repeat;
+  }
+  .welcome-cover { --brand-ink: #f6f4eb; }
+  .auth-page .welcome-cover .hero-glyph { align-self: end; color: #e8ce85; background: transparent; }
+  .auth-page .welcome-cover .hero-glyph svg { width: 3.25rem; height: 3.25rem; stroke-width: 1.25; }
+  .auth-page .legal-links { padding: 0; margin: 0; }
+  .whm-app .dashboard-shell .greeting { color: var(--ui-muted-foreground); margin: 0 0 .3rem; font-size: .9rem; }
+  .whm-app .app-header:has(+ .dashboard-shell) { padding-inline: 0; width: min(calc(100% - 2 * var(--page-gutter)), var(--content-max)); }
+  .whm-app :is(.text-field, .field) > :is(input:not([type=checkbox]):not([type=radio]), textarea, select),
+  .live-shell label > :is(input:not([type=checkbox]):not([type=radio]), textarea, select) {
+    border: 1px solid var(--ui-line); border-radius: .5rem;
+    background-color: var(--ui-card); color: var(--ui-foreground);
+  }
+  .whm-app :is(.text-field, .field).invalid > :is(input, textarea, select, .phone-field) { border-color: var(--color-error); }
+  .whm-app :is(.type-card, .ticket-card, .order-card) {
+    border-radius: .875rem; background-color: var(--ui-card); box-shadow: var(--ui-shadow);
+  }
+  @media (hover: hover) {
+    .whm-app :is(.unit-card:focus-within, .unit-card:hover, .type-card:hover, .ticket-card:hover, .order-card:hover) { border-color: var(--ui-ring); }
+  }
+  .dashboard-shell .unit-main { padding: 1rem; }
+  .dashboard-shell .unit-actions { background: var(--ui-card); gap: 1.25rem; }
+  .dashboard-shell .unit-status { color: var(--ui-muted-foreground); display: flex; align-items: center; gap: .4rem; }
+  .dashboard-shell .unit-status::before { content: ''; width: .45rem; height: .45rem; border-radius: 50%; background: var(--ui-primary); border: 1px solid var(--ui-ring); }
+  .dashboard-shell .item-placeholder { border: 1px dashed var(--ui-line); background: var(--ui-muted); color: var(--ui-muted-foreground); }
+  .whm-app .danger-link { color: var(--ui-danger); }
+  .page :is(.eyebrow, .intro, .details span, .note) { color: var(--ui-muted-foreground); }
+  .page .amount small { color: var(--ui-success); }
+  .page .amount small.refunded { color: var(--ui-muted-foreground); }
+  .whm-app .active-order-banner { border-inline-start: 3px solid var(--ui-primary); background: var(--ui-card); }
+  .whm-app .service-card .service-media {
+    align-content: center; gap: .6rem; background: var(--ui-muted); color: var(--ui-muted-foreground);
+    border: 0; border-block-end: 1px dashed var(--ui-line);
+  }
+  .whm-app .service-card .card-link-button { text-decoration: none; }
+  .whm-app .progress-dots span { border-radius: 2px; width: clamp(.8rem, 3vw, 1.65rem); height: .26rem; }
+  .whm-app .progress-dots span:is(.active,.complete) { background-color: var(--ui-primary); }
+  :is(.price, .amount, .stat, .summary-value, .progress-label) { font-variant-numeric: tabular-nums; }
+  :is(.hero-panel, .current-card, .preview .hero) {
+    background-image: url("/honeycomb.svg");
+    background-position: right top;
+    background-repeat: no-repeat;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  }
+}

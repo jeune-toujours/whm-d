@@ -39,7 +39,7 @@ export function ProblemsPanel() {
     {error && <p role="alert" className="whm-error">{error}</p>}
     {!creating && !id && <div className="whm-filters" role="search" aria-label="Проблемные заказы">
       <label>Поиск по номеру акта, заказа или вещи<input name="search" autoComplete="off" type="search" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} /></label>
-      <label>Показать<select name="state" value={state} onChange={e => { setState(e.target.value); setPage(1) }}><option value="pending">Внутренние фиксации</option><option value="published">Клиент уведомлён</option><option value="all">Все кейсы</option></select></label>
+      <label><span id="whm-problem-status-label">Показать</span><select name="state" aria-labelledby="whm-problem-status-label" value={state} onChange={e => { setState(e.target.value); setPage(1) }}><option value="pending">Внутренние фиксации</option><option value="published">Клиент уведомлён</option><option value="all">Все кейсы</option></select></label>
     </div>}
     {creating ? <ProblemForm key={`${params.get('orderID')}:${params.get('itemID')}:${revision}`} initialOrder={params.get('orderID') || ''} initialItem={params.get('itemID') || ''} onSaved={value => router.push(`${root}?report=${encodeURIComponent(value)}`)} /> : loading ? <p role="status">Загрузка…</p> : id ? report && <ReportDetail key={report.id} report={report} onPublished={setReport} /> : <>
       <p className="whm-count" role="status">Найдено: {total}</p>{reports.map(r => <article className="whm-order" key={r.id}><h2><Link href={`${root}?report=${r.id}`}>{r.number}</Link></h2><p>{r.orderNumber} · {r.itemLabel}</p><p>{date(r.createdAt)} · {statusLabel(r.status)}</p></article>)}

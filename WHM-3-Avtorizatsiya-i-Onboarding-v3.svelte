@@ -696,8 +696,8 @@
     transition: border-color 180ms ease, box-shadow 180ms ease;
   }
 
-  .text-field.invalid input, .text-field.invalid .phone-field {
-    border-color: var(--color-error); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-error) 16%, transparent);
+  .text-field.invalid > :is(input, .phone-field) {
+    border-color: var(--color-error);
   }
   .field-error { color: var(--color-error); font-weight: 700; }
   .field-caption { color: var(--faint-content); font-size: var(--type-caption); }

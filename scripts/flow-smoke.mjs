@@ -22,11 +22,17 @@ try {
     await page.getByRole('button', { name: 'Войти', exact: true }).click();
     const phone = page.getByLabel('Номер телефона', { exact: true });
     await phone.focus();
-    assert.deepEqual(await phone.evaluate(input => {
+    const rings = () => phone.evaluate(input => {
       const control = getComputedStyle(input);
       const group = getComputedStyle(input.closest('.phone-field'));
       return [control.outlineStyle, control.boxShadow, group.outlineStyle, group.outlineWidth, group.boxShadow];
-    }), ['none', 'none', 'solid', '2px', 'none'], 'Phone has one focus ring around the entire field');
+    });
+    const singleRing = ['none', 'none', 'solid', '2px', 'none'];
+    assert.deepEqual(await rings(), singleRing, 'Phone has one focus ring around the entire field');
+    await page.getByRole('button', { name: 'Получить код' }).click();
+    assert.equal(await phone.getAttribute('aria-invalid'), 'true');
+    await phone.focus();
+    assert.deepEqual(await rings(), singleRing, 'Invalid phone still has one focus ring');
     assert.deepEqual(errors, []);
     await page.close();
   }

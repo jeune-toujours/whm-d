@@ -2001,7 +2001,6 @@
 
   .text-field.invalid .phone-field {
     border-color: var(--color-error);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-error) 16%, transparent);
   }
 
 

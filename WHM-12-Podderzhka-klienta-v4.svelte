@@ -817,7 +817,7 @@
   .text-field select { min-height: 2.9rem; }
 
   .text-field.invalid select, .text-field.invalid textarea {
-    border-color: var(--color-error); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-error) 16%, transparent);
+    border-color: var(--color-error);
   }
   .field-error { color: var(--color-error); font-weight: 700; }
 

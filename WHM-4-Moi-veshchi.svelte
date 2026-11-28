@@ -297,10 +297,14 @@
         <div class="active-orders">
           {#each visibleActiveOrders as order}
             <button class="active-order-banner" type="button" onclick={() => onOpenActiveOrder(order)}>
-              <span class="active-order-type">{order.type === 'return' ? 'Возврат' : 'Сдача'}</span>
-              <span class="active-order-stage">{order.stage}</span>
-              <span class="active-order-next">{order.nextEventLabel}</span>
-              <ChevronRight aria-hidden="true" />
+              <span class="active-order-details">
+                <span class="active-order-heading">
+                  <span class="active-order-type">{order.type === 'return' ? 'Возврат' : 'Сдача'}</span>
+                  <span class="active-order-stage">{order.stage}</span>
+                </span>
+                {#if order.nextEventLabel}<span class="active-order-next">{order.nextEventLabel}</span>{/if}
+              </span>
+              <span class="active-order-open">Детали <ChevronRight aria-hidden="true" /></span>
             </button>
           {/each}
           {#if overflowActiveOrdersCount > 0}
@@ -605,9 +609,10 @@
   }
 
   .active-order-banner {
-    padding: 0.9rem 1.1rem;
+    min-height: 3.5rem;
+    padding: 0.75rem clamp(0.75rem, 3vw, 1.1rem);
     display: grid;
-    grid-template-columns: auto 1fr auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.75rem;
     border: var(--border) solid var(--soft-border);
@@ -616,6 +621,23 @@
     color: var(--color-base-content);
     text-align: left;
     cursor: pointer;
+  }
+
+  .active-order-banner:hover {
+    border-color: var(--ui-ring);
+  }
+
+  .active-order-details {
+    display: grid;
+    min-width: 0;
+    gap: 0.35rem;
+  }
+
+  .active-order-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.55rem;
   }
 
   .active-order-type {
@@ -635,6 +657,14 @@
   .active-order-next {
     color: var(--soft-content);
     font-size: var(--type-caption);
+  }
+
+  .active-order-open {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: var(--type-caption);
+    font-weight: 650;
   }
 
   .active-order-banner :global(svg) {
@@ -962,14 +992,6 @@
       grid-template-columns: 1fr;
     }
 
-    .active-order-banner {
-      grid-template-columns: auto 1fr;
-      grid-template-rows: auto auto;
-    }
-
-    .active-order-next {
-      grid-column: 1 / -1;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

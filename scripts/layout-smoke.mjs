@@ -32,6 +32,20 @@ async function inspect(page, name) {
       const b=rect(row);
       for (const cell of row.querySelectorAll('input')) { const c=rect(cell); if (c.x<b.x-1 || c.right>b.right+1) problems.push('OTP cells leave their form'); }
     }
+    for (const card of document.querySelectorAll('article.service-card')) {
+      const media = rect(card.querySelector('.service-media'));
+      const copy = rect(card.querySelector('.service-card-copy'));
+      if (media.bottom > copy.top + 1 || Math.abs(media.width - copy.width) > 1) {
+        problems.push('service card illustration does not span the row above its copy');
+      }
+      const badge = card.querySelector('.status-badge');
+      if (badge) {
+        const title = rect(card.querySelector('h2')), b = rect(badge);
+        if (title.left < b.right && title.right > b.left && title.top < b.bottom && title.bottom > b.top) {
+          problems.push('service card badge overlaps its title');
+        }
+      }
+    }
     for (const selector of ['.detail-page', '.subscription-page', '.info']) {
       const page=document.querySelector(selector), back=page?.querySelector('.navigation-back'), main=page?.querySelector('.shell, .content');
       if (back && main) { const b=rect(back),m=rect(main);const left=m.x+parseFloat(getComputedStyle(main).paddingLeft);if(Math.abs(b.x-left)>1)problems.push('back button is off the content grid'); }
@@ -64,6 +78,7 @@ try {
         // and this also makes repeated checks independent of an open wizard.
         await page.goto(`${base}/#/home`);
         await page.goto(`${base}/#/intake`);
+        await page.locator('article.service-card').last().waitFor();await inspect(page,`${width}/intake/service`);
         await page.locator('.service-card').filter({hasText:'Я упакую сам'}).getByRole('button',{name:'Выбрать',exact:true}).click();await inspect(page,`${width}/intake/items`);
         await page.getByRole('button',{name:/Увеличить количество/}).first().click();await page.locator('.sticky-bar .primary-button').click();await inspect(page,`${width}/intake/options`);
         await page.getByRole('button',{name:'Пропустить',exact:true}).click();await inspect(page,`${width}/intake/insurance`);

@@ -12,10 +12,13 @@
   <div class="balance">
     <span class="label">Хранение сейчас</span>
     <strong>{amount}<small> / мес.</small></strong>
-    <span>{count} {unit} на хранении</span>
+    <div class="storage-meta">
+      <span>{count} {unit} на хранении</span>
+      <span class="meta-separator" aria-hidden="true">·</span>
+      <span>{nextChargeDate ? `Следующее списание ${nextChargeDate}` : 'Дата списания пока не назначена'}</span>
+    </div>
   </div>
   <div class="billing">
-    {#if nextChargeDate}<span>Следующее списание · {nextChargeDate}</span>{/if}
     <Button variant="outline" size="sm" onclick={onOpenHistory}>История заказов <ArrowUpRight size={15} aria-hidden="true" /></Button>
   </div>
   <Button class="summary-refresh" size="icon" variant="outline" aria-label="Обновить" disabled={refreshing} onclick={onRefresh}>
@@ -31,15 +34,18 @@
     border-color: #423e32; color: #f7f5eb;
   }
   .balance, .billing { display: grid; gap: .5rem; }
-  .balance > span, .billing > span { font-size: .82rem; color: #dad7c9; }
+  .balance > span, .storage-meta { font-size: .82rem; color: #dad7c9; }
   .balance .label { font-weight: 650; color: #f4d56b; }
   .balance strong { font-size: clamp(2rem,4vw,3.2rem); letter-spacing: -.05em; line-height: 1.1; font-variant-numeric: tabular-nums; }
   small { font-size: .95rem; font-weight: 500; letter-spacing: 0; color: #dad7c9; }
-  .billing { justify-items: end; }
+  .storage-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .5rem; }
+  .billing { flex-shrink: 0; justify-items: end; }
   :global(.storage-summary .summary-refresh) { position: absolute; inset: .65rem .65rem auto auto; background: #35342c; color: #eeeadd; border-color: #555245; }
   :global(.storage-summary .summary-refresh:hover) { background: #444238; }
   @media (max-width: 600px) {
     :global(.storage-summary[data-slot="card"]) { flex-direction: column; align-items: stretch; gap: 1rem; }
+    .storage-meta { display: grid; }
+    .meta-separator { display: none; }
     .billing { border-top: 1px solid #504d43; padding-top: .85rem; justify-items: start; }
   }
 </style>

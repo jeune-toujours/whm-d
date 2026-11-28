@@ -35,6 +35,12 @@
   let order = $derived(data.orders.find(o => o.id === routeID));
   let plans = $derived(data.tariffs.filter(t => t.kind === 'subscription').map(t => ({ ...t, limit:t.itemLimit, volume:`до ${t.itemLimit} вещей` })));
   let storedCount = $derived(data.units.filter(u => ['stored','reserved','picked'].includes(u.status)).length);
+  let homeDashboard = $derived({
+    units: data.homeUnits || [],
+    monthlyPrice: data.profile.monthlyPrice,
+    nextChargeDate: data.profile.nextChargeDate,
+    activeOrders: data.activeOrders.map(order => ({ ...order, stage: order.statusLabel, nextEventLabel: order.visitWindow })),
+  });
   const legal = 'Это тестовая среда. Юридические документы и коммерческие правила ещё не утверждены. Реальные SMS, платежи и доставки не выполняются.';
   function navigate(path) { location.hash = `/${path}`; route = path; }
   function infoScreen(title, description, back = route) { info = { title, description, back }; navigate('info'); }
@@ -58,6 +64,10 @@
     try { data = await api('/v1/dashboard'); if (!checkoutConfig) checkoutConfig = (await api('/v1/checkout-config')).config; authenticated = true; error = ''; return data; }
     catch (e) { if (e.status === 401) { authenticated = false; navigate('signin'); } else error = e.message || 'Нет соединения с сервером.'; throw e; }
     finally { refreshing = false; }
+  }
+  async function refreshHome() {
+    await refresh();
+    return homeDashboard;
   }
   onMount(() => {
     try { const value = localStorage.getItem('whm-theme'); if (['bumblebee','halloween'].includes(value)) theme = value; } catch {}
@@ -125,7 +135,7 @@
   {#key root === 'history' ? 'history' : route}
     {#if root === 'info'}<InfoScreen initialTheme={theme} live={true} title={info.title} description={info.description} onBack={() => navigate(info.back)} />
     {:else if !authenticated || root === 'signin'}<Auth initialTheme={theme} otpLength={6} simulation={true} onCheckSession={() => ({ active:authenticated, biometricEnabled:false })} onRequestOtp={phone => safe(() => api('/auth/request-otp', { phone }))} onVerifyOtp={verified} onSaveProfile={saveProfile} onComplete={authComplete} onOpenTerms={() => infoScreen('Публичная оферта', legal, 'signin')} onOpenPrivacy={() => infoScreen('Политика конфиденциальности', legal, 'signin')} />
-    {:else if root === 'home'}<Home initialTheme={theme} userName={data.profile.firstName} liveDashboard={{ units:data.homeUnits || [], monthlyPrice:data.profile.monthlyPrice, activeOrders:data.activeOrders.map(o => ({ ...o,stage:o.statusLabel,nextEventLabel:o.visitWindow || 'Открыть детали' })),nextChargeDate:data.profile.nextChargeDate }} onLoadDashboard={() => ({ units:data.homeUnits || [],monthlyPrice:data.profile.monthlyPrice,activeOrders:data.activeOrders,nextChargeDate:data.profile.nextChargeDate })} onOpenItem={u => openItem(u)} onGoToHandover={() => navigate('intake')} onGoToReturn={() => openReturn()} onQuickReturn={u => openReturn([u.id])} onOpenActiveOrder={openOrder} onOpenActiveOrdersList={() => navigate('orders')} onOpenHistory={() => navigate('history')} onOpenProfile={() => navigate('profile')} onOpenSupport={() => openSupport()} />
+    {:else if root === 'home'}<Home initialTheme={theme} userName={data.profile.firstName} liveDashboard={homeDashboard} onLoadDashboard={refreshHome} onOpenItem={u => openItem(u)} onGoToHandover={() => navigate('intake')} onGoToReturn={() => openReturn()} onQuickReturn={u => openReturn([u.id])} onOpenActiveOrder={openOrder} onOpenActiveOrdersList={() => navigate('orders')} onOpenHistory={() => navigate('history')} onOpenProfile={() => navigate('profile')} onOpenSupport={() => openSupport()} />
     {:else if root === 'intake' && checkoutConfig}<Intake live={true} config={checkoutConfig} suggestAddress={checkoutConfig.addressSuggestions ? suggestAddress : undefined} catalog={data.tariffs.filter(t=>t.kind==='storage')} initialTheme={theme} insuranceRate={checkoutConfig.insuranceRate} insuranceMinPremium={checkoutConfig.insuranceMinPremium} customerName={data.profile.firstName} savedAddress="" savedPhone={data.profile.phone} draftKey={`whm-intake:${data.userID}`} demoMode={false} startAtService={true} onCalculateOrder={v=>quoteWizard('intake',v)} onCreateOrder={v=>createWizard('intake',v)} onNavigateOrder={v=>openOrder(v.orderId)} onNavigateHome={()=>navigate('home')} onOversizeRequest={v=>submitTicket('incident',{ operationKey:crypto.randomUUID(),description:'Индивидуальный расчёт негабарита: '+v.description,attachments:v.file?[{file:v.file}]:[] })} onOpenTerms={()=>infoScreen('Условия хранения',legal,'intake')}/>
     {:else if root === 'return' && checkoutConfig}<ReturnItems live={true} config={checkoutConfig} suggestAddress={checkoutConfig.addressSuggestions ? suggestAddress : undefined} storageUnits={data.units.filter(u=>['stored','reserved','picked'].includes(u.status))} initialSelectedIds={chosen} initialTheme={theme} savedAddress="" savedPhone={data.profile.phone} currentMonthlyPrice={data.profile.monthlyPrice} draftKey={`whm-return:${data.userID}`} onCalculateReturn={async v=>{const r=await quoteWizard('return',v);return r.ok===false?r:{...r,deliveryPrice:r.quote.deliveryPrice};}} onCreateReturn={v=>createWizard('return',v)} onSupport={openSupport} onNavigateToOrder={v=>openOrder(v.orderId)} onNavigateHome={()=>navigate('home')} onExit={()=>navigate('home')}/>
     {:else if root === 'checkout'}<Checkout id={routeID} initialTheme={theme} onBack={() => navigate('payments')} onComplete={async (payment, leave) => { await safe(refresh); if (leave) navigate(payment.orderID ? `order/${payment.orderID}` : 'subscription'); }} />

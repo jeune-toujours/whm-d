@@ -2619,6 +2619,17 @@
     text-align: center;
   }
 
+  @media (width < 60rem) {
+    article.service-card {
+      min-height: 0;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    article.service-card .service-media {
+      min-height: 7rem;
+    }
+  }
+
   .service-card-copy {
     display: flex;
     min-width: 0;

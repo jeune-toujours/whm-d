@@ -30,13 +30,14 @@ button { cursor: pointer; }
 .skip-link:not(:focus) { clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; padding: 0; }
 
 /* WHM-7: service selection cards only; delivery cards use buttons, not articles. */
-.whm-app .service-stack > article.service-card { position: relative; }
-.whm-app .service-stack > article.service-card .status-badge {
-  position: absolute;
-  top: 0.85rem;
-  right: 0.85rem;
-  z-index: 1;
-  white-space: nowrap;
+@media (min-width: 60rem) {
+  .whm-app .service-stack > article.service-card { position: relative; }
+  .whm-app .service-stack > article.service-card .status-badge {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+    z-index: 1;
+  }
 }
 .whm-app .service-stack > article.service-card .service-card-copy {
   justify-content: flex-start;

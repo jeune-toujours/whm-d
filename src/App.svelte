@@ -1,4 +1,6 @@
 <script>
+  import AppFooter from './components/AppFooter.svelte';
+  import { initialFaq } from './faq.js';
   import { applyTheme } from '$lib/theme.js';
   import LiveApp from './LiveApp.svelte';
   const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
@@ -44,7 +46,7 @@
   let item = $derived(selectedItem?.id === routeItemId ? selectedItem : demo.units.find(unit => unit.id === routeItemId));
 
   onMount(() => {
-    const syncRoute = () => { route = currentRoute(); window.scrollTo({ top: 0, behavior: 'instant' }); };
+    const syncRoute = () => { const next = currentRoute(); if (next === 'support/help' && root !== 'support') supportBackRoute = route; route = next; window.scrollTo({ top: 0, behavior: 'instant' }); };
     const syncTheme = (event) => {
       if (event.detail === 'bumblebee' || event.detail === 'halloween') {
         theme = event.detail;
@@ -78,7 +80,8 @@
     navigate(`item/${unit.id}`);
   }
   function openReturn(ids = []) { selectedForReturn = ids; navigate('return'); }
-  function openSupport(context = null, type = null) { supportContext = context; supportType = type || (context ? 'incident' : null); navigate('support'); }
+  let supportBackRoute = 'home';
+  function openSupport(context = null, type = null) { if (root !== 'support') supportBackRoute = route; supportContext = context; supportType = type || (context ? 'incident' : null); navigate('support'); }
   function openInfo(title, description, backRoute = root) { infoTitle = title; infoDescription = description; infoBackRoute = backRoute; navigate('info'); }
   function setScenario(scenario) { updateDemo(createDemo(scenario)); selectedForReturn = []; selectedItem = null; }
   function setOrderStage(stage) {
@@ -142,6 +145,7 @@
   <LiveApp />
 {:else}
 
+<div class="client-layout">
 <div class="review-bar" role="region" aria-label="Навигация по демо-контру">
   <span><strong>Клиентский демо-контур</strong><i></i>Без бэкенда</span>
   <div><a href="#/home">Главная</a><a href="#/preview">Все экраны <ExternalLink size={13} aria-hidden="true" /></a></div>
@@ -165,7 +169,7 @@
   {:else if root === 'history'}
     <History initialTheme={theme} activeOrder={demo.activeOrder ? { id: demo.activeOrder.id, number: demo.activeOrder.id, type: demo.activeOrder.type === 'return' ? 'return' : 'intake', statusLabel: demo.activeOrder.status, updatedAt: 'сейчас' } : null} onBack={() => navigate('home')} onOpenActiveOrder={() => navigate('order')} onOpenItem={(unit) => openItem(unit, 'history')} onOpenReceipt={() => openInfo('Чек по заказу', 'Фискальный чек недоступен в демо-контуре. Реальные платежи не проводятся.', 'history')} onOpenDocument={() => openInfo('Документ по заказу', 'Документы появятся после подключения бэкенда.', 'history')} onOpenSupport={(context) => openSupport(context, 'incident')} onOpenRelatedOrder={() => navigate('history')} />
   {:else if root === 'support'}
-    <Support initialTheme={theme} initialType={supportType} initialContext={supportContext} onLoadContextOptions={contextOptions} onSubmitIncident={(payload) => addTicket('incident', payload)} onSubmitTechnical={(payload) => addTicket('technical', payload)} onLoadTickets={() => demo.tickets} onReplyTicket={replyTicket} onOpenRelatedOrder={() => navigate('history')} onGoHome={() => navigate('home')} />
+    <Support initialTheme={theme} initialType={route === 'support' ? supportType : null} initialContext={route === 'support' ? supportContext : null} onBack={() => navigate(supportBackRoute)} loadQuestions={() => initialFaq} onLoadContextOptions={contextOptions} onSubmitIncident={(payload) => addTicket('incident', payload)} onSubmitTechnical={(payload) => addTicket('technical', payload)} onLoadTickets={() => demo.tickets} onReplyTicket={replyTicket} onOpenRelatedOrder={() => navigate('history')} onGoHome={() => navigate('home')} />
   {:else if root === 'profile'}
     <Profile initialTheme={theme} onLoadProfile={() => profileFrom(demo)} onSaveProfile={updateProfile} onRequestPhoneChange={() => ({ ok: true })} onConfirmPhoneChange={(code) => code === '0000' ? { ok: false, message: 'Неверный код' } : { ok: true }} onChangePaymentMethod={changePaymentMethod} onChangePlan={changePlan} onPauseSubscription={pauseSubscription} onOpenSubscription={() => navigate('subscription')} onOpenAllPayments={() => navigate('payments')} onOpenReceipt={() => openInfo('Чек', 'Фискальный чек недоступен в демо-контуре. Реальные платежи не проводятся.', 'profile')} onOpenSupport={() => openSupport()} onOpenTerms={() => openInfo('Публичная оферта', 'Текст оферты ещё не утверждён. В демо-контуре не заключаются договоры и не проводятся платежи.', 'profile')} onOpenPrivacy={() => openInfo('Политика конфиденциальности', 'Текст политики ещё не утверждён. Демо-контур не отправляет введённые данные на сервер.', 'profile')} onGoToReturn={() => openReturn()} onGoBack={() => navigate('home')} onLogout={() => navigate('signin')} onDeleteAccount={() => ({ ok: false, message: 'Удаление аккаунта недоступно без серверной части.' })} />
   {:else if root === 'subscription'}
@@ -176,7 +180,9 @@
     <InfoScreen initialTheme={theme} title={infoTitle} description={infoDescription} onBack={() => navigate(infoBackRoute)} />
   {/if}
 {/key}
+{#if !['signin', 'intake', 'return', 'checkout'].includes(root)}<AppFooter current={root} />{/if}
 
+</div>
 {/if}
 
 <style>

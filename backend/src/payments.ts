@@ -116,7 +116,7 @@ export const paymentEndpoints = [
   endpoint('/v1/subscription/pause', 'post', async req => {
     needSimulation(); const user = clientUser(req)
     return json(await transaction(req, [`client-orders:${user.id}`, `payment-owner:${user.id}`], async () => {
-      const items = await req.payload.count({ collection: 'storage-items', req, overrideAccess: false, where: { status: { not_equals: 'returned' } } })
+      const items = await req.payload.count({ collection: 'storage-items', req, overrideAccess: false, where: { status: { not_in: ['returned', 'archived'] } } })
       const orders = await req.payload.count({ collection: 'orders', req, overrideAccess: false, where: { status: { not_in: ['completed', 'cancelled'] } } })
       if (items.totalDocs || orders.totalDocs) throw new DomainError(409, 'SUBSCRIPTION_IN_USE', 'Сначала верните вещи и завершите заказы.')
       const sub = (await req.payload.find({ collection: 'subscriptions', req, overrideAccess: false, limit: 1 })).docs[0]

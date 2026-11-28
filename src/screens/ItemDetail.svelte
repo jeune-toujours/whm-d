@@ -17,7 +17,8 @@
   });
   let copied = $state(false);
   let dark = $derived(initialTheme === 'halloween');
-  let archived = $derived(Boolean(item?.archived || item?.currentStatus === 'returned' || item?.status === 'returned'));
+  let neverReceived = $derived(item?.currentStatus === 'archived' || item?.status === 'archived');
+  let archived = $derived(Boolean(item?.archived || ['returned', 'archived'].includes(item?.currentStatus) || ['returned', 'archived'].includes(item?.status)));
   let canReturn = $derived(!archived && item?.status === 'stored' && !item?.lockReason);
   let contents = $derived(item?.contents?.length ? item.contents : item?.description ? item.description.split(',').map(value => value.trim()) : []);
   let displayID = $derived(item?.internalID || item?.id || '—');
@@ -40,7 +41,7 @@
     <div class="eyebrow">Мои вещи <span>/</span> {displayID}</div>
     <div class="title-row">
       <div><h1>{item?.title || 'Вещь на хранении'}</h1><p>{item?.description || 'Подробная информация о единице хранения'}</p></div>
-      <span class:archive={archived} class="status">{live ? item.statusLabel : archived ? 'Возвращена' : item?.status === 'return-requested' ? 'Готовится к возврату' : 'На хранении'}</span>
+      <span class:archive={archived} class="status">{neverReceived ? 'Не поступила на склад' : live && item.statusLabel ? item.statusLabel : archived ? 'Возвращена' : item?.status === 'return-requested' ? 'Готовится к возврату' : 'На хранении'}</span>
     </div>
 
     <div class="columns">
@@ -78,10 +79,12 @@
 
         <section data-slot="card" class="card">
           <div class="section-title"><h2>Путь вещи</h2></div>
+          {#if neverReceived}<p class="muted">Вещь указана в заявке, но не была принята на склад.</p>{:else}
           <ol class="timeline">
             <li><span class="dot"></span><div><strong>Принята на хранение</strong><small>{item?.storedSinceLabel || item?.storedSince || 'Дата уточняется'}</small></div></li>
             <li><span class="dot"></span><div><strong>{archived ? 'Возвращена владельцу' : 'На охраняемом складе'}</strong><small>{archived ? item?.returnedAt || 'Возврат завершён' : 'Доступна для оформления возврата'}</small></div></li>
           </ol>
+          {/if}
         </section>
       </div>
 
@@ -99,7 +102,7 @@
           <div class="price"><span>Стоимость хранения</span><strong>{formatMoney(item?.monthlyPrice)}<small>/мес.</small></strong></div>
           {#if item?.lockReason}<p class="warning">{item.lockReason}</p>{/if}
           {#if canReturn}<button data-slot="button" class="primary {buttonVariants()}" type="button" onclick={() => onReturn(item)}>Вернуть эту вещь <ExternalLink size={16} aria-hidden="true" /></button>{/if}
-          {#if archived}<p class="note">Эта единица уже возвращена и доступна только для просмотра истории.</p>{/if}
+          {#if archived}<p class="note">{neverReceived ? 'Карточка сохранена в истории заявки.' : 'Эта вещь уже возвращена и доступна для просмотра истории.'}</p>{/if}
         </section>
         <button data-slot="button" class="secondary {buttonVariants({ variant: 'outline' })}" type="button" onclick={() => onSupport({ orderId: item?.sourceOrderId, unitId: item?.id })}>Сообщить о проблеме</button>
         <button data-slot="button" class="text-link {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={() => onOpenDocument(item)}>Документы по вещи <ExternalLink size={16} aria-hidden="true" /></button>

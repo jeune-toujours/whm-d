@@ -456,6 +456,7 @@
   }
 
   function itemStatusLabel(item) {
+    if (item.currentStatus === 'archived') return 'Не поступила на склад';
     if (item.currentStatus === 'stored') return 'На хранении';
     if (item.currentStatus === 'returned') return item.returnedAt ? `Возвращено ${item.returnedAt}` : 'Возвращено';
     return 'Заказ отменён';
@@ -1058,7 +1059,7 @@
                             <span class="mini-placeholder" aria-hidden="true"></span>
                             <span><strong>{item.title}</strong><small>{item.internalID || item.id}</small></span>
                             <span class:returned={item.currentStatus === 'returned'} class:cancelled={item.currentStatus === 'cancelled'} class="mini-status">
-                              {item.currentStatus === 'stored' ? 'Хранится' : item.currentStatus === 'returned' ? 'Возвращено' : 'Отменено'}
+                              {item.currentStatus === 'stored' ? 'Хранится' : item.currentStatus === 'returned' ? 'Возвращено' : item.currentStatus === 'archived' ? 'Не поступила' : 'Отменено'}
                             </span>
                           </div>
                         {/each}
@@ -1183,7 +1184,7 @@
         </dl>
         <div class="info-banner">
           <TriangleAlert aria-hidden="true" />
-          <p>{itemPreview.item.archived ? 'Карточка доступна только для просмотра. Данные сохранены на момент возврата.' : 'Это актуальная карточка вещи на хранении.'}</p>
+          <p>{itemPreview.item.currentStatus === 'archived' ? 'Вещь не поступила на склад. Карточка сохранена в истории.' : itemPreview.item.archived ? 'Карточка доступна только для просмотра. Данные сохранены на момент возврата.' : 'Это актуальная карточка вещи на хранении.'}</p>
         </div>
         <button data-slot="button" class="primary-button full {buttonVariants()}" type="button" onclick={() => (itemPreview = null)}>Понятно</button>
       </div>

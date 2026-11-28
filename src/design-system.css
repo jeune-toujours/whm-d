@@ -18,6 +18,9 @@
 }
 
 :root {
+  --layout-width: 72rem;
+  --layout-gutter: clamp(1rem, 3vw, 2.5rem);
+  --layout-inset: max(var(--layout-gutter), calc((100% - var(--layout-width)) / 2));
   color-scheme: light;
   --ui-background: #f8f8f5;
   --ui-card: #fff;
@@ -153,7 +156,46 @@
   .auth-page .welcome-cover .hero-glyph svg { width: 3.25rem; height: 3.25rem; stroke-width: 1.25; }
   .auth-page .legal-links { padding: 0; margin: 0; }
   .whm-app .dashboard-shell .greeting { color: var(--ui-muted-foreground); margin: 0 0 .3rem; font-size: .9rem; }
-  .whm-app .app-header:has(+ .dashboard-shell) { padding-inline: 0; width: min(calc(100% - 2 * var(--page-gutter)), var(--content-max)); }
+  .client-layout { min-height: 100dvh; display: flex; flex-direction: column; background: var(--ui-background); }
+  .client-layout > :is(.whm-app, .live-page, .detail-page, .subscription-page, .page, .info, .preview) { flex: 1; min-height: 0; }
+  .client-layout > .auth-page { min-height: min(80dvh, 42rem); }
+  .client-layout :is(.app-header, .topbar, .wizard-header, .home-topbar),
+  .client-layout > :is(.detail-page, .subscription-page, .page, .info, .live-page) > header {
+    width: 100%; max-width: none; min-height: 4.5rem; height: auto;
+    padding-block: .75rem; padding-inline: var(--layout-inset);
+    background-color: var(--ui-card); border-bottom: 1px solid var(--ui-line);
+  }
+  .client-layout :is(.dashboard-shell, .profile-shell, .history-shell, .support-shell, .order-shell, .flow-shell),
+  .client-layout > :is(.detail-page, .subscription-page, .page, .live-page) > main,
+  .client-layout > .info > .content {
+    width: min(calc(100% - 2 * var(--layout-gutter)), var(--layout-width));
+    max-width: none; padding-inline: 0; margin-inline: auto; min-width: 0;
+  }
+  .client-layout :is(.dashboard-shell, .profile-shell, .history-shell, .support-shell, .order-shell, .flow-shell) { overflow-wrap: anywhere; }
+  .client-layout :is(.profile-shell, .support-shell) { padding-block-start: clamp(1.25rem, 3vw, 2.25rem); }
+  .client-layout :is(.profile-shell, .support-shell) .page-heading { margin-block-start: 0; }
+  .client-layout :is(.profile-shell, .support-shell) h1 { font-size: clamp(1.85rem, 3.4vw, 2.65rem); }
+  .client-layout .support-grid { display: grid; gap: 1rem; align-items: start; margin-block-start: 1.35rem; }
+  .client-layout .support-grid .type-grid { margin: 0; }
+  .client-layout .support-grid .type-card { min-width: 0; }
+  .client-layout .brand:where(a) { color: inherit; text-decoration: none; }
+  .client-layout .unit-grid > .unit-card { content-visibility: auto; contain-intrinsic-block-size: auto 155px; }
+  .client-layout .unit-grid > .unit-card:focus-within { content-visibility: visible; }
+  .client-layout .profile-shell .field-list dd { overflow-wrap: anywhere; }
+  @media (min-width: 56rem) {
+    .client-layout .support-grid { grid-template-columns: 1.1fr 1fr; }
+    .client-layout .profile-shell {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+      gap: 1rem; align-items: start;
+    }
+    .client-layout .profile-shell > :not(.section-card) { grid-column: 1 / -1; }
+    .client-layout .profile-shell > .section-card { margin-block: 0; min-width: 0; }
+    .client-layout .profile-shell > .billing-card { grid-column: 2; grid-row: span 2; }
+    .client-layout .profile-shell > .section-card.account-actions { grid-column: 1 / -1; }
+    .client-layout .order-shell { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+    .client-layout .order-shell > :not(.status-section, .visit-section, .storage-section, .items-section) { grid-column: 1 / -1; }
+    .client-layout .order-shell > .section { margin-block: 0; min-width: 0; }
+  }
   .whm-app :is(.text-field, .field) > :is(input:not([type=checkbox]):not([type=radio]), textarea, select),
   .live-shell label > :is(input:not([type=checkbox]):not([type=radio]), textarea, select) {
     border: 1px solid var(--ui-line); border-radius: .5rem;

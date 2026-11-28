@@ -1,5 +1,4 @@
 import { Package } from 'lucide-react'
-import './warehouse.css'
 
 export function Icon() {
   return <span className="whm-brand-mark" aria-label="WHM D" role="img"><Package size={20} aria-hidden="true" /></span>

@@ -8,7 +8,6 @@ import { ArrowLeft, Plus, RefreshCw, CheckCircle, TriangleAlert } from 'lucide-r
 import { api } from './warehouse-api'
 import { BarcodeField } from './BarcodeField'
 import type { InventoryCellOption, InventoryCheck, InventoryDetail, InventoryOperation } from '../inventory-types'
-import './warehouse.css'
 
 const root = '/admin/warehouse/inventory'
 const date = (value?: string | null) => value ? new Date(value).toLocaleString('ru-RU') : '—'

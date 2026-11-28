@@ -70,6 +70,7 @@ export interface Config {
     'inventory-sessions': InventorySession;
     'inventory-session-cells': InventorySessionCell;
     'damage-reports': DamageReport;
+    faqs: Faq;
     users: User;
     'storage-items': StorageItem;
     orders: Order;
@@ -96,6 +97,7 @@ export interface Config {
     'inventory-sessions': InventorySessionsSelect<false> | InventorySessionsSelect<true>;
     'inventory-session-cells': InventorySessionCellsSelect<false> | InventorySessionCellsSelect<true>;
     'damage-reports': DamageReportsSelect<false> | DamageReportsSelect<true>;
+    faqs: FaqsSelect<false> | FaqsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     'storage-items': StorageItemsSelect<false> | StorageItemsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
@@ -389,7 +391,9 @@ export interface StorageItem {
   barcode?: string | null;
   seal?: string | null;
   sealPhoto?: (string | null) | Media;
-  status: 'expected' | 'received' | 'stored' | 'reserved' | 'picked' | 'returned';
+  status: 'expected' | 'received' | 'stored' | 'reserved' | 'picked' | 'returned' | 'archived';
+  archivedAt?: string | null;
+  archiveReason?: string | null;
   cell?: (string | null) | Cell;
   monthlyPrice: number;
   startedAt?: string | null;
@@ -493,6 +497,19 @@ export interface SupportTicket {
   order?: (string | null) | Order;
   item?: (string | null) | StorageItem;
   attachments?: (string | Media)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs".
+ */
+export interface Faq {
+  id: string;
+  question: string;
+  answer: string;
+  published?: boolean | null;
+  position: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -712,6 +729,10 @@ export interface PayloadLockedDocument {
         value: string | DamageReport;
       } | null)
     | ({
+        relationTo: 'faqs';
+        value: string | Faq;
+      } | null)
+    | ({
         relationTo: 'users';
         value: string | User;
       } | null)
@@ -890,6 +911,18 @@ export interface DamageReportsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs_select".
+ */
+export interface FaqsSelect<T extends boolean = true> {
+  question?: T;
+  answer?: T;
+  published?: T;
+  position?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
@@ -935,6 +968,8 @@ export interface StorageItemsSelect<T extends boolean = true> {
   seal?: T;
   sealPhoto?: T;
   status?: T;
+  archivedAt?: T;
+  archiveReason?: T;
   cell?: T;
   monthlyPrice?: T;
   startedAt?: T;

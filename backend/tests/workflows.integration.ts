@@ -47,6 +47,32 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     const configuration = (await request('/v1/checkout-config',c)).data.config;
     const schedule = { date:configuration.dates[0].id,slot:configuration.slots[0],consent:true };
     const orderData = { service:'self',consent:true,items:[{ tariffID:tariff.id, quantity:2, description:'Test inventory', price:1 }], fulfillment:'pickup', amount:1 }
+    const faq = { question: 'Как проверить FAQ?', answer: 'Ответ для проверки публикации.', position: 1, published: false }
+    assert.equal((await request('/faqs', w, faq)).status, 403)
+    assert.equal((await request('/faqs', c, faq)).status, 403)
+    const draftFaq = await request('/faqs', a, faq)
+    assert.equal(draftFaq.status, 201)
+    const faqID = draftFaq.data.doc.id
+    assert.ok(!(await request('/v1/faq', c)).data.questions.some((entry: any) => entry.id === faqID))
+    assert.equal((await request('/faqs/' + faqID, a, { published: true, answer: 'Обновлённый ответ.' }, undefined, 'PATCH')).status, 200)
+    assert.deepEqual((await request('/v1/faq', c)).data.questions[0], {
+      id: faqID, question: faq.question, answer: 'Обновлённый ответ.',
+    })
+
+    const archiveOrder = await request('/v1/intake', c, { ...orderData, items: [{ ...orderData.items[0], quantity: 1 }] }, suffix + '-archive')
+    assert.equal(archiveOrder.status, 200)
+    const archivedOrder = archiveOrder.data.order
+    const archiveURL = '/v1/warehouse/orders/' + archivedOrder.id + '/archive-item'
+    const archiveBody = { itemID: archivedOrder.items[0].id, reason: 'Клиент не привёз коробку' }
+    assert.equal((await request(archiveURL, c, archiveBody)).status, 403)
+    assert.equal((await request(archiveURL, w, { ...archiveBody, reason: ' ' })).status, 400)
+    const archiveResults = await Promise.all([request(archiveURL, w, archiveBody), request(archiveURL, w, archiveBody)])
+    assert.deepEqual(archiveResults.map(result => result.status), [200, 200])
+    const archivedItem = await payload.findByID({ collection: 'storage-items', id: archiveBody.itemID, overrideAccess: true, depth: 0 })
+    assert.equal(archivedItem.status, 'archived')
+    assert.equal(archivedItem.archiveReason, archiveBody.reason)
+    assert.equal((await request('/v1/orders/' + archivedOrder.id, c)).data.order.backendStatus, 'cancelled')
+
     const manualCourier={...orderData,...schedule,fulfillment:'courier',address:'  Садовническая  набережная 1  ',phone:'8 (999) 000-00-01'}
     const manualQuote=await request('/v1/intake/quote',c,manualCourier)
     assert.equal(manualQuote.status,200);assert.equal(manualQuote.data.quote.logistics.address,'Садовническая набережная 1');assert.equal(manualQuote.data.quote.logistics.phone,'+79990000001')
@@ -54,7 +80,7 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     const requests = await Promise.all([request('/v1/intake',c,orderData,suffix), request('/v1/intake',c,orderData,suffix)])
     assert.deepEqual(requests.map(r => r.status), [200,200]); assert.equal(requests[0].data.order.id, requests[1].data.order.id)
     const order = requests[0].data.order, itemID = order.items[0].id, secondID = order.items[1].id
-    assert.equal((await payload.count({ collection:'storage-items', where:{ owner:{ equals:client.id } }, overrideAccess:true })).totalDocs, 2, 'Retry does not create extra items')
+    assert.equal((await payload.count({ collection:'storage-items', where:{ owner:{ equals:client.id } }, overrideAccess:true })).totalDocs, 3, 'Retry does not create extra items')
     assert.equal((await request('/v1/intake',c,{ ...orderData, fulfillment:'courier', address:'changed' },suffix)).status,409,'Key cannot be reused with different payload')
     assert.equal((await request(`/v1/orders/${order.id}`,o)).status,404)
     assert.equal((await request(`/v1/orders/${order.id}/cancel`,o,{})).status,404)
@@ -188,6 +214,7 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     await request(`/v1/payments/${cp.id}/simulate`,c,{ result:'paid' })
     assert.equal((await request(`/v1/orders/${cancelled.id}/cancel`,c,{})).status,200)
     assert.equal((await request(`/v1/orders/${cancelled.id}/cancel`,c,{})).status,200)
+    assert.equal((await payload.findByID({ collection: 'storage-items', id: cancelled.items[0].id, overrideAccess: true, depth: 0 })).status, 'archived')
     assert.equal((await request(`/v1/payments/${cp.id}`,c)).data.payment.status,'refunded')
     assert.equal((await request(`/v1/payments/${cp.id}/simulate`,c,{ result:'paid' })).data.payment.status,'refunded')
     const partial = (await request('/v1/intake',c,{...orderData,...schedule,fulfillment:'courier',address:configuration.addresses[0].value,phone:'+79990000001'},`${suffix}-partial-courier`)).data.order
@@ -200,6 +227,9 @@ test('persistent intake, payments, media, four warehouse stages, ownership, capa
     assert.equal(partiallyReceived.cancelAllowed,false,'Client receives server cancellation eligibility')
     assert.equal((await request(`/v1/orders/${partial.id}/cancel`,c,{})).status,409,'A single physically received item prevents cancellation')
     assert.equal((await request(`/v1/payments/${partialPayment.id}`,c)).data.payment.status,'paid','Rejected cancellation does not refund payment')
+    assert.equal((await request(`/v1/warehouse/orders/${partial.id}/archive-item`, w, { itemID: partial.items[0].id, reason: 'Проверка ограничения' })).status, 409)
+    assert.equal((await request(`/v1/warehouse/orders/${partial.id}/archive-item`, w, { itemID: partial.items[1].id, reason: 'Вторая коробка не поступила' })).status, 200)
+    assert.equal((await request(`/v1/orders/${partial.id}`, c)).data.order.backendStatus, 'received')
     const historyMarker = `cursor-fixture-${suffix}`, closedAt = new Date().toISOString()
     for (let i=0;i<21;i++) await payload.create({collection:'orders',overrideAccess:true,data:{owner:client.id,number:`CURSOR-${suffix}-${i}`,type:'intake',status:'completed',items:[lastID],fulfillment:'pickup',idempotencyKey:`${suffix}-history-${i}`,closedAt,historySearch:historyMarker,details:{version:2,units:[]}}})
     const firstPage = await request(`/v1/history?search=${historyMarker}`,c)

@@ -14,7 +14,7 @@ const idsOf = (value: unknown) => { if (!Array.isArray(value) || !value.length |
 const terminal = (status: string) => ['completed', 'cancelled'].includes(status)
 const wf = { workflow: true }
 const dateLabel = (value: unknown) => value ? new Date(String(value)).toLocaleDateString('ru-RU') : ''
-export const labels: Record<string, string> = { damage_found: 'Повреждение', created: 'Заявка создана', received: 'Принято на склад', placed: 'Размещено', picking: 'Идёт подбор', ready: 'Готово к выдаче', completed: 'Заказ завершён', cancelled: 'Отменён', expected: 'Ожидает приёмки', stored: 'На хранении', reserved: 'Заказан возврат', picked: 'Подобрано', returned: 'Возвращено' }
+export const labels: Record<string, string> = { damage_found: 'Повреждение', created: 'Заявка создана', received: 'Принято на склад', placed: 'Размещено', picking: 'Идёт подбор', ready: 'Готово к выдаче', completed: 'Заказ завершён', cancelled: 'Отменён', expected: 'Ожидает приёмки', stored: 'На хранении', reserved: 'Заказан возврат', picked: 'Подобрано', returned: 'Возвращено', archived: 'Не поступила · в архиве' }
 const stateMap: Record<string, string> = { created: 'created', received: 'storing', placed: 'storing', picking: 'assembling', ready: 'pickup_ready', completed: 'completed', cancelled: 'cancelled' }
 
 export function itemDTO(item: any) {
@@ -25,7 +25,7 @@ export function orderDTO(order: any, events: any[] = []) {
   const status = order.status === 'created' && order.type === 'intake' && order.fulfillment === 'pickup' ? 'warehouse_visit' : order.status === 'received' ? 'warehouse_received' : order.status === 'ready' && order.fulfillment === 'courier' ? 'delivery_ready' : stateMap[order.status] || 'created'
   const visibleEvents = events.filter(e => relationID(e.order) === order.id)
   const historyMap: Record<string, string> = { ...stateMap, received: 'warehouse_received', placed: 'storing', ready: order.fulfillment === 'courier' ? 'delivery_ready' : 'pickup_ready' }
-  return { id: order.id, number: order.number, type: order.type === 'intake' ? 'storage' : 'return', fulfillment: order.fulfillment, status, backendStatus: order.status, statusLabel: status === 'delivery_ready' ? 'Готово к доставке' : labels[order.status], visitAt: details.logistics?.visitAt || null, visitWindow: order.slot || '', address: order.address || '', addressHint: [details.logistics?.apartment && 'Кв. ' + details.logistics.apartment, details.logistics?.entrance && 'Подъезд ' + details.logistics.entrance, details.logistics?.floor && 'Этаж ' + details.logistics.floor].filter(Boolean).join(', '), warehouse: details.logistics?.warehouse?.name || '', warehouseAddress: details.logistics?.warehouse?.address || '', workingHours: details.logistics?.warehouse?.hours || '', courier: { name: 'Не назначен', vehicle: '', plate: '' }, pickupInstructions: 'Передача согласовывается с сотрудником склада.', scheduleNotice: 'Тестовый слот; реальная доставка не назначена.', currentMonthlyStorage: details.currentMonthly ?? 0, futureMonthlyStorage: details.futureMonthly ?? 0, cancelReason: visibleEvents.find(e => e.status === 'cancelled')?.note || '', documentAvailable: false, cancelAllowed: order.type === 'intake' && order.fulfillment === 'courier' && order.status === 'created' && items.every((i:any)=>i.status==='expected') && Boolean(details.logistics?.visitAt) && new Date(details.logistics.visitAt).getTime()-Date.now() >= 2*3600_000, cancelledFrom: null, events: visibleEvents.map(e => ({ status: e.status, label: labels[e.status] || e.status, at: e.createdAt, note: ['cancelled', 'damage_found'].includes(e.status) ? e.note : '' })), history: visibleEvents.filter(e => e.status in historyMap).map(e => ({ status: historyMap[e.status] || 'created', at: e.createdAt })), items: items.map((i: any) => ({ ...i, name: i.title, note: i.description, icon: i.type === 'box' ? 'box' : 'bag', itemStatus: i.status, status: i.statusLabel })), createdAt: order.createdAt, updatedAt: order.updatedAt, paymentID: relationID(order.payment), paymentStatus: typeof order.payment === 'object' ? order.payment?.status : null, signature: relationID(order.signature), evidence: (order.evidence || []).map(relationID) }
+  return { id: order.id, number: order.number, type: order.type === 'intake' ? 'storage' : 'return', fulfillment: order.fulfillment, status, backendStatus: order.status, statusLabel: status === 'delivery_ready' ? 'Готово к доставке' : labels[order.status], visitAt: details.logistics?.visitAt || null, visitWindow: order.slot || '', address: order.address || '', addressHint: [details.logistics?.apartment && 'Кв. ' + details.logistics.apartment, details.logistics?.entrance && 'Подъезд ' + details.logistics.entrance, details.logistics?.floor && 'Этаж ' + details.logistics.floor].filter(Boolean).join(', '), warehouse: details.logistics?.warehouse?.name || '', warehouseAddress: details.logistics?.warehouse?.address || '', workingHours: details.logistics?.warehouse?.hours || '', courier: null, pickupInstructions: 'Передача согласовывается с сотрудником склада.', scheduleNotice: 'Тестовый слот; реальная доставка не назначена.', currentMonthlyStorage: details.currentMonthly ?? 0, futureMonthlyStorage: details.futureMonthly ?? 0, cancelReason: visibleEvents.find(e => e.status === 'cancelled')?.note || '', documentAvailable: false, cancelAllowed: order.type === 'intake' && order.fulfillment === 'courier' && order.status === 'created' && items.every((i: any) => ['expected', 'archived'].includes(i.status)) && Boolean(details.logistics?.visitAt) && new Date(details.logistics.visitAt).getTime()-Date.now() >= 2*3600_000, cancelledFrom: null, events: visibleEvents.map(e => ({ status: e.status, label: labels[e.status] || e.status, at: e.createdAt, note: ['cancelled', 'damage_found'].includes(e.status) ? e.note : '' })), history: visibleEvents.filter(e => e.status in historyMap).map(e => ({ status: historyMap[e.status] || 'created', at: e.createdAt })), items: items.map((i: any) => ({ ...i, name: i.title, note: i.description, icon: i.type === 'box' ? 'box' : 'bag', itemStatus: i.status, status: i.statusLabel })), createdAt: order.createdAt, updatedAt: order.updatedAt, paymentID: relationID(order.payment), paymentStatus: typeof order.payment === 'object' ? order.payment?.status : null, signature: relationID(order.signature), evidence: (order.evidence || []).map(relationID) }
 }
 const event = (req: PayloadRequest, order: any, status: string, note = '') => req.payload.create({ collection: 'order-events', req, overrideAccess: true, data: { owner: relationID(order.owner), order: order.id, status, actor: req.user!.id, note } })
 async function orderByID(req: PayloadRequest, id: string, client = false) {
@@ -51,6 +51,36 @@ async function ownedMedia(req: PayloadRequest, ids: string[], owner: string, pur
     const media = await req.payload.findByID({ collection: 'media', req, id, overrideAccess: false, depth: 0 })
     if (relationID(media.owner) !== owner || (purpose && media.purpose !== purpose)) throw bad('Материал должен принадлежать клиенту и нужному процессу.')
   }
+}
+
+function archiveItem(req: PayloadRequest, id: string, reason: string) {
+  return req.payload.update({
+    collection: 'storage-items', id, req, overrideAccess: true, context: wf,
+    data: { status: 'archived', archivedAt: new Date().toISOString(), archiveReason: reason },
+  })
+}
+
+async function countIntakeItems(req: PayloadRequest, ids: string[], status: NonNullable<import('payload').Where['status']>) {
+  const result = await req.payload.count({
+    collection: 'storage-items', req, overrideAccess: true, where: { id: { in: ids }, status },
+  })
+  return result.totalDocs
+}
+
+async function closeIntake(req: PayloadRequest, order: Awaited<ReturnType<typeof orderByID>>, reason: string) {
+  assertTransition(order.type, order.status, 'cancelled')
+  if (order.payment) {
+    const payment = await req.payload.findByID({ collection: 'payments', id: relationID(order.payment), req, overrideAccess: true, depth: 0 })
+    if (payment.provider === 'simulation') {
+      await req.payload.update({ collection: 'payments', id: payment.id, req, overrideAccess: true, data: { status: payment.status === 'paid' ? 'refunded' : 'failed' } })
+      await req.payload.create({ collection: 'integration-events', req, overrideAccess: true, data: { key: `cancel-payment:${payment.id}`, provider: 'simulation-payment', status: 'completed', entityID: payment.id } })
+    }
+  }
+  await req.payload.update({
+    collection: 'orders', id: order.id, req, overrideAccess: true, context: wf,
+    data: { status: 'cancelled', closedAt: new Date().toISOString() },
+  })
+  await event(req, order, 'cancelled', reason)
 }
 
 export const workflowEndpoints = [
@@ -100,18 +130,14 @@ export const workflowEndpoints = [
       if (order.status === 'cancelled') return { ok: true }
       const details = order.details as any
       if (order.type !== 'intake' || order.fulfillment !== 'courier' || order.status !== 'created' || !details?.logistics?.visitAt || new Date(details.logistics.visitAt).getTime() - Date.now() < 2 * 3600_000) throw conflict('Отмена доступна только для курьерской сдачи не позднее чем за 2 часа до визита. Для других изменений обратитесь в поддержку.')
-      const accepted = await req.payload.count({ collection: 'storage-items', req, overrideAccess: true, where: { and: [{ id: { in: (order.items || []).map(relationID) } }, { status: { not_equals: 'expected' } }] } })
-      if (accepted.totalDocs) throw conflict('Часть вещей уже принята складом. Изменить заявку можно через поддержку.')
-      assertTransition(order.type, order.status, 'cancelled')
-      for (const itemID of ids) await req.payload.update({ collection: 'storage-items', id: itemID, req, overrideAccess: true, context: wf, data: { status: order.type === 'intake' ? 'returned' : 'stored' } })
-      if (order.payment) {
-        const payment = await req.payload.findByID({ collection: 'payments', id: relationID(order.payment), req, overrideAccess: true, depth: 0 })
-        if (payment.provider === 'simulation') {
-          await req.payload.update({ collection: 'payments', id: payment.id, req, overrideAccess: true, data: { status: payment.status === 'paid' ? 'refunded' : 'failed' } })
-          await req.payload.create({ collection: 'integration-events', req, overrideAccess: true, data: { key: `cancel-payment:${payment.id}`, provider: 'simulation-payment', status: 'completed', entityID: payment.id } })
-        }
-      }
-      await req.payload.update({ collection: 'orders', id, req, overrideAccess: true, context: wf, data: { status: 'cancelled', closedAt: new Date().toISOString() } }); await event(req, order, 'cancelled', 'Отменено клиентом')
+      const accepted = await countIntakeItems(req, ids, { not_in: ['expected', 'archived'] })
+      if (accepted) throw conflict('Часть вещей уже принята складом. Изменить заявку можно через поддержку.')
+      const expected = await req.payload.find({
+        collection: 'storage-items', req, overrideAccess: true, depth: 0, pagination: false,
+        where: { id: { in: ids }, status: { equals: 'expected' } },
+      })
+      for (const item of expected.docs) await archiveItem(req, item.id, 'Заявка отменена клиентом')
+      await closeIntake(req, order, 'Отменено клиентом')
       return { ok: true }
     }))
   }),
@@ -170,13 +196,42 @@ export const workflowEndpoints = [
     ])
     return json({ ok: true, role: req.user!.role, orders: orders.docs.map(o => ({ ...orderDTO(o), type: o.type, ownerID: relationID(o.owner), clientName: typeof o.owner === 'object' ? `${o.owner.firstName || ''} ${o.owner.lastName || ''}`.trim() : '', picked: (o.picked || []).map(relationID) })), items: items.docs.map(i => ({ ...itemDTO(i), ownerID: relationID(i.owner), cell: relationID(i.cell), cellName: typeof i.cell === 'object' ? i.cell?.name : '' })), cells: cells.docs.map(c => ({ id: c.id, name: c.name, barcode: c.barcode, capacity: c.capacity, active: c.active, occupied: items.docs.filter(i => relationID(i.cell) === c.id && i.status !== 'returned').length })), tickets: tickets.docs.map(t => ({ id: t.id, subject: t.subject, attachments: (t.attachments || []).filter((m: any) => typeof m === 'object').map((m: any) => ({ filename: m.filename, url: m.url })), status: t.status, type: t.type, closeReason: t.closeReason || '', messages: messages.docs.filter(m => relationID(m.ticket) === t.id).map(m => ({ text: m.text, author: m.authorRole, date: dateLabel(m.createdAt) })) })) })
   }),
+  endpoint('/v1/warehouse/orders/:id/archive-item', 'post', async req => {
+    staffUser(req)
+    const id = idOf(req.routeParams?.id), data = await body(req)
+    const itemID = idOf(data.itemID), reason = required(data.reason, 500)
+    const initial = await orderByID(req, id)
+    const owner = relationID(initial.owner)
+    return json(await transaction(req, [`client-orders:${owner}`, `payment-owner:${owner}`, `order:${id}`, `item:${itemID}`], async () => {
+      const order = await orderByID(req, id)
+      const ids = (order.items || []).map(relationID)
+      if (order.type !== 'intake' || !ids.includes(itemID)) throw conflict('Вещь не входит в эту заявку на сдачу.')
+      const item = await req.payload.findByID({ collection: 'storage-items', id: itemID, req, overrideAccess: false, depth: 0 })
+      if (relationID(item.owner) !== owner) throw conflict('Вещь не входит в эту заявку на сдачу.')
+      if (item.status === 'archived') return { ok: true }
+      if (order.status !== 'created' || item.status !== 'expected' || item.cell || item.startedAt) {
+        throw conflict('В архив можно отправить только вещь, которую ещё не приняли.')
+      }
+      await archiveItem(req, itemID, reason)
+      await event(req, order, 'created', `Вещь ${item.internalID} отправлена в архив приёмки`)
+      if (!(await countIntakeItems(req, ids, { equals: 'expected' }))) {
+        if (await countIntakeItems(req, ids, { equals: 'received' })) {
+          await req.payload.update({ collection: 'orders', id, req, overrideAccess: true, context: wf, data: { status: 'received' } })
+          await event(req, order, 'received')
+        } else {
+          await closeIntake(req, order, 'Вещи не поступили на склад')
+        }
+      }
+      return { ok: true }
+    }))
+  }),
   endpoint('/v1/warehouse/orders/:id/receive', 'post', async req => {
     staffUser(req); const id = idOf(req.routeParams?.id), data = await body(req), itemID = idOf(data.itemID), barcode = required(data.barcode, 80), seal = text(data.seal, 80), sealPhoto = data.sealPhoto ? idOf(data.sealPhoto) : undefined, evidence = idsOf(data.evidence)
     return json(await transaction(req, [`order:${id}`, `item:${itemID}`, `barcode:${barcode}`], async () => {
       const order = await orderByID(req, id); if (order.type !== 'intake' || order.status !== 'created' || !(order.items || []).map(relationID).includes(itemID)) throw conflict('Приёмка недоступна для этой заявки.')
       if (((order.details as any)?.amount > 0 && !order.payment) || (order.payment && (await req.payload.findByID({ collection: 'payments', id: relationID(order.payment), req, overrideAccess: true, depth: 0 })).status !== 'paid')) throw conflict('Сначала подтвердите оплату заявки.')
       const item = await req.payload.findByID({ collection: 'storage-items', id: itemID, req, overrideAccess: false })
-      if (item.status !== 'expected') throw conflict('Вещь уже принята.')
+      if (item.status !== 'expected') throw conflict('Вещь больше не ожидает приёмки.')
       if (item.type === 'box' && !seal) throw bad('Укажите пломбу коробки.')
       if (seal && !sealPhoto) throw bad('Добавьте фото пломбы с читаемым номером.')
       if (sealPhoto && !seal) throw bad('Укажите номер сфотографированной пломбы.')
@@ -189,7 +244,7 @@ export const workflowEndpoints = [
       const duplicate = await req.payload.find({ collection: 'storage-items', req, overrideAccess: true, limit: 1, where: { barcode: { equals: barcode } } }); if (duplicate.totalDocs) throw conflict('Штрихкод уже используется.')
       await req.payload.update({ collection: 'storage-items', id: itemID, req, overrideAccess: true, context: wf, data: { barcode, seal, sealPhoto, contents: text(data.contents, 5000), media: evidence, status: 'received' } })
       // Populated relations can be cached on this request. Count fresh rows in the transaction.
-      const pending = await req.payload.count({ collection: 'storage-items', req, overrideAccess: true, where: { and: [{ id: { in: (order.items || []).map(relationID) } }, { status: { not_equals: 'received' } }] } })
+      const pending = await req.payload.count({ collection: 'storage-items', req, overrideAccess: true, where: { and: [{ id: { in: (order.items || []).map(relationID) } }, { status: { not_in: ['received', 'archived'] } }] } })
       if (!pending.totalDocs) { await req.payload.update({ collection: 'orders', id, req, overrideAccess: true, context: wf, data: { status: 'received' } }); await event(req, order, 'received') }
       else await event(req, order, 'created', `Принята вещь ${item.internalID}`)
       return { ok: true }
@@ -205,7 +260,7 @@ export const workflowEndpoints = [
       const occupied = await req.payload.count({ collection: 'storage-items', req, overrideAccess: true, where: { and: [{ cell: { equals: cellID } }, { status: { not_equals: 'returned' } }] } })
       if (occupied.totalDocs >= cell.capacity) throw conflict('В ячейке нет места.')
       await req.payload.update({ collection: 'storage-items', id: itemID, req, overrideAccess: true, context: wf, data: { cell: cellID, status: 'stored', startedAt: new Date().toISOString() } })
-      const pending = await req.payload.count({ collection: 'storage-items', req, overrideAccess: true, where: { and: [{ id: { in: (order.items || []).map(relationID) } }, { status: { not_equals: 'stored' } }] } })
+      const pending = await req.payload.count({ collection: 'storage-items', req, overrideAccess: true, where: { and: [{ id: { in: (order.items || []).map(relationID) } }, { status: { not_in: ['stored', 'archived'] } }] } })
       await event(req, order, 'received', 'Вещь размещена на хранение')
       if (!pending.totalDocs) { await event(req, order, 'placed'); await captureOrder(req, order); await req.payload.update({ collection: 'orders', id: orderID, req, overrideAccess: true, context: wf, data: { status: 'completed', closedAt: new Date().toISOString() } }); await event(req, order, 'completed') }
       return { ok: true }

@@ -555,7 +555,7 @@
     </button>
   </header>
 
-  <main class="page-shell">
+  <main class="page-shell profile-shell">
     <div class="page-heading">
       <h1>Профиль и биллинг</h1>
       <p>Личные данные, подписка и способ оплаты хранения.</p>
@@ -586,7 +586,7 @@
         </dl>
       </section>
 
-      <section data-slot="card" class="section-card">
+      <section data-slot="card" class="section-card billing-card">
         <div class="section-head">
           <h2>Подписка и оплата</h2>
           <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={onOpenSubscription}>Подробнее</button>
@@ -594,13 +594,13 @@
         <div class="plan-summary">
           <div>
             <span class="field-label">Текущий тариф</span>
-            <strong>{currentPlan?.title ?? '—'}</strong>
-            <span class="field-caption">{currentPlan?.volume ?? ''}</span>
+            <strong>{currentPlan?.title ?? 'Тариф не выбран'}</strong>
+            {#if currentPlan?.volume}<span class="field-caption">{currentPlan.volume}</span>{/if}
           </div>
           <div>
             <span class="field-label">Стоимость</span>
             <strong>{formatMoney(monthlyPrice)}/мес.</strong>
-            <span class="field-caption">Следующее списание: {nextChargeDate}</span>
+            {#if nextChargeDate}<span class="field-caption">Следующее списание · {nextChargeDate}</span>{/if}
           </div>
         </div>
 

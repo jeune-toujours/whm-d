@@ -928,14 +928,10 @@
       </nav>
     </section>
   {:else if view === 'success'}
-    <section class="success-screen" aria-labelledby="success-title">
+    <main class="success-screen" aria-labelledby="success-title">
       <div data-slot="card" class="success-card">
-        <div class="success-media media-placeholder" aria-label="Заявка оформлена">
-          <span class="success-check" aria-hidden="true">
-            <Check aria-hidden="true" />
-          </span>
-        </div>
         <div class="success-copy">
+          <span class="success-check" aria-hidden="true"><Check aria-hidden="true" /></span>
           <h1 id="success-title">Заявка принята</h1>
           <p>Номер заявки: <strong>#{orderNumber}</strong></p>
         </div>
@@ -961,7 +957,7 @@
           </button>
         </div>
       </div>
-    </section>
+    </main>
   {:else}
     <section class="wizard-shell">
       <header class="wizard-header">
@@ -3623,50 +3619,34 @@
   }
 
   .success-screen {
+    width: min(calc(100% - 2 * var(--layout-gutter)), var(--layout-width));
+    margin: 0 auto;
+    padding: clamp(1.25rem, 5vh, 3.5rem) 0;
     display: grid;
-    min-height: 100dvh;
-    padding: 1rem;
-    place-items: center;
-    background: var(--color-base-100);
+    justify-items: start;
   }
 
   .success-card {
-    display: flex;
-    width: min(100%, 35rem);
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .success-media {
     display: grid;
-    min-height: 17rem;
-    padding: 1rem;
-    place-items: center;
-    border-radius: var(--radius-box);
-    text-align: center;
-  }
-
-  .success-media .media-label {
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
+    width: min(100%, 43rem);
+    gap: 1.25rem;
+    padding: clamp(1rem, 3vw, 2rem);
+    overflow-wrap: anywhere;
   }
 
   .success-check {
     display: grid;
-    width: 5.5rem;
-    height: 5.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
     place-items: center;
-    border-radius: 50%;
-    background: var(--color-success);
-    color: var(--color-success-content);
+    border-radius: .8rem;
+    background: color-mix(in oklab, var(--color-success) 16%, var(--ui-card));
+    color: var(--ui-success);
   }
 
-  .success-check :global(svg) {
-    width: 2.8rem;
-    height: 2.8rem;
-    stroke-width: 2.5;
-  }
+  .success-check :global(svg) { width: 1.4rem; height: 1.4rem; }
+  .success-copy h1 { font-size: clamp(1.8rem, 4vw, 2.7rem); line-height: 1.15; }
+  .success-details h2 { font-size: 1.1rem; }
 
   .success-copy,
   .success-details {
@@ -4040,8 +4020,7 @@
   .service-media.media-placeholder,
   .item-media.media-placeholder,
   .guide-media.media-placeholder,
-  .compact-media.media-placeholder,
-  .success-media.media-placeholder {
+  .compact-media.media-placeholder {
     background: var(--color-base-200);
     border: 1px dashed var(--color-base-300);
   }

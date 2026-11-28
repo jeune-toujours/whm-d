@@ -11,7 +11,7 @@ const choice = (field: string, options: string[], defaultValue?: string): Select
 const immutableWorkflow: CollectionConfig['hooks'] = {
   beforeChange: [({ data, originalDoc, req, operation }) => {
     if (operation === 'update' && !req.context.workflow) {
-      for (const key of ['owner', 'status', 'type', 'fulfillment', 'address', 'slot', 'number', 'requestHash', 'idempotencyKey', 'cell', 'items', 'monthlyPrice', 'startedAt', 'returnedAt', 'picked', 'signature', 'evidence', 'payment', 'barcode', 'seal', 'sealPhoto', 'contents', 'media', 'details', 'closedAt', 'historySearch', 'hasServices']) {
+      for (const key of ['owner', 'status', 'type', 'fulfillment', 'address', 'slot', 'number', 'requestHash', 'idempotencyKey', 'cell', 'items', 'monthlyPrice', 'startedAt', 'returnedAt', 'archivedAt', 'archiveReason', 'picked', 'signature', 'evidence', 'payment', 'barcode', 'seal', 'sealPhoto', 'contents', 'media', 'details', 'closedAt', 'historySearch', 'hasServices']) {
         if (data[key] !== undefined && JSON.stringify(data[key]) !== JSON.stringify(originalDoc[key])) throw new DomainError(403, 'WORKFLOW_REQUIRED', 'Изменение выполняется через складской процесс.')
       }
     }
@@ -23,6 +23,25 @@ const internal = (slug: string, fields: Field[], read = office): CollectionConfi
 export const collections: CollectionConfig[] = [
   ...inventoryCollections,
   ...problemCollections,
+  {
+    slug: 'faqs', labels: { singular: 'Вопрос FAQ', plural: 'FAQ' },
+    admin: { useAsTitle: 'question', group: 'Помощь', defaultColumns: ['question', 'published', 'position'] },
+    access: { create: office, read: office, update: office, delete: never },
+    hooks: {
+      beforeValidate: [({ data }) => {
+        if (typeof data?.question === 'string') data.question = data.question.trim()
+        if (typeof data?.answer === 'string') data.answer = data.answer.trim()
+        return data
+      }],
+      afterChange: [audit],
+    },
+    fields: [
+      { name: 'question', label: 'Вопрос', type: 'text', required: true, maxLength: 200 },
+      { name: 'answer', label: 'Ответ', type: 'textarea', required: true, maxLength: 3000 },
+      { name: 'published', label: 'Показывать в помощи', type: 'checkbox', defaultValue: false },
+      { name: 'position', label: 'Порядок', type: 'number', defaultValue: 100, required: true, min: 0 },
+    ],
+  },
   {
     slug: 'users', labels: { singular: 'Пользователь', plural: 'Пользователи' },
     auth: { useSessions: true, tokenExpiration: 60 * 60 * 24 * 7, maxLoginAttempts: 5, lockTime: 900_000, cookies: { sameSite: 'Lax', secure: process.env.APP_URL?.startsWith('https://') || false } },
@@ -48,13 +67,21 @@ export const collections: CollectionConfig[] = [
     },
   },
   {
-    slug: 'storage-items', labels: { singular: 'Вещь', plural: 'Вещи' }, admin: { useAsTitle: 'title', group: 'Склад' },
+    slug: 'storage-items', labels: { singular: 'Вещь', plural: 'Вещи' }, admin: { useAsTitle: 'title', group: 'Склад', defaultColumns: ['internalID', 'title', 'status', 'archivedAt'] },
     access: { create: never, read: owned, update: staff, delete: never }, hooks: immutableWorkflow,
     fields: [owner, { name: 'internalID', type: 'text', unique: true, required: true }, { name: 'title', type: 'text', required: true },
       choice('type', ['box', 'item'], 'box'), { name: 'description', type: 'textarea' }, { name: 'contents', type: 'textarea' },
       { name: 'barcode', type: 'text', unique: true, index: true }, { name: 'seal', label: 'Номер пломбы', type: 'text' },
       { name: 'sealPhoto', label: 'Фото пломбы', type: 'relationship', relationTo: 'media' },
-      choice('status', ['expected', 'received', 'stored', 'reserved', 'picked', 'returned'], 'expected'),
+      { ...choice('status', ['expected', 'received', 'stored', 'reserved', 'picked', 'returned', 'archived'], 'expected'),
+        options: [
+          { value: 'expected', label: 'Ожидает приёмки' }, { value: 'received', label: 'Принято' },
+          { value: 'stored', label: 'На хранении' }, { value: 'reserved', label: 'Заказан возврат' },
+          { value: 'picked', label: 'Подобрано' }, { value: 'returned', label: 'Возвращено' },
+          { value: 'archived', label: 'В архиве' },
+        ], admin: { readOnly: true } },
+      { name: 'archivedAt', label: 'Дата архивации', type: 'date', admin: { readOnly: true } },
+      { name: 'archiveReason', label: 'Причина архивации', type: 'textarea', admin: { readOnly: true }, access: { read: ({ req }) => hasRole(req, ['admin', 'manager', 'warehouse']) } },
       { name: 'cell', type: 'relationship', relationTo: 'cells' }, { name: 'monthlyPrice', type: 'number', min: 0, required: true, defaultValue: 0 },
       { name: 'startedAt', type: 'date' }, { name: 'returnedAt', type: 'date' }, { name: 'blockReason', type: 'text' }, { name: 'media', type: 'relationship', relationTo: 'media', hasMany: true },
     ],

@@ -12,6 +12,15 @@ export const endpoints = [
   ...authEndpoints,
   ...workflowEndpoints,
   ...paymentEndpoints,
+  endpoint('/v1/faq', 'get', async req => {
+    clientUser(req)
+    const result = await req.payload.find({
+      collection: 'faqs', req, overrideAccess: true, depth: 0, pagination: false,
+      where: { published: { equals: true } }, sort: ['position', 'createdAt'],
+      select: { question: true, answer: true },
+    })
+    return json({ ok: true, questions: result.docs })
+  }),
   endpoint('/me', 'get', async req => {
     const user = clientUser(req)
     return json({ ok: true, user: { id: user.id, firstName: user.firstName || '', lastName: user.lastName || '', phone: user.phone, email: user.contactEmail || '' } })
@@ -23,7 +32,7 @@ export const endpoints = [
   }),
   endpoint('/v1/profile/deactivate', 'post', async req => {
     const user = clientUser(req)
-    const items = await req.payload.count({ collection: 'storage-items', req, overrideAccess: false, where: { status: { not_equals: 'returned' } } })
+    const items = await req.payload.count({ collection: 'storage-items', req, overrideAccess: false, where: { status: { not_in: ['returned', 'archived'] } } })
     const orders = await req.payload.count({ collection: 'orders', req, overrideAccess: false, where: { status: { not_in: ['completed', 'cancelled'] } } })
     if (items.totalDocs || orders.totalDocs) throw new DomainError(409, 'ACCOUNT_IN_USE', 'Сначала верните вещи и завершите активные заказы.')
     await req.payload.update({ collection: 'users', req, id: user.id, overrideAccess: true, data: { active: false } })

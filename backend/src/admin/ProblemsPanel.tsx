@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Gutter, useAuth } from '@payloadcms/ui'
 import { ArrowLeft, Plus, RefreshCw, TriangleAlert } from 'lucide-react'
 import { api } from './warehouse-api'
-import './warehouse.css'
 
 const root = '/admin/warehouse/problems'
 const date = (value: string) => new Date(value).toLocaleString('ru-RU')
@@ -38,12 +37,14 @@ export function ProblemsPanel() {
     <p className="inventory-note">Операционная фиксация. Юридическая форма акта ещё не утверждена.</p>
     {(id || creating) && <Link className="inventory-back" href={root}><ArrowLeft size={18} aria-hidden />К списку</Link>}
     {error && <p role="alert" className="whm-error">{error}</p>}
-    {!creating && !id && <label>Поиск по номеру акта, заказа или вещи<input type="search" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} /></label>}
-    {!creating && !id && <label>Показать<select aria-label="Показать" value={state} onChange={e => { setState(e.target.value); setPage(1) }}><option value="pending">Внутренние фиксации</option><option value="published">Клиент уведомлён</option><option value="all">Все кейсы</option></select></label>}
+    {!creating && !id && <div className="whm-filters" role="search" aria-label="Проблемные заказы">
+      <label>Поиск по номеру акта, заказа или вещи<input name="search" autoComplete="off" type="search" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} /></label>
+      <label><span id="whm-problem-status-label">Показать</span><select name="state" aria-labelledby="whm-problem-status-label" value={state} onChange={e => { setState(e.target.value); setPage(1) }}><option value="pending">Внутренние фиксации</option><option value="published">Клиент уведомлён</option><option value="all">Все кейсы</option></select></label>
+    </div>}
     {creating ? <ProblemForm key={`${params.get('orderID')}:${params.get('itemID')}:${revision}`} initialOrder={params.get('orderID') || ''} initialItem={params.get('itemID') || ''} onSaved={value => router.push(`${root}?report=${encodeURIComponent(value)}`)} /> : loading ? <p role="status">Загрузка…</p> : id ? report && <ReportDetail key={report.id} report={report} onPublished={setReport} /> : <>
-      <p>Найдено: {total}</p>{reports.map(r => <article className="whm-order" key={r.id}><h2><Link href={`${root}?report=${r.id}`}>{r.number}</Link></h2><p>{r.orderNumber} · {r.itemLabel}</p><p>{date(r.createdAt)} · {statusLabel(r.status)}</p></article>)}
+      <p className="whm-count" role="status">Найдено: {total}</p>{reports.map(r => <article className="whm-order" key={r.id}><h2><Link href={`${root}?report=${r.id}`}>{r.number}</Link></h2><p>{r.orderNumber} · {r.itemLabel}</p><p>{date(r.createdAt)} · {statusLabel(r.status)}</p></article>)}
       {!reports.length && !error && <p className="whm-empty">Записей не найдено.</p>}
-      <nav aria-label="Страницы проблемных заказов"><Button disabled={page <= 1} onClick={() => setPage(v => v - 1)}>Назад</Button><span>{page} / {Math.max(1, pages)}</span><Button disabled={page >= pages} onClick={() => setPage(v => v + 1)}>Далее</Button></nav>
+      {pages > 1 && <nav className="whm-toolbar-actions" aria-label="Страницы проблемных заказов"><Button disabled={page <= 1} onClick={() => setPage(v => v - 1)}>Назад</Button><span>{page} / {Math.max(1, pages)}</span><Button disabled={page >= pages} onClick={() => setPage(v => v + 1)}>Далее</Button></nav>}
     </>}
   </section></Gutter>
 }

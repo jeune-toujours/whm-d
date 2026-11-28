@@ -106,7 +106,7 @@
     return {
       ...base,
       ...incoming,
-      courier: { ...base.courier, ...(incoming?.courier || {}) },
+      courier: incoming?.courier === null ? null : { ...base.courier, ...incoming?.courier },
       history: Array.isArray(incoming?.history) ? incoming.history : base.history,
       items: Array.isArray(incoming?.items) ? incoming.items : base.items
     };
@@ -254,6 +254,7 @@
     return ['courier', 'warehouse_visit', 'delivering', 'pickup_ready'].includes(step);
   }
 
+  let courierVehicle = $derived([currentOrder.courier?.vehicle, currentOrder.courier?.plate].filter(Boolean).join(' · '));
   let dark = $derived(theme === 'halloween');
   let steps = $derived(stepsFor(currentOrder));
   let activeIndex = $derived(steps.indexOf(currentOrder.status));
@@ -298,7 +299,7 @@
     </button>
   </header>
 
-  <main class="page-shell">
+  <main class="page-shell order-shell">
       <section data-slot="card" class="hero-panel" aria-live="polite">
         <div class="hero-head">
           <button class="order-chip" type="button" onclick={copyOrderId} aria-label={orderTypeName() + ' · № ' + currentOrder.id + ' — скопировать номер заказа'}>
@@ -395,16 +396,24 @@
               <div class="visit-date">
                 <span>{isStorageOrder ? 'Забор вещей' : 'Доставка вещей'}</span>
                 <strong>{dateLabel(currentOrder.visitAt)}</strong>
-                {#if currentOrder.visitWindow}<small>Курьер приедет в интервале {currentOrder.visitWindow}</small>{/if}
+                {#if currentOrder.visitWindow}<small>Выбранный интервал · {currentOrder.visitWindow}</small>{/if}
                 {#if currentOrder.scheduleNotice}<p class="schedule-note">{currentOrder.scheduleNotice}</p>{/if}
               </div>
               <div class="visit-divider"></div>
               <div class="courier-line">
-                <span class="avatar" aria-hidden="true">{currentOrder.courier.name.charAt(0)}</span>
-                <div><strong>{currentOrder.courier.name}, ваш курьер</strong><span>{currentOrder.courier.vehicle} · {currentOrder.courier.plate}</span></div>
-                <button data-slot="button" class="call-button {buttonVariants()}" type="button" onclick={contactCourier} aria-label="Связаться с курьером">
-                  <Phone aria-hidden="true" />
-                </button>
+                {#if currentOrder.courier?.name}
+                  <span class="avatar" aria-hidden="true">{currentOrder.courier.name.charAt(0)}</span>
+                  <div>
+                    <strong>{currentOrder.courier.name}, ваш курьер</strong>
+                    {#if courierVehicle}<span>{courierVehicle}</span>{/if}
+                  </div>
+                  <button data-slot="button" class="call-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" onclick={contactCourier} aria-label="Связаться с курьером">
+                    <Phone size={19} aria-hidden="true" />
+                  </button>
+                {:else}
+                  <span class="avatar unassigned" aria-hidden="true"><Truck size={18} aria-hidden="true" /></span>
+                  <div><strong>Курьер пока не назначен</strong></div>
+                {/if}
               </div>
               <div class="address-line">
                 <span class="pin" aria-hidden="true"><MapPin aria-hidden="true" /></span>
@@ -619,7 +628,8 @@
   .courier-line span, .address-line span, .warehouse-card span { color: var(--muted); font-size: .72rem; }
   .avatar { width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border-radius: 50%; background: var(--primary); color: #161616; font-size: .8rem; font-weight: 840; }
   .call-button { width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border: 0; border-radius: .65rem; background: var(--soft); color: var(--ink); cursor: pointer; }
-  .call-button :global(svg) { width: 1rem; }
+  .call-button :global(svg) { width: 1.15rem; height: 1.15rem; }
+  .courier-line .avatar.unassigned { display: grid; place-items: center; background: var(--ui-muted); color: var(--ui-muted-foreground); }
   .address-line { grid-template-columns: 2.25rem 1fr; margin-top: .9rem; padding-top: .9rem; border-top: 1px solid var(--border); }
   .pin, .warehouse-icon { width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border-radius: .65rem; background: var(--soft); }
   .pin :global(svg), .warehouse-icon :global(svg) { width: 1.05rem; }

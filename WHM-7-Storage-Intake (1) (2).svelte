@@ -5,7 +5,7 @@
   import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { Archive, ArrowRight, Check, ChevronLeft, ChevronRight, CircleHelp, Copy, MapPin, Minus, Moon, Plus, Sun, Truck, Package, User, Warehouse, X } from '@lucide/svelte';
   import { onMount } from 'svelte';
-  import { nationalPhone, courierAddress } from './src/courier-fields.js';
+  import { nationalPhone, formatNationalPhone, courierAddress } from './src/courier-fields.js';
 
   /*
    * WHM-7 — Оформление: Сдача на хранение
@@ -1263,14 +1263,14 @@
             </section>
           {:else if view === 'insurance'}
             <section class="screen-content with-sticky" aria-labelledby="insurance-title">
-              <div class="screen-heading split-heading">
-                <div>
-                  <h1 id="insurance-title">Страхование вещей</h1>
+              <div class="screen-heading insurance-heading">
+                <h1 id="insurance-title">Страхование вещей</h1>
+                <div class="insurance-intro">
                   <p>Укажите общую стоимость имущества, которое передаёте на хранение.</p>
+                  <button type="button" data-slot="button" class={buttonVariants({ variant: 'outline' })} onclick={skipInsurance}>
+                    Пропустить
+                  </button>
                 </div>
-                <button type="button" data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" onclick={skipInsurance}>
-                  Пропустить
-                </button>
               </div>
 
               <div class="insurance-layout">
@@ -1280,16 +1280,19 @@
                     <span class="money-input">
                       <input
                         id="insurance-value"
+                        name="insurance-value"
                         type="text"
                         inputmode="numeric"
-                        placeholder="Например, 50 000"
+                        autocomplete="off"
+                        placeholder="Например, 50 000…"
+                        aria-describedby="insurance-value-help"
                         value={insuranceDeclaredValue}
                         oninput={handleInsuranceInput}
                       />
-                      <span>₽</span>
+                      <span aria-hidden="true">₽</span>
                     </span>
                   </label>
-                  <p class="field-help">
+                  <p id="insurance-value-help" class="field-help">
                     Минимальная сумма декларации — 1 000 ₽. Премия рассчитывается по ставке
                     {(insuranceRate * 100).toFixed(2).replace('.', ',')}% в месяц.
                   </p>
@@ -1724,37 +1727,56 @@
                   {/if}
                 </section>
 
-                <section class="review-section">
+                <section class="review-section" aria-labelledby="handover-title">
                   <div class="review-heading">
-                    <h2>Передача вещей</h2>
+                    <h2 id="handover-title">Передача вещей</h2>
                     <button
                       type="button"
-                      data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}"
+                      data-slot="button" class={buttonVariants({ variant: 'outline' })}
+                      aria-label="Изменить способ передачи вещей"
                       onclick={() =>
                         go(deliveryMode === 'self' ? 'warehouse' : 'slots', 'back')}
                     >
                       Изменить
                     </button>
                   </div>
-                  <p>{deliverySummary}</p>
-                  {#if deliveryMode === 'self'}
-                    <p>{warehouse.address}</p>
-                  {:else}
-                    <p>{selectedDate.short}, {selectedSlot}</p>
-                    <p>{selectedAddress}</p>
-                    <div class="address-summary">
-                      {#if apartment}<span>Квартира: {apartment}</span>{/if}
-                      {#if intercom}<span>Домофон: {intercom}</span>{/if}
-                      {#if entrance}<span>Подъезд: {entrance}</span>{/if}
-                      {#if floor}<span>Этаж: {floor}</span>{/if}
+                  <dl class="handover-details">
+                    <div>
+                      <dt>Способ передачи</dt>
+                      <dd>{deliverySummary}</dd>
                     </div>
-                    <p>Телефон: +7 {contactPhone}</p>
-                  {/if}
+                    {#if deliveryMode === 'courier'}
+                      <div>
+                        <dt>Дата и время</dt>
+                        <dd>{selectedDate.short}, {selectedSlot}</dd>
+                      </div>
+                    {/if}
+                    <div>
+                      <dt>{deliveryMode === 'self' ? 'Адрес склада' : 'Адрес забора вещей'}</dt>
+                      <dd>
+                        {deliveryMode === 'self' ? warehouse.address : selectedAddress}
+                        {#if deliveryMode === 'courier' && (apartment || intercom || entrance || floor)}
+                          <p class="address-summary">
+                            {#if apartment}<span>Квартира {apartment}</span>{/if}
+                            {#if entrance}<span>Подъезд {entrance}</span>{/if}
+                            {#if floor}<span>Этаж {floor}</span>{/if}
+                            {#if intercom}<span>Домофон {intercom}</span>{/if}
+                          </p>
+                        {/if}
+                      </dd>
+                    </div>
+                    {#if deliveryMode === 'courier'}
+                      <div>
+                        <dt>Телефон для связи</dt>
+                        <dd>+7 {formatNationalPhone(contactPhone)}</dd>
+                      </div>
+                    {/if}
+                  </dl>
                 </section>
 
                 <section class="review-section payment-section">
                   <div class="review-heading">
-                    <h2>Итог оплаты</h2>
+                    <h2>Промежуточный итог</h2>
                   </div>
                   <div class="review-lines">
                     <div>
@@ -1771,10 +1793,10 @@
                         <strong>{formatPrice(insurancePremium)} / мес.</strong>
                       </div>
                     {/if}
-                    <div class="grand-total">
-                      <span>Итого при оформлении</span>
-                      <strong>{formatPrice(payNow)}</strong>
-                    </div>
+                  </div>
+                  <div class="grand-total">
+                    <h2>Итого</h2>
+                    <strong>{formatPrice(payNow)}</strong>
                   </div>
                   <div class="acquiring-note">
                     <h2>Оплата</h2>
@@ -2521,6 +2543,23 @@
 
   .screen-heading p {
     color: var(--soft-content);
+  }
+
+  .insurance-heading {
+    gap: 1rem;
+    margin-block-end: 0.25rem;
+  }
+
+  .insurance-intro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+  }
+
+  .insurance-intro p {
+    flex: 1 1 28rem;
   }
 
   .split-heading {
@@ -3359,6 +3398,11 @@
     gap: 1rem;
   }
 
+  .review-heading h2,
+  .insurance-heading h1 {
+    text-wrap: balance;
+  }
+
   .review-heading .text-button {
     min-height: auto;
   }
@@ -3379,6 +3423,7 @@
   .review-lines strong {
     text-align: right;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   .review-note {
@@ -3396,23 +3441,55 @@
     border-color: color-mix(in oklab, var(--color-primary) 42%, var(--soft-border));
   }
 
+  .handover-details {
+    display: grid;
+    gap: 1rem 1.5rem;
+    padding-block-start: 1rem;
+    border-top: var(--border) solid var(--soft-border);
+  }
+
+  .handover-details dt {
+    margin-block-end: 0.2rem;
+    color: var(--soft-content);
+    font-size: var(--type-caption);
+  }
+
+  .handover-details dd {
+    margin: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
   .address-summary {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem 0.8rem;
+    gap: 0.25rem 0.9rem;
+    margin-block-start: 0.3rem;
     color: var(--soft-content);
+    font-size: var(--type-caption);
+    font-weight: 400;
   }
 
   .grand-total {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.35rem 1rem;
     margin-top: 0.25rem;
     padding-top: 0.75rem;
     border-top: var(--border) solid var(--soft-border);
   }
 
-  .grand-total span,
   .grand-total strong {
     font-size: var(--type-heading);
-    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (min-width: 40rem) {
+    .handover-details {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   .payment-section {

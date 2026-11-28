@@ -95,11 +95,16 @@ try {
     await page.locator('.item-card .stepper button:last-child').first().click();
     await page.locator('.sticky-bar .primary-button').click();
     await page.locator('.sticky-bar .primary-button').click();
-    await page.locator('main .text-button').first().click();
+    await page.getByRole('button', { name: 'Пропустить', exact: true }).click();
     await page.locator('.slot-grid button:not([disabled])').first().click();
     await page.locator('.sticky-bar .primary-button').click();
     await page.locator('.saved-address').click();
     await page.locator('.sticky-bar .primary-button').click();
+    const handover = page.getByRole('region', { name: 'Передача вещей' });
+    await handover.getByText('Адрес забора вещей', { exact: true }).waitFor();
+    await handover.getByText('Дата и время', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Промежуточный итог', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Итого', exact: true }).waitFor();
     console.log('Intake review reached');
     await page.locator('.terms-card .custom-checkbox').click();
     await page.locator('.review-submit').click();

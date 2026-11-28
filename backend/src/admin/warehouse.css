@@ -90,4 +90,6 @@
 .whm-scanner { overscroll-behavior: contain; }
 .whm-wordmark { display: inline-flex; align-items: center; gap: .6em; color: var(--theme-text); font-weight: 750; letter-spacing: -.04em; font-size: 1.65rem; }
 .whm-brand-mark { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: oklch(85% .199 91.936); color: #252016; }
+.step-nav__home .whm-brand-mark { width: 16px; height: 16px; border-radius: 4px; }
+.step-nav__home .whm-brand-mark svg { width: 13px; height: 13px; }
 [data-theme="dark"] .whm-brand-mark { background: oklch(76% .188 70.08); }

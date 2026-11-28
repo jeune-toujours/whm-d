@@ -6,6 +6,8 @@ import * as migration_20261101_143058_manual_inventory from './20261101_143058_m
 import * as migration_20261119_135242_problem_orders from './20261119_135242_problem_orders';
 import * as migration_20261119_145318_problem_confirmation from './20261119_145318_problem_confirmation';
 import * as migration_20261122_133233_seal_photo from './20261122_133233_seal_photo';
+import * as migration_20261128_012210_faq_and_intake_archive from './20261128_012210_faq_and_intake_archive';
+import * as archiveCancelledIntakeItems from './20261128_012211_archive_cancelled_intake_items';
 
 export const migrations = [
   {
@@ -46,6 +48,15 @@ export const migrations = [
   {
     up: migration_20261122_133233_seal_photo.up,
     down: migration_20261122_133233_seal_photo.down,
-    name: '20261122_133233_seal_photo'
+    name: '20261122_133233_seal_photo',
+  },
+  {
+    up: migration_20261128_012210_faq_and_intake_archive.up,
+    down: migration_20261128_012210_faq_and_intake_archive.down,
+    name: '20261128_012210_faq_and_intake_archive',
+  },
+  {
+    ...archiveCancelledIntakeItems,
+    name: '20261128_012211_archive_cancelled_intake_items',
   },
 ];

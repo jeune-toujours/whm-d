@@ -7,7 +7,7 @@ const executablePath = process.env.CHROME_PATH || (process.platform === 'win32' 
 const browser = await chromium.launch({ executablePath, headless:true });
 const errors = [];
 let checked = 0;
-const viewports = [[320,740],[360,800],[390,844],[768,1024],[1024,768],[1440,900],[844,390]];
+const viewports = [[320,740],[360,800],[390,844],[768,1024],[1024,768],[1440,900],[1920,1080],[844,390]];
 async function inspect(page, name) {
   await page.waitForTimeout(120);
   const result = await page.evaluate(() => {
@@ -16,6 +16,8 @@ async function inspect(page, name) {
     const visible = e => rect(e).width > 0 && getComputedStyle(e).visibility !== 'hidden';
     const problems = [];
     if (document.documentElement.scrollWidth > width + 1) problems.push('horizontal page overflow');
+    const appHeader = document.querySelector('.client-layout .whm-app > :is(.app-header, .topbar)');
+    if (appHeader && Math.abs(rect(appHeader).width - width) > 1) problems.push('app header is not full width');
     for (const button of document.querySelectorAll('button[aria-label]')) {
       if (!/^Назад/.test(button.getAttribute('aria-label')) || !visible(button)) continue;
       const b = rect(button), svg = button.querySelector('svg'), s = svg && rect(svg);
@@ -82,5 +84,5 @@ try {
     await context.close();
   }
   assert.deepEqual(errors,[]);
-  console.log(`Layout: ${checked} states, seven viewports, both themes, wizard back navigation and dialogs passed.`);
+  console.log(`Layout: ${checked} states, ${viewports.length} viewports, both themes, wizard back navigation and dialogs passed.`);
 }finally{await browser.close();}

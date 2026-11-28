@@ -1,11 +1,12 @@
 'use client'
+import { Archive, RefreshCw } from 'lucide-react'
+import { ArchiveIntakeItem } from './ArchiveIntakeItem'
 import { Button } from './ui/Button'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Gutter } from '@payloadcms/ui'
 import Link from 'next/link'
 import { BarcodeField } from './BarcodeField'
 import { api, createSupportReply } from './warehouse-api'
-import './warehouse.css'
 
 type Mode = 'receive' | 'place' | 'pick' | 'return' | 'support'
 const titles: Record<Mode, string> = { receive: 'Приёмка', place: 'Размещение', pick: 'Подбор', return: 'Выдача', support: 'Обращения клиентов' }
@@ -19,26 +20,55 @@ async function upload(file: File, owner: string, purpose: string) {
 
 export function WarehousePanel({ mode }: { mode: Mode }) {
   const [data, setData] = useState<any>(null), [error, setError] = useState(''), [loading, setLoading] = useState(false)
-  const load = useCallback(async () => { try { const d = await api('/v1/warehouse'); setData(d); setError('') } catch (e) { setError((e as Error).message) } }, [])
-  useEffect(() => { void load(); const timer = setInterval(() => void load(), 10_000); return () => clearInterval(timer) }, [load])
+  const revision = useRef(0)
+  const load = useCallback(async () => {
+    const request = ++revision.current
+    try {
+      const next = await api('/v1/warehouse')
+      if (request !== revision.current) return
+      setData(next)
+      setError('')
+    } catch (failure) {
+      if (request === revision.current) setError((failure as Error).message)
+    }
+  }, [])
+  useEffect(() => {
+    void load()
+    const timer = setInterval(() => void load(), 10_000)
+    return () => { clearInterval(timer); revision.current++ }
+  }, [load])
   const perform = async (fn: () => Promise<unknown>) => { setLoading(true); setError(''); try { await fn(); await load() } catch (e) { setError((e as Error).message) } finally { setLoading(false) } }
-  const orders = (data?.orders || []).filter((o: any) => mode === 'receive' ? o.type === 'intake' && o.backendStatus === 'created' : mode === 'place' ? o.type === 'intake' && o.backendStatus === 'received' : mode === 'pick' ? o.type === 'return' && ['created', 'picking'].includes(o.backendStatus) : o.type === 'return' && o.backendStatus === 'ready')
-  return <Gutter><section className="whm-work"><h1>{titles[mode]}</h1><p>Изменения сохраняются на сервере. Для каждой операции проверяются права, штрихкоды и текущий статус.</p>
-    <Button onClick={() => void load()} disabled={loading}>Обновить очередь</Button>
+  const itemsById = new Map<string, any>((data?.items || []).map((item: any) => [item.id, item]))
+  const itemStage: Partial<Record<Mode, string>> = { receive: 'expected', place: 'received', pick: 'reserved' }
+  const orders = (data?.orders || []).filter((order: any) => {
+    if (mode === 'return') return order.type === 'return' && order.backendStatus === 'ready'
+    const queue = mode === 'receive' ? order.type === 'intake' && order.backendStatus === 'created'
+      : mode === 'place' ? order.type === 'intake' && order.backendStatus === 'received'
+      : mode === 'pick' && order.type === 'return' && ['created', 'picking'].includes(order.backendStatus)
+    return queue && order.items.some((item: any) => itemsById.get(item.id)?.status === itemStage[mode])
+  })
+  return <Gutter><section className="whm-work">
+    <div className="inventory-toolbar">
+      <h1>{titles[mode]}</h1>
+      <div className="whm-toolbar-actions">
+        {mode === 'receive' && <Link className="problem-action" href="/admin/collections/storage-items?where%5Bstatus%5D%5Bequals%5D=archived"><Archive size={17} aria-hidden="true" />Архив приёмки</Link>}
+        <Button onClick={() => void load()} disabled={loading}><RefreshCw size={17} aria-hidden="true" />Обновить очередь</Button>
+      </div>
+    </div>
     {error && <p className="whm-error" role="alert">{error}</p>}
     {!data && !error && <p role="status">Загрузка…</p>}
     {mode === 'support' ? (data?.tickets || []).map((ticket: any) => <Ticket key={ticket.id} ticket={ticket} busy={loading} perform={perform} />) : orders.map((order: any) => <section key={order.id} className="whm-order"><h2>{order.number} · {order.statusLabel}</h2><p>{order.clientName || 'Клиент'} · {order.fulfillment === 'courier' ? 'Курьер' : 'Самостоятельная передача'} · {order.slot || 'Время не согласовано'}</p><p>{order.address}</p>
       {mode === 'return' ? <Handover order={order} busy={loading} perform={perform} /> : order.items.map((item: any) => {
-        const actual = data.items.find((i: any) => i.id === item.id)
-        if (!actual || (mode === 'receive' && actual.status !== 'expected') || (mode === 'place' && actual.status !== 'received') || (mode === 'pick' && actual.status !== 'reserved')) return null
-        return <ItemOperation key={item.id} mode={mode} order={order} item={actual} cells={data.cells} busy={loading} perform={perform} />
+        const actual = itemsById.get(item.id)
+        if (!actual || actual.status !== itemStage[mode]) return null
+        return <ItemOperation key={item.id} mode={mode} order={order} item={actual} cells={data.cells} busy={loading} perform={perform} refresh={load} />
       })}
     </section>)}
     {data && (mode === 'support' ? !data.tickets.length : !orders.length) && <p className="whm-empty">Очередь пуста.</p>}
   </section></Gutter>
 }
 type Perform = (fn: () => Promise<unknown>) => Promise<void>
-function ItemOperation({ mode, order, item, cells, busy, perform }: { mode: Mode; order: any; item: any; cells: any[]; busy: boolean; perform: Perform }) {
+function ItemOperation({ mode, order, item, cells, busy, perform, refresh }: { mode: Mode; order: any; item: any; cells: any[]; busy: boolean; perform: Perform; refresh: () => Promise<void> }) {
   const [barcode, setBarcode] = useState(''), [seal, setSeal] = useState(''), [sealFile, setSealFile] = useState<File | null>(null), [contents, setContents] = useState(''), [cell, setCell] = useState(''), [cellBarcode, setCellBarcode] = useState(''), [file, setFile] = useState<File | null>(null)
   const submit = () => perform(async () => {
     if (mode === 'receive') {
@@ -51,7 +81,7 @@ function ItemOperation({ mode, order, item, cells, busy, perform }: { mode: Mode
     } else if (mode === 'place') await api('/v1/warehouse/place', { orderID: order.id, itemID: item.id, barcode, cellID: cell, cellBarcode })
     else await api(`/v1/warehouse/orders/${order.id}/pick`, { itemID: item.id, barcode })
   })
-  return <form className="whm-operation" onSubmit={e => { e.preventDefault(); void submit() }}><h3>{item.title} · {item.internalID}</h3><p>{item.description} {item.cellName ? `· Ячейка ${item.cellName}` : ''}</p>
+  return <div className="whm-operation"><form onSubmit={e => { e.preventDefault(); void submit() }}><h3>{item.title} · {item.internalID}</h3><p>{item.description} {item.cellName ? `· Ячейка ${item.cellName}` : ''}</p>
     {mode === 'receive' && <p><Link href={`/admin/warehouse/problems?new=1&orderID=${order.id}&itemID=${item.id}`}>Зафиксировать повреждение при поступлении</Link></p>}
     {mode !== 'receive' && <p>Ожидаемый штрихкод: <code>{item.barcode}</code></p>}
     {mode !== 'receive' && item.sealPhoto?.url && <p>Пломба: {item.seal} · <a href={item.sealPhoto.url} target="_blank" rel="noopener noreferrer">Открыть фото пломбы</a></p>}
@@ -63,6 +93,10 @@ function ItemOperation({ mode, order, item, cells, busy, perform }: { mode: Mode
     {mode === 'place' && <><label htmlFor={`cell-${item.id}`}>Ячейка</label><select id={`cell-${item.id}`} required value={cell} onChange={e => setCell(e.target.value)}><option value="">Выберите ячейку</option>{cells.filter(c => c.active).map(c => <option key={c.id} value={c.id}>{c.name} · {c.occupied}/{c.capacity} · {c.barcode}</option>)}</select><BarcodeField label="Скан ячейки" value={cellBarcode} onChange={setCellBarcode} disabled={busy} /></>}
     <Button type="submit" variant="default" disabled={busy}>{busy ? 'Сохранение…' : mode === 'receive' ? 'Принять' : mode === 'place' ? 'Разместить' : 'Подобрать'}</Button>
   </form>
+    {mode === 'receive' && <div className="whm-operation-secondary">
+      <ArchiveIntakeItem orderID={order.id} item={item} busy={busy} refresh={refresh} />
+    </div>}
+  </div>
 }
 function Handover({ order, busy, perform }: { order: any; busy: boolean; perform: Perform }) {
   const canvas = useRef<HTMLCanvasElement>(null), drawing = useRef(false), [signed, setSigned] = useState(false), [confirmed, setConfirmed] = useState(false), [file, setFile] = useState<File | null>(null)

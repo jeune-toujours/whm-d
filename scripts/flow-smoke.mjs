@@ -17,6 +17,26 @@ async function pageFor(route) {
 try {
   {
     const { page, errors } = await pageFor('profile');
+    const footer = page.getByRole('contentinfo');
+    await footer.getByRole('link', { name: 'Помощь', exact: true }).click();
+    const question = page.locator('summary').filter({ hasText: 'Как вернуть вещи?' });
+    await question.focus();
+    await page.keyboard.press('Enter');
+    await page.getByText(/отметьте нужные позиции/).waitFor();
+    await page.getByRole('button', { name: 'Назад', exact: true }).click();
+    await page.waitForURL('**/#/profile');
+    await footer.getByRole('link', { name: 'Мои вещи', exact: true }).click();
+    await page.getByRole('button', { name: 'Поддержка' }).click();
+    await page.getByRole('button', { name: 'Проблема с приложением', exact: false }).click();
+    await page.getByRole('button', { name: 'Назад', exact: true }).click();
+    await page.getByRole('heading', { name: 'Частые вопросы' }).waitFor();
+    await page.getByRole('link', { name: 'WHM D — Мои вещи', exact: true }).first().click();
+    await page.waitForURL('**/#/home');
+    assert.deepEqual(errors, []);
+    await page.close();
+  }
+  {
+    const { page, errors } = await pageFor('profile');
     const trigger = page.getByRole('button', { name: 'Изменить', exact: true }).first();
     await trigger.click();
     const dialog = page.getByRole('dialog', { name: 'Изменить личные данные' });

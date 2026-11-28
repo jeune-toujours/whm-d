@@ -1,4 +1,5 @@
 <script>
+  import AppFooter from './components/AppFooter.svelte';
   import { applyTheme } from '$lib/theme.js';
   import PaymentDialog from './components/PaymentDialog.svelte';
   import { onMount } from 'svelte';
@@ -37,12 +38,14 @@
   const legal = 'Это тестовая среда. Юридические документы и коммерческие правила ещё не утверждены. Реальные SMS, платежи и доставки не выполняются.';
   function navigate(path) { location.hash = `/${path}`; route = path; }
   function infoScreen(title, description, back = route) { info = { title, description, back }; navigate('info'); }
+  let supportBackRoute = 'home';
   async function openSupport(context = null, type = null) {
     if (context?.ticketID) {
       const latest = await safe(() => api('/v1/dashboard'));
       if (latest.ok === false) { error = latest.message; return; }
       data = latest;
     }
+    if (root !== 'support') supportBackRoute = ['intake', 'return'].includes(root) ? 'home' : route;
     supportContext = context; supportType = type || (context ? 'incident' : null); navigate('support');
   }
   function openOrder(o) { const id = typeof o === 'string' ? o : o.id; const value = data.orders.find(o => o.id === id); navigate(`${value && ['completed','cancelled'].includes(value.backendStatus) ? 'history' : 'order'}/${id}`); }
@@ -58,7 +61,7 @@
   }
   onMount(() => {
     try { const value = localStorage.getItem('whm-theme'); if (['bumblebee','halloween'].includes(value)) theme = value; } catch {}
-    const routeChanged = () => { route = currentRoute(); window.scrollTo({ top:0, behavior:'instant' }); };
+    const routeChanged = () => { const next = currentRoute(); if (next === 'support/help' && root !== 'support') supportBackRoute = route; route = next; window.scrollTo({ top:0, behavior:'instant' }); };
     const themeChanged = event => { if (['bumblebee','halloween'].includes(event.detail)) { theme = event.detail; try { localStorage.setItem('whm-theme', theme); } catch {} } };
     window.addEventListener('hashchange', routeChanged); window.addEventListener('whm-theme-change', themeChanged);
     void (async () => { const me = await safe(() => api('/me')); if (me.ok !== false) { authenticated = true; await safe(refresh); if (root === 'signin') navigate('home'); } else if (me.code === 'UNAUTHENTICATED') navigate('signin'); else error = me.message; loading = false; })();
@@ -109,6 +112,7 @@
   async function submitTicket(type, payload) { return safe(async () => { const attachments = []; for (const a of payload.attachments || []) { if (a.file) { let id=uploadedFiles.get(a.file); if (!id) { id=await uploadSupport(a.file,type); uploadedFiles.set(a.file,id); } attachments.push(id); } } const { operationKey:key, ...fields }=payload; const r = await api('/v1/support', { ...fields,attachments,type,appVersion:import.meta.env.VITE_SOURCE_COMMIT || 'staging',platform:navigator.userAgent },'POST',await operationKey(key || crypto.randomUUID(),{...fields,attachments,type})); await refresh(); return r; }); }
 </script>
 
+<div class="client-layout">
 <div class:dark={theme === 'halloween'} class="live-banner" role="region" aria-label="Тестовая среда"><span>Тестовый контур · SMS, оплата и логистика симулируются</span></div>
 {#if paymentDialog}<PaymentDialog><Checkout id={paymentDialog.id} initialTheme={theme} embedded={true} onBack={cancelPayment} onComplete={finishPayment}/></PaymentDialog>{/if}
 {#if error}<div class="connection-error" role="alert">{error}<button onclick={() => void safe(refresh)}>Повторить</button></div>{/if}
@@ -127,12 +131,14 @@
     {:else}<InfoScreen initialTheme={theme} live={true} title="Заказ недоступен" description="Откройте историю и выберите заказ." onBack={() => navigate('history')} />{/if}
     {:else if root === 'history' || root === 'payments'}<History userInitials={[data.profile.firstName?.[0],data.profile.lastName?.[0]].filter(Boolean).join('') || 'П'} onOpenProfile={()=>navigate('profile')} live={true} activeOrder={data.activeOrders[0] || null} initialTheme={theme} financialView={root === 'payments' || routeID === 'payments'} onLoadPayments={v=>api('/v1/payments?'+new URLSearchParams(v))} onPaymentReceipt={p=>download(`/v1/payments/${p.id}/receipt`)} onPaymentRetry={p=>navigate(`checkout/${p.id}`)} onShowPayments={()=>navigate('history/payments')} onShowOrders={()=>navigate('history')} initialOrderId={root === 'payments' || routeID === 'payments' ? '' : routeID} viewKey={`whm-history:${data.userID}`} onLoadPage={loadHistory} onLoadDetail={historyDetail} onSelectOrder={id=>navigate(id?`history/${id}`:'history')} onBack={()=>navigate(root==='payments'||routeID==='payments'?'profile':'home')} onOpenActiveOrder={openOrder} onOpenItem={(value,context)=>{ archivedItem={...value,status:value.currentStatus,contents:typeof value.contents==='string'?value.contents.split('\n'):value.contents||[],media:data.units.find(i=>i.id===value.id)?.media||[]};itemBackRoute=`history/${context.order.id}`;navigate(`item/${value.id}`); }} onOpenReceipt={o=>download(`/v1/payments/${o.financial.paymentID}/receipt`)} onOpenSupport={openSupport} onOpenRelatedOrder={id=>navigate(`history/${id}`)}/>
     {:else if root === 'orders'}<LiveHistory orders={data.activeOrders} activeOnly={true} initialTheme={theme} onBack={()=>navigate('home')} onOpen={openOrder}/>
-    {:else if root === 'support'}<Support initialTheme={theme} initialType={supportType} initialContext={supportContext} live={true} onLoadContextOptions={contextOptions} onSubmitIncident={payload => submitTicket('incident',payload)} onSubmitTechnical={payload => submitTicket('technical',payload)} onLoadTickets={() => data.tickets} onReplyTicket={(id,text,key) => safe(async () => { const r = await api(`/v1/support/${id}/reply`, { text }, 'POST',key); await refresh(); return r; })} liveTickets={data.tickets} onOpenRelatedItem={id=>openItem({id},'support')} onOpenRelatedOrder={ticket => openOrder(ticket.relatedOrderId)} onGoHome={() => navigate('home')} />
+    {:else if root === 'support'}<Support initialTheme={theme} initialType={route === 'support' ? supportType : null} initialContext={route === 'support' ? supportContext : null} onBack={() => navigate(supportBackRoute)} loadQuestions={async () => (await api('/v1/faq')).questions} live={true} onLoadContextOptions={contextOptions} onSubmitIncident={payload => submitTicket('incident',payload)} onSubmitTechnical={payload => submitTicket('technical',payload)} onLoadTickets={() => data.tickets} onReplyTicket={(id,text,key) => safe(async () => { const r = await api(`/v1/support/${id}/reply`, { text }, 'POST',key); await refresh(); return r; })} liveTickets={data.tickets} onOpenRelatedItem={id=>openItem({id},'support')} onOpenRelatedOrder={ticket => openOrder(ticket.relatedOrderId)} onGoHome={() => navigate('home')} />
     {:else if root === 'profile'}<Profile initialTheme={theme} planOptions={plans} otpLength={6} simulation={true} onLoadProfile={() => ({ ...data.profile,recentPayments:data.profile.recentPayments.slice(0,3) })} onSaveProfile={saveProfile} onRequestPhoneChange={phone => { pendingPhone = phone; return safe(() => api('/v1/profile/phone/request',{phone})); }} onConfirmPhoneChange={code => safe(async () => { const r = await api('/v1/profile/phone/confirm',{phone:pendingPhone,code}); await refresh(); return r; })} onChangePaymentMethod={() => safe(async () => { const r = await api('/v1/payment-method/simulate',{}); await refresh(); return r; })} onChangePlan={changePlan} onPauseSubscription={pauseSubscription} onOpenSubscription={() => navigate('subscription')} onOpenAllPayments={() => navigate('history/payments')} onOpenReceipt={p => download(`/v1/payments/${p.id}/receipt`)} onOpenSupport={() => openSupport()} onOpenTerms={() => infoScreen('Публичная оферта',legal)} onOpenPrivacy={() => infoScreen('Политика конфиденциальности',legal)} onGoToReturn={() => openReturn()} onGoBack={() => navigate('home')} onLogout={logout} onDeleteAccount={() => safe(async () => { const r = await api('/v1/profile/deactivate',{}); await logout(); return r; })} />
     {:else if root === 'subscription'}<Subscription profile={data.profile} {plans} simulation={true} unitCount={storedCount} hasActiveOrder={data.activeOrders.length > 0} initialTheme={theme} onBack={() => navigate('profile')} onChangePlan={changePlan} onPause={pauseSubscription} onReturn={() => openReturn()} onOpenPayments={() => navigate('history/payments')} />
     {:else}<InfoScreen initialTheme={theme} live={true} title="Экран не найден" description="Вернитесь на главную страницу." onBack={() => navigate('home')} />{/if}
   {/key}
+{#if authenticated && !['signin', 'intake', 'return', 'checkout'].includes(root)}<AppFooter current={root} />{/if}
 {/if}
+</div>
 <style>
   .live-banner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px 24px; background:#f2e7ad; color:#383424; font:11px 'Open Sans',sans-serif; }
   .live-banner.dark { background:#343024; color:#e9e3cb; }

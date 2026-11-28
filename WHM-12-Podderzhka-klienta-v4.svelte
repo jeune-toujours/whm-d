@@ -1,4 +1,5 @@
 <script>
+  import SupportFaq from './src/components/SupportFaq.svelte';
   import Brand from '$lib/components/Brand.svelte';
   import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { Check, ChevronLeft, Monitor, Moon, Sun, TriangleAlert, Warehouse, X } from '@lucide/svelte';
@@ -137,7 +138,9 @@
     onOpenRelatedItem = () => {},
     onOpenRelatedOrder = () => {},
     onReplyTicket = defaultReplyTicket,
-    onGoHome = () => {}
+    onGoHome = () => {},
+    onBack = onGoHome,
+    loadQuestions = () => []
   } = $props();
 
   let theme = $state('bumblebee');
@@ -419,6 +422,7 @@
     else if (screen === 'confirmation') screen = 'select';
     else if (screen === 'detail') screen = 'list';
     else if (screen === 'list') screen = 'select';
+    else onBack();
   }
 
   function resetToSelect() {
@@ -463,9 +467,9 @@
     <button data-slot="button" class="back-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Назад" onclick={goBack}>
       <ChevronLeft aria-hidden="true" />
     </button>
-    <div class="brand" aria-label="Клиентский интерфейс">
+    <a href="#/home" class="brand" aria-label="WHM D — Мои вещи">
       <Brand />
-    </div>
+    </a>
     <button
       data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}"
       type="button"
@@ -480,13 +484,15 @@
     </button>
   </header>
 
-  <main class="page-shell">
+  <main class="page-shell support-shell">
     {#if screen === 'select'}
       <div class="page-heading">
         <h1>Чем мы можем помочь?</h1>
         <p>Выберите тип обращения — мы направим его нужной команде.</p>
       </div>
 
+      <div class="support-grid">
+      <section aria-label="Связаться с поддержкой">
       <div class="type-grid">
         <button class="type-card" type="button" onclick={() => selectType('incident')}>
           <span class="type-icon">
@@ -505,6 +511,9 @@
       </div>
 
       <button data-slot="button" class="link-button standalone {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={openList}>Мои обращения</button>
+      </section>
+      <SupportFaq {loadQuestions} />
+      </div>
 
     {:else if screen === 'form'}
       {#if ticketType === 'incident'}

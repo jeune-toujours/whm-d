@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Archive, ClipboardList, Headphones, PackageCheck, PackageMinus, ScanBarcode, TriangleAlert } from 'lucide-react'
 import { useAuth } from '@payloadcms/ui'
-import './warehouse.css'
 
 const destinations = [
   { path: 'receive', label: 'Приёмка', icon: PackageCheck },

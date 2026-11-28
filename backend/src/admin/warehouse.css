@@ -93,3 +93,42 @@
 .step-nav__home .whm-brand-mark { width: 16px; height: 16px; border-radius: 4px; }
 .step-nav__home .whm-brand-mark svg { width: 13px; height: 13px; }
 [data-theme="dark"] .whm-brand-mark { background: oklch(76% .188 70.08); }
+
+.whm-work {
+  width: 100%; max-width: 72rem; min-width: 0; margin-inline: auto;
+  padding-block: clamp(1.25rem, 3vw, 2.25rem) 3rem; overflow-wrap: anywhere;
+}
+.whm-work h1 { font-size: clamp(1.65rem, 3.2vw, 2.2rem); line-height: 1.18; }
+.whm-work > p { max-width: 68ch; margin: .75rem 0; }
+.whm-work .inventory-toolbar { margin-bottom: 1rem; justify-content: space-between; }
+.whm-work .inventory-toolbar > h1 { margin: 0; }
+.whm-work .inventory-toolbar > :is(button, a) { margin: 0; }
+.whm-work .whm-toolbar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
+.whm-work .whm-toolbar-actions button, .whm-work .whm-operation-secondary button { margin: 0; }
+.whm-work .problem-action { min-height: 40px; padding: 8px 14px; text-decoration: none; font-weight: 600; background: var(--theme-elevation-0); }
+.whm-work .problem-action:hover { background: var(--theme-elevation-100); }
+.whm-work .whm-filters {
+  display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: end; gap: 1rem;
+  margin-block: 1rem; padding: 1rem; border: 1px solid var(--theme-elevation-250);
+  border-radius: 12px; background: var(--theme-elevation-50);
+}
+.whm-work .whm-filters label { margin: 0; max-width: none; }
+.whm-work .whm-count { font-variant-numeric: tabular-nums; }
+.whm-work .whm-order { margin-block: 1rem; padding: clamp(1rem, 2vw, 1.5rem); }
+.whm-work .whm-operation { margin-block: 1rem 0; border: 1px solid var(--theme-elevation-200); }
+.whm-work .whm-operation h3 { margin-top: 0; }
+.whm-work .whm-operation-secondary { border-top: 1px solid var(--theme-elevation-200); padding-top: .75rem; margin-top: .75rem; }
+.whm-work :is(button, a, input, textarea, select), .whm-scanner button { touch-action: manipulation; }
+.whm-work :is(input, textarea, select) { max-width: 100%; }
+.whm-archive-dialog {
+  width: min(32rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto;
+  padding: 1.25rem; overscroll-behavior: contain; border-radius: 12px;
+  border: 1px solid var(--theme-elevation-300); background: var(--theme-elevation-0); color: var(--theme-text);
+}
+.whm-archive-dialog::backdrop { background: rgb(0 0 0 / 55%); }
+.whm-archive-dialog h2 { margin-top: 0; }
+.whm-archive-dialog textarea { width: 100%; }
+@media (max-width: 42rem) {
+  .whm-work .whm-filters { grid-template-columns: minmax(0, 1fr); }
+  .whm-work .inventory-toolbar h1 { flex-basis: 100%; }
+}

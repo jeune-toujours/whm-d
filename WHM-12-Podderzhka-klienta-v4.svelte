@@ -815,7 +815,7 @@
     transition: border-color 180ms ease, box-shadow 180ms ease; font-family: inherit;
   }
   .text-field select { min-height: 2.9rem; }
-  .text-field select:focus, .text-field textarea:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--primary-faint); }
+
   .text-field.invalid select, .text-field.invalid textarea {
     border-color: var(--color-error); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-error) 16%, transparent);
   }
@@ -916,9 +916,7 @@
 
   @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 
-  :global(button:focus-visible), :global(select:focus-visible), :global(textarea:focus-visible) {
-    outline: 3px solid color-mix(in oklab, var(--color-primary) 45%, transparent); outline-offset: 3px;
-  }
+
 
   @media (max-width: 640px) {
     .app-header { padding: 0 1rem; }

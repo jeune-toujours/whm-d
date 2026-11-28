@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 import { DomainError, relationID, text, normalizePhone } from './domain'
+import { addressSuggestionsEnabled } from './address-suggestions'
 import { simulationsEnabled } from './simulations'
 
 // Prices below are staging fixtures from the archived wizard, never production rules.
@@ -36,7 +37,7 @@ export async function checkoutConfiguration(req: PayloadRequest) {
     const id = date.toISOString().slice(0, 10)
     return { id, label: new Date(`${id}T12:00:00Z`).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' }), short: new Date(`${id}T12:00:00Z`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }), weekday: date.toLocaleDateString('ru-RU', { weekday: 'short' }), day: date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }), disabled: false, soldOut: false, slots: testSlots.map(label => ({ label, disabled: false })) }
   })
-  return { simulation: true, dates, slots: testSlots, addresses: testAddresses, options: testOptions, insuranceRate: 0.0058, insuranceMinPremium: 100, turnkeyFee: 1490, courierFee: 890, returnFee: 1490, extraTripFee: 890, itemsPerTrip: 3, warehouses: warehouses.docs.map(w => ({ id: w.id, name: w.name, title: w.name, address: w.address || '', hours: 'Тестовый график: ежедневно, 09:00–21:00' })) }
+  return { simulation: true, addressSuggestions: addressSuggestionsEnabled(), dates, slots: testSlots, addresses: testAddresses, options: testOptions, insuranceRate: 0.0058, insuranceMinPremium: 100, turnkeyFee: 1490, courierFee: 890, returnFee: 1490, extraTripFee: 890, itemsPerTrip: 3, warehouses: warehouses.docs.map(w => ({ id: w.id, name: w.name, title: w.name, address: w.address || '', hours: 'Тестовый график: ежедневно, 09:00–21:00' })) }
 }
 export async function quoteOrder(req: PayloadRequest, kind: 'intake' | 'return', data: any) {
   const config = await checkoutConfiguration(req)

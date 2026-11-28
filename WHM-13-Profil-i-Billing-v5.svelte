@@ -1081,7 +1081,7 @@
     outline: 0; background: var(--color-base-100); color: var(--color-base-content);
     transition: border-color 180ms ease, box-shadow 180ms ease;
   }
-  .text-field input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--primary-faint); }
+
   .text-field small { color: var(--faint-content); font-weight: 550; }
 
   .phone-field {
@@ -1089,10 +1089,10 @@
     border: var(--border) solid var(--soft-border); border-radius: var(--radius-field); background: var(--color-base-100);
     transition: border-color 180ms ease, box-shadow 180ms ease;
   }
-  .phone-field:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--primary-faint); }
+
   .country-code { padding: 0 0.7rem 0 0.85rem; border-right: var(--border) solid var(--soft-border); color: var(--color-base-content); font-weight: 700; }
   .phone-field input { border: 0; height: 2.8rem; padding: 0 0.8rem; background: transparent; color: var(--color-base-content); }
-  .phone-field input:focus { border: 0; box-shadow: none; }
+
 
   .otp-actions { margin-top: 0.6rem; display: flex; justify-content: flex-start; }
   .otp-actions .link-button { margin-left: 0; }
@@ -1110,9 +1110,7 @@
 
   @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 
-  :global(button:focus-visible), :global(input:focus-visible) {
-    outline: 3px solid color-mix(in oklab, var(--color-primary) 45%, transparent); outline-offset: 3px;
-  }
+
 
   @media (max-width: 640px) {
     .app-header { padding: 0 1rem; }

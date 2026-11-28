@@ -84,7 +84,10 @@
   background-color: var(--whm-honey); color: #252016; border-color: transparent;
 }
 .whm-work :focus-visible, .whm-scanner :focus-visible, .whm-navigation a:focus-visible {
-  outline: 3px solid var(--whm-ring); outline-offset: 3px;
+  outline: 2px solid var(--whm-ring); outline-offset: 2px;
+}
+.whm-work :is(input, textarea, select):focus {
+  outline: 2px solid var(--whm-ring); outline-offset: 2px; box-shadow: none;
 }
 .whm-work .whm-empty { padding: 24px; background: var(--theme-elevation-50); border: 1px dashed var(--theme-elevation-250); border-radius: 12px; }
 .whm-scanner { overscroll-behavior: contain; }

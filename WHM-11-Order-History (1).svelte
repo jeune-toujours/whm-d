@@ -1284,7 +1284,7 @@
 
   h1, h2, h3, p { margin: 0; }
   button, input, select { color: inherit; }
-  button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid color-mix(in oklab, var(--color-primary) 62%, transparent); outline-offset: 2px; }
+
   :global(svg) { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
   .ambient { position: fixed; z-index: -1; border-radius: 999px; pointer-events: none; opacity: 0.62; }
@@ -1363,7 +1363,7 @@
 
   .search-and-sort { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.75rem; margin-top: 1.25rem; }
   .search-field { min-height: 3.5rem; padding: 0 0.95rem; gap: 0.65rem; border: var(--border) solid var(--soft-border); border-radius: var(--radius-field); background: color-mix(in oklab, var(--color-base-100) 92%, transparent); }
-  .search-field:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--primary-faint); }
+
   .search-field > :global(svg) { width: 1.25rem; height: 1.25rem; color: var(--faint-content); }
   .search-field input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; }
   .search-field input::placeholder { color: var(--faint-content); }

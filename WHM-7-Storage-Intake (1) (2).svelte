@@ -1,8 +1,9 @@
 <script>
+  import AddressInput from './src/components/AddressInput.svelte';
   import DialogFrame from '$lib/components/ui/dialog.svelte';
   import Brand from '$lib/components/Brand.svelte';
   import { buttonVariants } from '$lib/components/ui/button/index.js';
-  import { Archive, ArrowRight, Check, ChevronLeft, ChevronRight, CircleHelp, Copy, MapPin, Minus, Moon, Plus, Search, Sun, Truck, Package, User, Warehouse, X } from '@lucide/svelte';
+  import { Archive, ArrowRight, Check, ChevronLeft, ChevronRight, CircleHelp, Copy, MapPin, Minus, Moon, Plus, Sun, Truck, Package, User, Warehouse, X } from '@lucide/svelte';
   import { onMount } from 'svelte';
   import { nationalPhone, courierAddress } from './src/courier-fields.js';
 
@@ -18,6 +19,7 @@
   let {
     live = false, config = null, catalog = [], draftKey = '', initialTheme = 'bumblebee',
     onCalculateOrder = async () => null, onOversizeRequest = async () => ({ ok: false }),
+    suggestAddress,
     customerName = 'Александра',
     savedAddress = 'Москва, ул. Тверская, 18',
     savedPhone = '',
@@ -203,7 +205,6 @@
   let floor = $state('');
   let contactPhone = $state(nationalPhone(savedPhone));
   let courierComment = $state('');
-  let showSuggestions = $state(false);
   let addressError = $state('');
   let notifyEmail = $state('');
   let zoneNoticeSent = $state(false);
@@ -225,13 +226,6 @@
   let isDark = $derived(theme === 'halloween');
   let addressState = $derived(courierAddress(addressQuery, addressCatalog));
   let selectedDate = $derived(dates[selectedDateIndex]);
-  let addressSuggestions = $derived(
-    addressQuery.trim().length < 3
-      ? []
-      : addressCatalog.filter((item) =>
-          item.value.toLowerCase().includes(addressQuery.trim().toLowerCase())
-        )
-  );
   let totalQuantity = $derived(
     allItems.reduce((sum, item) => sum + (quantities[item.id] || 0), 0) +
       oversizeItems.length
@@ -556,12 +550,18 @@
     go('address');
   }
 
-  function handleAddressInput(event) {
-    addressQuery = event.currentTarget.value;
+  function handleAddressInput(value) {
+    addressQuery = value;
     selectedAddress = '';
     addressError = '';
     zoneNoticeSent = false;
-    showSuggestions = true;
+  }
+
+  function selectAddress(value) {
+    handleAddressInput(value);
+    const choice = courierAddress(value, addressCatalog);
+    if (choice.blocked) addressError = 'Мы пока не работаем в этом районе';
+    if (choice.valid) selectedAddress = choice.address;
   }
 
   function handlePhoneInput(event) {
@@ -569,23 +569,10 @@
     event.currentTarget.value = contactPhone;
   }
 
-  function selectAddress(item) {
-    addressQuery = item.value;
-    showSuggestions = false;
-    if (!item.inZone) {
-      selectedAddress = '';
-      addressError = 'Мы пока не работаем в этом районе';
-      return;
-    }
-    selectedAddress = item.value;
-    addressError = '';
-  }
-
   function useSavedAddress() {
     addressQuery = savedAddress;
     selectedAddress = savedAddress;
     addressError = '';
-    showSuggestions = false;
   }
 
   function sendZoneNotice() {
@@ -1497,42 +1484,15 @@
 
               <div class="form-stack">
                 <label class="field-label" for="address-search">Новый адрес</label>
-                <div class="autocomplete">
-                  <div class="input-with-icon" class:error={Boolean(addressError)}>
-                    <Search aria-hidden="true" />
-                    <input
-                      id="address-search"
-                      type="search"
-                      placeholder="Начните вводить улицу и дом"
-                      value={addressQuery}
-                      oninput={handleAddressInput}
-                      onfocus={() => (showSuggestions = true)}
-                      autocomplete="off"
-                      maxlength="500"
-                      aria-describedby="courier-address-hint"
-                    />
-                  </div>
-                  {#if showSuggestions && addressSuggestions.length > 0}
-                    <div class="suggestions" role="listbox" aria-label="Подсказки адресов">
-                      {#each addressSuggestions as item}
-                        <button
-                          type="button"
-                          role="option"
-                          aria-selected={selectedAddress === item.value}
-                          onclick={() => selectAddress(item)}
-                        >
-                          <MapPin aria-hidden="true" />
-                          {item.value}
-                        </button>
-                      {/each}
-                    </div>
-                  {/if}
+                <div>
+                  <AddressInput id="address-search" value={addressQuery} catalog={live ? [] : addressCatalog}
+                    suggest={suggestAddress} onChange={handleAddressInput} onSelect={selectAddress}
+                    invalid={Boolean(addressError) || addressState.blocked} describedBy="courier-address-hint" />
                   {#if addressError}
                     <p class="field-error">{addressError}</p>
                   {/if}
-                  <p id="courier-address-hint" class="field-caption">Можно выбрать подсказку или ввести улицу и номер дома вручную.</p>
+                  <p id="courier-address-hint" class="field-caption">Укажите город, улицу и дом. Квартиру и подъезд заполните ниже.</p>
                   {#if addressState.blocked && !addressError}<p class="field-error">Мы пока не работаем в этом районе</p>{/if}
-                  {#if live && addressState.valid && addressState.manual}<p class="field-caption">Адрес введён вручную. В тестовом контуре зона доставки не проверяется.</p>{/if}
                 </div>
 
                 {#if addressError === 'Мы пока не работаем в этом районе'}
@@ -2118,13 +2078,7 @@
     color: inherit;
   }
 
-  button:focus-visible,
-  a:focus-visible,
-  input:focus-visible,
-  textarea:focus-visible {
-    outline: 3px solid color-mix(in oklab, var(--color-primary) 48%, transparent);
-    outline-offset: 2px;
-  }
+
 
   h1,
   h2,
@@ -2986,10 +2940,7 @@
     background: var(--color-base-100);
   }
 
-  .money-input:focus-within,
-  .phone-input:focus-within {
-    border-color: var(--color-primary);
-  }
+
 
   .money-input input,
   .phone-input input {
@@ -3313,84 +3264,6 @@
   input::placeholder,
   textarea::placeholder {
     color: var(--faint-content);
-  }
-
-  input:focus,
-  textarea:focus,
-  .input-with-icon:focus-within {
-    border-color: var(--color-primary);
-  }
-
-  .autocomplete {
-    position: relative;
-  }
-
-  .input-with-icon {
-    display: grid;
-    grid-template-columns: 1.3rem 1fr;
-    align-items: center;
-    gap: 0.55rem;
-    border: var(--border) solid var(--soft-border);
-    border-radius: var(--radius-field);
-    background: var(--color-base-100);
-  }
-
-  .input-with-icon.error {
-    border-color: var(--color-error);
-  }
-
-  .input-with-icon :global(svg) {
-    width: 1.2rem;
-    height: 1.2rem;
-    margin-left: 0.8rem;
-    color: var(--soft-content);
-  }
-
-  .input-with-icon input {
-    padding-left: 0;
-    border: 0;
-    background: transparent;
-  }
-
-  .suggestions {
-    position: absolute;
-    z-index: 20;
-    top: calc(100% + 0.35rem);
-    right: 0;
-    left: 0;
-    overflow: hidden;
-    border: var(--border) solid var(--soft-border);
-    border-radius: var(--radius-field);
-    background: var(--color-base-100);
-    box-shadow: 0 1rem 2.5rem color-mix(in oklab, var(--color-base-content) 12%, transparent);
-  }
-
-  .suggestions button {
-    display: grid;
-    width: 100%;
-    min-height: 3.4rem;
-    padding: 0.7rem;
-    grid-template-columns: 1.25rem 1fr;
-    align-items: center;
-    gap: 0.55rem;
-    text-align: left;
-    border: 0;
-    border-bottom: var(--border) solid var(--muted-border);
-    background: var(--color-base-100);
-    cursor: pointer;
-  }
-
-  .suggestions button:last-child {
-    border-bottom: 0;
-  }
-
-  .suggestions button:hover {
-    background: var(--color-base-200);
-  }
-
-  .suggestions :global(svg) {
-    width: 1.15rem;
-    height: 1.15rem;
   }
 
   .field-caption { color: color-mix(in oklab, var(--color-base-content) 70%, transparent); font-size: .875rem; line-height: 1.5; margin: 8px 0 0; }

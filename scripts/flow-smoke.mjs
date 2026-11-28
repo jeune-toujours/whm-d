@@ -15,6 +15,21 @@ async function pageFor(route) {
 }
 
 try {
+  for (const theme of ['bumblebee', 'halloween']) {
+    const { page, errors } = await pageFor('signin');
+    await page.evaluate(value => localStorage.setItem('whm-theme', value), theme);
+    await page.reload();
+    await page.getByRole('button', { name: 'Войти', exact: true }).click();
+    const phone = page.getByLabel('Номер телефона', { exact: true });
+    await phone.focus();
+    assert.deepEqual(await phone.evaluate(input => {
+      const control = getComputedStyle(input);
+      const group = getComputedStyle(input.closest('.phone-field'));
+      return [control.outlineStyle, control.boxShadow, group.outlineStyle, group.outlineWidth, group.boxShadow];
+    }), ['none', 'none', 'solid', '2px', 'none'], 'Phone has one focus ring around the entire field');
+    assert.deepEqual(errors, []);
+    await page.close();
+  }
   {
     const { page, errors } = await pageFor('profile');
     const footer = page.getByRole('contentinfo');
@@ -59,6 +74,13 @@ try {
     await page.getByRole('button',{name:'Пропустить',exact:true}).click();await page.getByRole('button',{name:'Пропустить',exact:true}).click();
     await page.getByRole('button',{name:/Курьер заберёт/}).click();
     await page.locator('.slot-grid button:not([disabled])').first().click();await page.locator('.sticky-bar .primary-button').click();
+    const address = page.getByRole('combobox', { name: 'Новый адрес' });
+    await address.fill('Тверская');
+    await page.getByRole('option', { name: /Тверская/ }).waitFor();
+    await address.press('ArrowDown');
+    assert.ok(await address.getAttribute('aria-activedescendant'));
+    await address.press('Enter');
+    assert.match(await address.inputValue(), /Тверская, 18/);
     await verifyCourierAddressFields(page);assert.deepEqual(errors,[]);await page.close();
   }
   {

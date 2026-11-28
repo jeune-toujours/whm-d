@@ -724,9 +724,7 @@
     background: var(--color-base-100);
   }
 
-  .search-field:focus-within {
-    border-color: var(--color-primary);
-  }
+
 
   .search-field :global(svg) {
     width: 1.05rem;
@@ -940,11 +938,7 @@
     to { transform: rotate(360deg); }
   }
 
-  :global(button:focus-visible),
-  :global(input:focus-visible) {
-    outline: 3px solid color-mix(in oklab, var(--color-primary) 45%, transparent);
-    outline-offset: 3px;
-  }
+
 
   @media (max-width: 720px) {
     .app-header {

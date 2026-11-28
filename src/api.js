@@ -1,9 +1,10 @@
 const base = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 export class ApiError extends Error { constructor(message, status, code) { super(message); this.status = status; this.code = code; } }
-export async function api(path, data, method = 'POST', key) {
+export async function api(path, data, method = 'POST', key, signal) {
+  const timeout = AbortSignal.timeout(20000);
   const response = await fetch(`${base}${path}`, {
     method: data === undefined ? 'GET' : method,
-    credentials: 'include', signal: AbortSignal.timeout(20000),
+    credentials: 'include', signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     headers: { 'X-WHM-Client': '1', ...(data === undefined ? {} : { 'Content-Type': 'application/json' }), ...(key ? { 'Idempotency-Key': key } : {}) },
     body: data === undefined ? undefined : JSON.stringify(data),
   });

@@ -439,18 +439,21 @@
       </div>
 
       <label class="text-field" class:invalid={missingPhone}>
-        <span>Номер телефона</span>
+        <span id="signin-phone-label">Номер телефона</span>
         <span class="phone-field">
-          <span class="country-code">+7</span>
+          <span id="signin-country-code" class="country-code">+7</span>
           <input
             type="tel"
             inputmode="numeric"
+            aria-labelledby="signin-phone-label"
+            aria-describedby={missingPhone ? 'signin-country-code signin-phone-error' : 'signin-country-code'}
+            aria-invalid={missingPhone || undefined}
             name="phone" autocomplete="tel-national" placeholder="999 123 45 67"
             value={formattedPhone}
             oninput={handlePhoneInput}
           />
         </span>
-        {#if missingPhone}<small class="field-error">Введите корректный номер телефона.</small>{/if}
+        {#if missingPhone}<small id="signin-phone-error" class="field-error">Введите корректный номер телефона.</small>{/if}
       </label>
 
       {#if alreadyRegisteredNotice}
@@ -692,7 +695,7 @@
     outline: 0; background: var(--color-base-100); color: var(--color-base-content);
     transition: border-color 180ms ease, box-shadow 180ms ease;
   }
-  .text-field input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--primary-faint); }
+
   .text-field.invalid input, .text-field.invalid .phone-field {
     border-color: var(--color-error); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-error) 16%, transparent);
   }
@@ -704,10 +707,10 @@
     border: var(--border) solid var(--soft-border); border-radius: var(--radius-field); background: var(--color-base-100);
     transition: border-color 180ms ease, box-shadow 180ms ease;
   }
-  .phone-field:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--primary-faint); }
+
   .country-code { padding: 0 0.75rem 0 0.9rem; border-right: var(--border) solid var(--soft-border); color: var(--color-base-content); font-weight: 700; }
   .phone-field input { border: 0; height: 3.1rem; padding: 0 0.9rem; background: transparent; color: var(--color-base-content); }
-  .phone-field input:focus { border: 0; box-shadow: none; }
+
 
   .inline-note { margin-top: 0.85rem; color: var(--soft-content); font-size: var(--type-caption); }
   .inline-note.warning { color: var(--color-error); font-weight: 700; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
@@ -743,7 +746,7 @@
     background: var(--color-base-100); color: var(--color-base-content); outline: 0;
     transition: border-color 180ms ease, box-shadow 180ms ease;
   }
-  .otp-cell:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--primary-faint); }
+
 
   @media (max-width: 380px) {
     .otp-row { gap: 0.45rem; }
@@ -769,9 +772,7 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  :global(button:focus-visible), :global(input:focus-visible) {
-    outline: 3px solid color-mix(in oklab, var(--color-primary) 45%, transparent); outline-offset: 3px;
-  }
+
 
   @media (prefers-reduced-motion: reduce) {
     * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

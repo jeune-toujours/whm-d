@@ -1,4 +1,6 @@
 <script>
+  import { applyTheme } from '$lib/theme.js';
+  import PaymentDialog from './components/PaymentDialog.svelte';
   import { onMount } from 'svelte';
   import { ExternalLink, Moon, Sun } from '@lucide/svelte';
   import Auth from '../WHM-3-Avtorizatsiya-i-Onboarding-v3.svelte';
@@ -26,6 +28,7 @@
   let checkoutConfig = $state(null), paymentDialog = $state(null), archivedItem = $state(null), itemBackRoute = $state('home');
   const uploadedFiles = new WeakMap();
   let pendingPhone = '', refreshing = false, planOperation = null;
+  $effect(() => applyTheme(theme));
   let root = $derived(route.split('/')[0]), routeID = $derived(route.split('/')[1] || '');
   let item = $derived(archivedItem?.id === routeID ? archivedItem : data.units.find(u => u.id === routeID));
   let order = $derived(data.orders.find(o => o.id === routeID));
@@ -107,7 +110,7 @@
 </script>
 
 <div class:dark={theme === 'halloween'} class="live-banner" role="region" aria-label="Тестовая среда"><span>Тестовый контур · SMS, оплата и логистика симулируются</span></div>
-{#if paymentDialog}<div class="payment-overlay" role="presentation"><div class="payment-frame" role="dialog" aria-modal="true" aria-label="Симулятор оплаты" tabindex="-1"><Checkout id={paymentDialog.id} initialTheme={theme} embedded={true} onBack={cancelPayment} onComplete={finishPayment}/></div></div>{/if}
+{#if paymentDialog}<PaymentDialog><Checkout id={paymentDialog.id} initialTheme={theme} embedded={true} onBack={cancelPayment} onComplete={finishPayment}/></PaymentDialog>{/if}
 {#if error}<div class="connection-error" role="alert">{error}<button onclick={() => void safe(refresh)}>Повторить</button></div>{/if}
 {#if loading}<div class:dark={theme === 'halloween'} class="live-page"><main class="live-shell"><p role="status">Подключаемся к WHM…</p></main></div>
 {:else}
@@ -134,6 +137,4 @@
   .live-banner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px 24px; background:#f2e7ad; color:#383424; font:11px 'Open Sans',sans-serif; }
   .live-banner.dark { background:#343024; color:#e9e3cb; }
   .connection-error { display:flex; align-items:center; justify-content:center; gap:16px; padding:14px; background:#fff0e8; color:#742f18; font:12px 'Open Sans',sans-serif; }
-  .payment-overlay { position:fixed; inset:0; background:#0008; z-index:1000; display:grid; place-items:center; padding:16px; overflow:auto; }
-  .payment-overlay .payment-frame { width:min(680px,100%); max-height:calc(100dvh - 32px); overflow:auto; border-radius:24px; }
 </style>

@@ -1,4 +1,5 @@
 'use client'
+import { Button } from './ui/Button'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -32,7 +33,7 @@ export function ProblemsPanel() {
     return () => { active = false; clearTimeout(timer) }
   }, [id, creating, search, state, page, revision])
   return <Gutter><section className="whm-work whm-problems">
-    <div className="inventory-toolbar"><h1>Проблемные заказы</h1>{!creating && !id && <Link className="problem-action" href={`${root}?new=1`}><Plus size={18} aria-hidden />Зафиксировать повреждение</Link>}{!creating && <button onClick={() => setRevision(v => v + 1)} disabled={loading}><RefreshCw size={18} aria-hidden />Обновить</button>}</div>
+    <div className="inventory-toolbar"><h1>Проблемные заказы</h1>{!creating && !id && <Link className="problem-action" href={`${root}?new=1`}><Plus size={18} aria-hidden />Зафиксировать повреждение</Link>}{!creating && <Button onClick={() => setRevision(v => v + 1)} disabled={loading}><RefreshCw size={18} aria-hidden />Обновить</Button>}</div>
     <p>Сначала фиксация видна только сотрудникам. После подтверждения кейса клиент получает уведомление и обращение в поддержке.</p>
     <p className="inventory-note">Операционная фиксация. Юридическая форма акта ещё не утверждена.</p>
     {(id || creating) && <Link className="inventory-back" href={root}><ArrowLeft size={18} aria-hidden />К списку</Link>}
@@ -42,7 +43,7 @@ export function ProblemsPanel() {
     {creating ? <ProblemForm key={`${params.get('orderID')}:${params.get('itemID')}:${revision}`} initialOrder={params.get('orderID') || ''} initialItem={params.get('itemID') || ''} onSaved={value => router.push(`${root}?report=${encodeURIComponent(value)}`)} /> : loading ? <p role="status">Загрузка…</p> : id ? report && <ReportDetail key={report.id} report={report} onPublished={setReport} /> : <>
       <p>Найдено: {total}</p>{reports.map(r => <article className="whm-order" key={r.id}><h2><Link href={`${root}?report=${r.id}`}>{r.number}</Link></h2><p>{r.orderNumber} · {r.itemLabel}</p><p>{date(r.createdAt)} · {statusLabel(r.status)}</p></article>)}
       {!reports.length && !error && <p className="whm-empty">Записей не найдено.</p>}
-      <nav aria-label="Страницы проблемных заказов"><button disabled={page <= 1} onClick={() => setPage(v => v - 1)}>Назад</button><span>{page} / {Math.max(1, pages)}</span><button disabled={page >= pages} onClick={() => setPage(v => v + 1)}>Далее</button></nav>
+      <nav aria-label="Страницы проблемных заказов"><Button disabled={page <= 1} onClick={() => setPage(v => v - 1)}>Назад</Button><span>{page} / {Math.max(1, pages)}</span><Button disabled={page >= pages} onClick={() => setPage(v => v + 1)}>Далее</Button></nav>
     </>}
   </section></Gutter>
 }
@@ -62,7 +63,7 @@ function ReportDetail({ report, onPublished }: { report: Report; onPublished: (r
     <p><strong>{statusLabel(report.status)}</strong></p>
     {report.evidence.length > 0 && <><h3>Материалы</h3><ul>{report.evidence.map(file => <li key={file.id}><a href={file.url} target="_blank" rel="noopener noreferrer">{file.filename}</a></li>)}</ul></>}
     {error && <p role="alert" className="whm-error">{error}</p>}
-    {report.status === 'pending' ? <><p>Клиент пока не видит фиксацию и материалы. Обращение появится только после подтверждения кейса.</p>{['admin', 'manager'].includes(user?.role) ? <button type="button" disabled={busy} onClick={() => void publish()}>{busy ? 'Подтверждение…' : 'Подтвердить кейс и уведомить клиента'}</button> : <p>Подтвердить кейс может менеджер или администратор.</p>}</> : <><p>{report.publishedByName ? `Подтвердил: ${report.publishedByName}` : 'Опубликовано до введения подтверждения кейсов'} · {report.publishedAt ? date(report.publishedAt) : '—'}</p><p>Уведомление сохранено в личном кабинете клиента. Реальные SMS и email не отправляются.</p>{user?.role !== 'warehouse' && <Link href={`/admin/collections/support-tickets/${report.ticketID}`}>Открыть обращение клиента</Link>}</>}
+    {report.status === 'pending' ? <><p>Клиент пока не видит фиксацию и материалы. Обращение появится только после подтверждения кейса.</p>{['admin', 'manager'].includes(user?.role) ? <Button type="button" disabled={busy} onClick={() => void publish()}>{busy ? 'Подтверждение…' : 'Подтвердить кейс и уведомить клиента'}</Button> : <p>Подтвердить кейс может менеджер или администратор.</p>}</> : <><p>{report.publishedByName ? `Подтвердил: ${report.publishedByName}` : 'Опубликовано до введения подтверждения кейсов'} · {report.publishedAt ? date(report.publishedAt) : '—'}</p><p>Уведомление сохранено в личном кабинете клиента. Реальные SMS и email не отправляются.</p>{user?.role !== 'warehouse' && <Link href={`/admin/collections/support-tickets/${report.ticketID}`}>Открыть обращение клиента</Link>}</>}
   </article>
 }
 
@@ -106,7 +107,7 @@ function ProblemForm({ initialOrder, initialItem, onSaved }: { initialOrder: str
   }
   return <form className="whm-order" onSubmit={e => { e.preventDefault(); void save() }}><h2>Зафиксировать повреждение</h2>
     <fieldset disabled={busy}>
-      {!initialOrder && <><label>Найти приёмку по номеру<input type="search" value={search} onChange={e => { setSearch(e.target.value); setPage(1); setOrderID(''); setItemID('') }} /></label><div><button type="button" disabled={page <= 1 || loading} onClick={() => { setPage(v => v - 1); setOrderID(''); setItemID('') }}>Назад</button><span>{page} / {Math.max(1, pages)}</span><button type="button" disabled={page >= pages || loading} onClick={() => { setPage(v => v + 1); setOrderID(''); setItemID('') }}>Далее</button></div></>}
+      {!initialOrder && <><label>Найти приёмку по номеру<input type="search" value={search} onChange={e => { setSearch(e.target.value); setPage(1); setOrderID(''); setItemID('') }} /></label><div><Button type="button" disabled={page <= 1 || loading} onClick={() => { setPage(v => v - 1); setOrderID(''); setItemID('') }}>Назад</Button><span>{page} / {Math.max(1, pages)}</span><Button type="button" disabled={page >= pages || loading} onClick={() => { setPage(v => v + 1); setOrderID(''); setItemID('') }}>Далее</Button></div></>}
       {loading && <p role="status">Загрузка приёмок…</p>}
       <label>Приёмка<select required disabled={loading} value={orderID} onChange={e => { setOrderID(e.target.value); setItemID('') }}><option value="">Выберите приёмку</option>{orders.map(o => <option key={o.id} value={o.id}>{o.number}</option>)}</select></label>
       {!loading && !orders.length && <p>Подходящих приёмок нет. Фиксация доступна до размещения вещи на хранение.</p>}
@@ -115,7 +116,7 @@ function ProblemForm({ initialOrder, initialItem, onSaved }: { initialOrder: str
       {evidenceEnabled ? <label>Фото, видео или документы — до 5 файлов, каждый до 25 МБ<input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf" onChange={e => { const next = Array.from(e.target.files || []); if (next.length > 5 || next.some(f => f.size > 25 * 1024 * 1024)) { setError('Допускается до 5 файлов, каждый не больше 25 МБ.'); e.target.value = ''; setFiles([]) } else { setFiles(next); setError('') } }} /></label> : !loading && <p className="inventory-note">Материалы временно недоступны. Можно сохранить описание повреждения без файлов.</p>}
       <label className="whm-checkbox"><input type="checkbox" required checked={discovered} onChange={e => setDiscovered(e.target.checked)} />Повреждение обнаружено при поступлении</label>
       {error && <p role="alert" className="whm-error">{error}</p>}<p>Описание и материалы останутся внутри системы. На этом шаге клиент не получает уведомлений.</p>
-      <button type="submit" disabled={loading || !order}>{busy ? 'Сохранение…' : 'Сохранить внутреннюю фиксацию'}</button>
+      <Button type="submit" variant="default" disabled={loading || !order}>{busy ? 'Сохранение…' : 'Сохранить внутреннюю фиксацию'}</Button>
     </fieldset>
   </form>
 }

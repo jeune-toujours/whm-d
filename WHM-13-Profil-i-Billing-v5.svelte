@@ -1,4 +1,8 @@
 <script>
+  import Input from '$lib/components/ui/input.svelte';
+  import DialogFrame from '$lib/components/ui/dialog.svelte';
+  import Brand from '$lib/components/Brand.svelte';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { ChevronLeft, Moon, Sun, TriangleAlert, X } from '@lucide/svelte';
   /*
    * WHM-13 — Профиль и Биллинг
@@ -531,14 +535,14 @@
   <div class="ambient ambient-two"></div>
 
   <header class="app-header">
-    <button class="back-button" type="button" aria-label="Назад" onclick={onGoBack}>
+    <button data-slot="button" class="back-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Назад" onclick={onGoBack}>
       <ChevronLeft aria-hidden="true" />
     </button>
     <div class="brand" aria-label="Клиентский интерфейс">
-      <span class="system-label">Клиентский интерфейс</span>
+      <Brand />
     </div>
     <button
-      class="icon-button"
+      data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}"
       type="button"
       aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
       onclick={toggleTheme}
@@ -561,7 +565,7 @@
       <div class="error-banner" role="alert">
         <TriangleAlert aria-hidden="true" />
         <span>Не удалось загрузить профиль.</span>
-        <button class="link-button" type="button" onclick={fetchProfile}>Повторить</button>
+        <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={fetchProfile}>Повторить</button>
       </div>
     {/if}
 
@@ -570,10 +574,10 @@
       <div class="section-card skeleton" aria-hidden="true"></div>
       <div class="section-card skeleton" aria-hidden="true"></div>
     {:else}
-      <section class="section-card">
+      <section data-slot="card" class="section-card">
         <div class="section-head">
           <h2>Личные данные</h2>
-          <button class="link-button" type="button" onclick={openEdit}>Изменить</button>
+          <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={openEdit}>Изменить</button>
         </div>
         <dl class="field-list">
           <div><dt>Имя и фамилия</dt><dd>{fullName}</dd></div>
@@ -582,10 +586,10 @@
         </dl>
       </section>
 
-      <section class="section-card">
+      <section data-slot="card" class="section-card">
         <div class="section-head">
           <h2>Подписка и оплата</h2>
-          <button class="link-button" type="button" onclick={onOpenSubscription}>Подробнее</button>
+          <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={onOpenSubscription}>Подробнее</button>
         </div>
         <div class="plan-summary">
           <div>
@@ -609,7 +613,7 @@
               <strong>Не привязан</strong>
             {/if}
           </div>
-          <button class="secondary-button" type="button" onclick={openPaymentModal}>
+          <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={openPaymentModal}>
             {paymentMethod ? 'Изменить способ оплаты' : 'Привязать способ оплаты'}
           </button>
         </div>
@@ -618,9 +622,9 @@
         {/if}
 
         <div class="plan-actions">
-          <button class="secondary-button" type="button" onclick={openPlanModal}>Изменить тариф</button>
+          <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={openPlanModal}>Изменить тариф</button>
           <button
-            class="secondary-button"
+            data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}"
             type="button"
             disabled={hasStoredItems || hasActiveOrders || pauseBusy}
             title={hasStoredItems || hasActiveOrders ? 'Недоступно при вещах на хранении или активном заказе' : undefined}
@@ -634,10 +638,10 @@
         {/if}
       </section>
 
-      <section class="section-card">
+      <section data-slot="card" class="section-card">
         <div class="section-head">
           <h2>Последние платежи</h2>
-          <button class="link-button" type="button" onclick={onOpenAllPayments}>Вся история</button>
+          <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={onOpenAllPayments}>Вся история</button>
         </div>
         <div class="payment-list">
           {#each recentPayments as payment}
@@ -652,7 +656,7 @@
                 {paymentStatusLabel[payment.status] ?? payment.status}
               </span>
               {#if payment.hasReceipt}
-                <button class="link-button" type="button" onclick={() => onOpenReceipt(payment)}>Чек</button>
+                <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={() => onOpenReceipt(payment)}>Чек</button>
               {/if}
             </div>
           {/each}
@@ -662,25 +666,25 @@
         </div>
       </section>
 
-      <section class="section-card">
+      <section data-slot="card" class="section-card">
         <div class="section-head">
           <h2>Поддержка и документы</h2>
         </div>
         <div class="link-list">
-          <button class="link-button" type="button" onclick={onOpenSupport}>Обратиться в поддержку</button>
-          <button class="link-button" type="button" onclick={onOpenTerms}>Публичная оферта</button>
-          <button class="link-button" type="button" onclick={onOpenPrivacy}>Политика конфиденциальности</button>
+          <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={onOpenSupport}>Обратиться в поддержку</button>
+          <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={onOpenTerms}>Публичная оферта</button>
+          <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={onOpenPrivacy}>Политика конфиденциальности</button>
         </div>
       </section>
 
-      <section class="section-card account-actions">
-        <button class="secondary-button" type="button" onclick={requestLogout}>Выйти</button>
+      <section data-slot="card" class="section-card account-actions">
+        <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={requestLogout}>Выйти</button>
         <button class="danger-link" type="button" onclick={requestDeleteAccount}>{simulation ? 'Отключить тестовый аккаунт' : 'Удалить аккаунт'}</button>
         {#if deleteBlockedMessage}
           <p class="inline-note warning" role="alert">
             {deleteBlockedMessage}
             {#if hasStoredItems}
-              <button class="link-button" type="button" onclick={onGoToReturn}>Оформить возврат</button>
+              <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={onGoToReturn}>Оформить возврат</button>
             {/if}
           </p>
         {/if}
@@ -689,31 +693,30 @@
   </main>
 
   {#if editOpen}
-    <div class="modal-backdrop" role="presentation" onclick={closeEdit}>
-      <div
+    <DialogFrame onDismiss={closeEdit}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps}
         class="modal-card"
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-modal-title"
         tabindex="-1"
-        onclick={(event) => event.stopPropagation()}
-        onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={closeEdit}><X aria-hidden="true" /></button>
+        <button data-slot="button" class="modal-close {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={closeEdit}><X aria-hidden="true" /></button>
 
         {#if editStep === 'form'}
           <h2 id="edit-modal-title">Изменить личные данные</h2>
-          <label class="text-field">
+          <label for="field-editFirstName" class="text-field">
             <span>Имя</span>
-            <input type="text" bind:value={editFirstName} />
+            <Input id="field-editFirstName" type="text" name="firstName" autocomplete="given-name" bind:value={editFirstName} />
           </label>
-          <label class="text-field">
+          <label for="field-editLastName" class="text-field">
             <span>Фамилия</span>
-            <input type="text" bind:value={editLastName} />
+            <Input id="field-editLastName" type="text" name="lastName" autocomplete="family-name" bind:value={editLastName} />
           </label>
-          <label class="text-field">
+          <label for="field-editEmail" class="text-field">
             <span>Email</span>
-            <input type="email" bind:value={editEmail} />
+            <Input id="field-editEmail" type="email" name="email" autocomplete="email" spellcheck="false" bind:value={editEmail} />
           </label>
           <label class="text-field">
             <span>Телефон</span>
@@ -722,7 +725,7 @@
               <input
                 type="tel"
                 inputmode="numeric"
-                placeholder="999 123 45 67"
+                name="phone" autocomplete="tel-national" placeholder="999 123 45 67"
                 value={editFormattedPhone}
                 oninput={handleEditPhoneInput}
               />
@@ -733,10 +736,10 @@
             <p class="inline-note warning" role="alert">{editError}</p>
           {/if}
           <div class="modal-actions">
-            <button class="primary-button" type="button" disabled={savingProfile} onclick={saveProfile}>
+            <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={savingProfile} onclick={saveProfile}>
               {savingProfile ? 'Сохраняем…' : 'Сохранить'}
             </button>
-            <button class="secondary-button" type="button" onclick={closeEdit}>Отмена</button>
+            <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={closeEdit}>Отмена</button>
           </div>
         {:else}
           <h2 id="edit-modal-title">Подтвердите новый номер</h2>
@@ -744,39 +747,39 @@
           {#if simulationCode}<p data-testid="simulation-otp">Тестовое SMS: <strong>{simulationCode}</strong></p>{/if}
           <label class="text-field">
             <span>Код из SMS</span>
-            <input type="tel" inputmode="numeric" maxlength="6" bind:value={otpCode} />
+            <input type="tel" inputmode="numeric" maxlength="6" name="otp" autocomplete="one-time-code" bind:value={otpCode} />
           </label>
           {#if otpError}
             <p class="inline-note warning" role="alert">{otpError}</p>
           {/if}
           <div class="otp-actions">
-            <button class="link-button" type="button" disabled={resendCooldown > 0 || otpBusy} onclick={resendPhoneOtp}>
+            <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" disabled={resendCooldown > 0 || otpBusy} onclick={resendPhoneOtp}>
               {resendCooldown > 0 ? `Выслать код повторно через 0:${String(resendCooldown).padStart(2, '0')}` : 'Выслать код повторно'}
             </button>
           </div>
           <div class="modal-actions">
-            <button class="primary-button" type="button" disabled={otpBusy} onclick={confirmPhoneOtp}>
+            <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={otpBusy} onclick={confirmPhoneOtp}>
               {otpBusy ? 'Проверяем…' : 'Подтвердить номер'}
             </button>
-            <button class="secondary-button" type="button" onclick={backToEditForm}>Изменить номер</button>
+            <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={backToEditForm}>Изменить номер</button>
           </div>
         {/if}
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if planModalOpen}
-    <div class="modal-backdrop" role="presentation" onclick={closePlanModal}>
-      <div
+    <DialogFrame onDismiss={closePlanModal}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps}
         class="modal-card"
         role="dialog"
         aria-modal="true"
         aria-labelledby="plan-modal-title"
         tabindex="-1"
-        onclick={(event) => event.stopPropagation()}
-        onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={closePlanModal}><X aria-hidden="true" /></button>
+        <button data-slot="button" class="modal-close {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={closePlanModal}><X aria-hidden="true" /></button>
         <h2 id="plan-modal-title">Выберите тариф</h2>
         <div class="plan-list">
           {#each planOptions as plan}
@@ -799,31 +802,31 @@
         {#if planActionError}
           <div class="inline-note warning" role="alert">
             <p>{planActionError}</p>
-            <button class="link-button" type="button" onclick={goToReturnFromPlan}>Перейти к возврату вещей</button>
+            <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={goToReturnFromPlan}>Перейти к возврату вещей</button>
           </div>
         {/if}
         <div class="modal-actions">
-          <button class="primary-button" type="button" disabled={planBusy} onclick={confirmPlanChange}>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={planBusy} onclick={confirmPlanChange}>
             {planBusy ? 'Применяем…' : 'Применить тариф'}
           </button>
-          <button class="secondary-button" type="button" onclick={closePlanModal}>Отмена</button>
+          <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={closePlanModal}>Отмена</button>
         </div>
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if paymentModalOpen}
-    <div class="modal-backdrop" role="presentation" onclick={closePaymentModal}>
-      <div
+    <DialogFrame onDismiss={closePaymentModal}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps}
         class="modal-card payment-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="payment-modal-title"
         tabindex="-1"
-        onclick={(event) => event.stopPropagation()}
-        onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" disabled={paymentBusy} onclick={closePaymentModal}><X aria-hidden="true" /></button>
+        <button data-slot="button" class="modal-close {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" disabled={paymentBusy} onclick={closePaymentModal}><X aria-hidden="true" /></button>
         <h2 id="payment-modal-title">Способ оплаты</h2>
         <p>В рабочей версии привязка карты откроется в защищённом интерфейсе платёжного провайдера. Приложение получит только маскированный способ оплаты.</p>
         <p class="inline-note">{simulation ? 'Симулируем привязку тестового способа оплаты. Реквизиты не нужны, результат сохранится в базе.' : 'В демо-контуре можно посмотреть успешный результат без ввода реквизитов и списания денег.'}</p>
@@ -833,63 +836,65 @@
         {/if}
 
         <div class="modal-actions">
-          <button class="primary-button" type="button" disabled={paymentBusy} onclick={submitPaymentDemo}>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={paymentBusy} onclick={submitPaymentDemo}>
             {paymentBusy ? 'Подключаем…' : simulation ? 'Подключить тестовую карту' : 'Показать демо-привязку'}
           </button>
-          <button class="secondary-button" type="button" disabled={paymentBusy} onclick={closePaymentModal}>Отмена</button>
+          <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" disabled={paymentBusy} onclick={closePaymentModal}>Отмена</button>
         </div>
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if logoutConfirmOpen}
-    <div class="modal-backdrop" role="presentation" onclick={() => (logoutConfirmOpen = false)}>
-      <div
+    <DialogFrame onDismiss={() => (logoutConfirmOpen = false)}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps}
         class="modal-card"
         role="dialog"
         aria-modal="true"
         aria-labelledby="logout-modal-title"
         tabindex="-1"
-        onclick={(event) => event.stopPropagation()}
-        onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (logoutConfirmOpen = false)}><X aria-hidden="true" /></button>
+        <button data-slot="button" class="modal-close {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={() => (logoutConfirmOpen = false)}><X aria-hidden="true" /></button>
         <h2 id="logout-modal-title">Выйти из аккаунта?</h2>
         <p>Вы сможете войти снова по номеру телефона.</p>
         <div class="modal-actions">
-          <button class="primary-button" type="button" onclick={confirmLogout}>Выйти</button>
-          <button class="secondary-button" type="button" onclick={() => (logoutConfirmOpen = false)}>Отмена</button>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={confirmLogout}>Выйти</button>
+          <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={() => (logoutConfirmOpen = false)}>Отмена</button>
         </div>
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if deleteConfirmOpen}
-    <div class="modal-backdrop" role="presentation" onclick={() => (deleteConfirmOpen = false)}>
-      <div
+    <DialogFrame onDismiss={() => (deleteConfirmOpen = false)}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps}
         class="modal-card"
         role="dialog"
         aria-modal="true"
         aria-labelledby="delete-modal-title"
         tabindex="-1"
-        onclick={(event) => event.stopPropagation()}
-        onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (deleteConfirmOpen = false)}><X aria-hidden="true" /></button>
+        <button data-slot="button" class="modal-close {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={() => (deleteConfirmOpen = false)}><X aria-hidden="true" /></button>
         <h2 id="delete-modal-title">{simulation ? 'Отключить тестовый аккаунт?' : 'Удалить аккаунт без возможности восстановления?'}</h2>
         <p>{simulation ? 'Вход будет отключён. Записи и история операций сохранятся для проверки. Правила удаления персональных данных ещё не утверждены.' : 'Это действие необратимо. Личные данные и история будут удалены согласно регламенту.'}</p>
         <div class="modal-actions">
           <button class="danger-button" type="button" disabled={deleteBusy} onclick={confirmDeleteAccount}>
             {deleteBusy ? 'Обрабатываем…' : simulation ? 'Отключить аккаунт' : 'Удалить аккаунт'}
           </button>
-          <button class="secondary-button" type="button" onclick={() => (deleteConfirmOpen = false)}>Отмена</button>
+          <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={() => (deleteConfirmOpen = false)}>Отмена</button>
         </div>
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 </div>
 
 <style>
+@layer screens {
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(html) { min-width: 320px; background: var(--color-base-100, white); }
   :global(body) { margin: 0; font-family: 'Open Sans', sans-serif; }
@@ -922,35 +927,7 @@
     transition: background-color 200ms ease, color 200ms ease;
   }
 
-  .whm-app[data-theme='bumblebee'] {
-    color-scheme: light;
-    --color-base-100: oklch(100% 0 0);
-    --color-base-200: oklch(97% 0 0);
-    --color-base-content: oklch(20% 0 0);
-    --color-primary: oklch(85% 0.199 91.936);
-    --color-primary-content: oklch(42% 0.095 57.708);
-    --color-warning: oklch(82% 0.189 84.429);
-    --color-error: oklch(70% 0.191 22.216);
-    --color-secondary: oklch(75% 0.183 55.934);
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
-  .whm-app[data-theme='halloween'] {
-    color-scheme: dark;
-    --color-base-100: oklch(21% 0.006 56.043);
-    --color-base-200: oklch(14% 0.004 49.25);
-    --color-base-content: oklch(84.955% 0 0);
-    --color-primary: oklch(76% 0.188 70.08);
-    --color-primary-content: oklch(19.693% 0.004 196.779);
-    --color-warning: oklch(66.584% 0.157 58.318);
-    --color-error: oklch(65.72% 0.199 27.33);
-    --color-secondary: oklch(45.98% 0.248 305.03);
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
   .ambient { position: fixed; z-index: -1; border-radius: 999px; pointer-events: none; opacity: 0.5; }
   .ambient-one { top: -14rem; right: -12rem; width: 30rem; height: 30rem; background: radial-gradient(circle, var(--primary-faint), transparent 68%); }
@@ -1080,11 +1057,6 @@
     font-weight: 700; font-size: var(--type-caption); text-decoration: underline; text-underline-offset: 0.18em; cursor: pointer;
   }
   .danger-link:hover { color: color-mix(in oklab, var(--color-error) 80%, black); }
-
-  .modal-backdrop {
-    position: fixed; z-index: 100; inset: 0; padding: 1rem; display: grid; place-items: center;
-    background: color-mix(in oklab, black 55%, transparent); backdrop-filter: blur(6px);
-  }
   .modal-card {
     position: relative; width: min(100%, 28rem); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 1.4rem;
     border: var(--border) solid var(--soft-border); border-radius: var(--radius-box); background: var(--color-base-100);
@@ -1157,4 +1129,5 @@
 
 
 
+}
 </style>

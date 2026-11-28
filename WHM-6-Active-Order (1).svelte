@@ -1,5 +1,8 @@
 <!-- Playground: replace the entire contents of App.svelte with this file. -->
 <script>
+  import DialogFrame from '$lib/components/ui/dialog.svelte';
+  import Brand from '$lib/components/Brand.svelte';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { ArrowRight, Check, ChevronLeft, ChevronRight, CircleHelp, Copy, Download, MapPin, Moon, Package, Phone, RefreshCw, ShoppingBag, Sun, TriangleAlert, Truck, Warehouse, X } from '@lucide/svelte';
   import { onMount } from 'svelte';
 
@@ -280,13 +283,13 @@
   <div class="glow glow-bottom" aria-hidden="true"></div>
 
   <header class="topbar">
-    <button class="round-button" type="button" aria-label="Назад" onclick={onBack}>
+    <button data-slot="button" class="round-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Назад" onclick={onBack}>
       <ChevronLeft aria-hidden="true" />
     </button>
-    <button class="brand" type="button" aria-label="На главный экран" onclick={onHome}>
-      <span class="system-label">Клиентский интерфейс</span>
+    <button class="brand" type="button" aria-label="WHM D — на главный экран" onclick={onHome}>
+      <Brand />
     </button>
-    <button class="round-button" type="button" aria-label={dark ? 'Включить светлую тему' : 'Включить тёмную тему'} onclick={toggleTheme}>
+    <button data-slot="button" class="round-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label={dark ? 'Включить светлую тему' : 'Включить тёмную тему'} onclick={toggleTheme}>
       {#if dark}
         <Sun aria-hidden="true" />
       {:else}
@@ -296,9 +299,9 @@
   </header>
 
   <main class="page-shell">
-      <section class="hero-panel" aria-live="polite">
+      <section data-slot="card" class="hero-panel" aria-live="polite">
         <div class="hero-head">
-          <button class="order-chip" type="button" onclick={copyOrderId} aria-label="Скопировать номер заказа">
+          <button class="order-chip" type="button" onclick={copyOrderId} aria-label={orderTypeName() + ' · № ' + currentOrder.id + ' — скопировать номер заказа'}>
             {orderTypeName()} · № {currentOrder.id}
             <Copy aria-hidden="true" />
           </button>
@@ -329,7 +332,7 @@
         {#if currentOrder.status !== 'cancelled'}
           <div class="progress-block">
             <div class="progress-label"><span>Готовность заказа</span><strong>{progressPercent}%</strong></div>
-            <div class="progress-track" role="progressbar" aria-valuenow={progressPercent} aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-track" role="progressbar" aria-label="Готовность заказа" aria-valuenow={progressPercent} aria-valuemin="0" aria-valuemax="100">
               <span style={`width: ${progressPercent}%`}></span>
             </div>
           </div>
@@ -388,7 +391,7 @@
           <div class="section-heading"><h2 id="visit-title">Детали визита</h2></div>
 
           {#if currentOrder.fulfillment === 'courier'}
-            <div class="visit-card">
+            <div data-slot="card" class="visit-card">
               <div class="visit-date">
                 <span>{isStorageOrder ? 'Забор вещей' : 'Доставка вещей'}</span>
                 <strong>{dateLabel(currentOrder.visitAt)}</strong>
@@ -399,7 +402,7 @@
               <div class="courier-line">
                 <span class="avatar" aria-hidden="true">{currentOrder.courier.name.charAt(0)}</span>
                 <div><strong>{currentOrder.courier.name}, ваш курьер</strong><span>{currentOrder.courier.vehicle} · {currentOrder.courier.plate}</span></div>
-                <button class="call-button" type="button" onclick={contactCourier} aria-label="Связаться с курьером">
+                <button data-slot="button" class="call-button {buttonVariants()}" type="button" onclick={contactCourier} aria-label="Связаться с курьером">
                   <Phone aria-hidden="true" />
                 </button>
               </div>
@@ -409,7 +412,7 @@
               </div>
             </div>
           {:else}
-            <div class="visit-card warehouse-card">
+            <div data-slot="card" class="visit-card warehouse-card">
               <span class="warehouse-icon" aria-hidden="true"><Warehouse aria-hidden="true" /></span>
               <div>
                 <span class="label">{isStorageOrder ? 'Передайте вещи на склад' : 'Заберите вещи со склада'}</span>
@@ -469,7 +472,7 @@
       </section>
 
       {#if currentOrder.status === 'completed' && currentOrder.documentAvailable !== false}
-        <button class="document-button" type="button" onclick={downloadDocument}>
+        <button data-slot="button" class="document-button {buttonVariants()}" type="button" onclick={downloadDocument}>
           <Download aria-hidden="true" />
           Скачать акт приёма-передачи
         </button>
@@ -488,16 +491,17 @@
           <p class="cancel-note">{cancellationReason} <button type="button" onclick={support}>Написать в поддержку</button></p>
         {/if}
         {#if currentOrder.status === 'completed' || currentOrder.status === 'cancelled'}
-          <button class="main-button" type="button" onclick={onHome}>На главный экран</button>
-          <button class="secondary-button" type="button" onclick={() => onOpenHistory(currentOrder.id)}>Открыть историю заказов</button>
+          <button data-slot="button" class="main-button {buttonVariants()}" type="button" onclick={onHome}>На главный экран</button>
+          <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={() => onOpenHistory(currentOrder.id)}>Открыть историю заказов</button>
         {/if}
       </section>
   </main>
 
   {#if cancelDialogOpen}
-    <div class="modal-backdrop" role="presentation" onclick={closeCancel}></div>
-    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <button class="modal-close" type="button" aria-label="Закрыть" onclick={closeCancel}>
+    <DialogFrame onDismiss={closeCancel}>
+      {#snippet children(dialogProps)}
+        <section {...dialogProps} class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button data-slot="button" class="modal-close {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={closeCancel}>
         <X aria-hidden="true" />
       </button>
       <span class="modal-icon" aria-hidden="true"><TriangleAlert aria-hidden="true" /></span>
@@ -509,10 +513,13 @@
         <button class="stay" type="button" disabled={cancelling} onclick={closeCancel}>Оставить заказ</button>
       </div>
     </section>
+      {/snippet}
+    </DialogFrame>
   {/if}
 </div>
 
 <style>
+@layer screens {
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(html) { min-width: 320px; }
   :global(body) { margin: 0; font-family: 'Open Sans', sans-serif; }
@@ -523,7 +530,7 @@
     --max: 39rem;
     --border: color-mix(in oklab, var(--ink) 12%, transparent);
     --muted: color-mix(in oklab, var(--ink) 62%, transparent);
-    --faint: color-mix(in oklab, var(--ink) 43%, transparent);
+    --faint: var(--ui-muted-foreground);
     --soft: color-mix(in oklab, var(--primary) 12%, var(--bg));
     min-height: 100dvh; position: relative; isolation: isolate; overflow-x: hidden;
     background: var(--bg); color: var(--ink); transition: background .2s, color .2s;
@@ -536,7 +543,7 @@
   .glow-bottom { width: 30rem; height: 30rem; bottom: -22rem; left: -18rem; background: radial-gradient(circle, color-mix(in oklab, var(--primary) 9%, transparent), transparent 70%); }
 
   .topbar, .page-shell { width: min(calc(100% - var(--gutter) * 2), var(--max)); margin: 0 auto; }
-  .topbar { height: 4.65rem; display: grid; grid-template-columns: 2.55rem 1fr 2.55rem; align-items: center; }
+  .topbar { height: 4.65rem; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
   .brand { justify-self: center; display: flex; align-items: center; gap: .55rem; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; }
 
 
@@ -658,14 +665,13 @@
   .need-help button { padding: 0; border: 0; background: none; color: var(--ink); font-size: .72rem; font-weight: 800; text-decoration: underline; cursor: pointer; }
 
   .actions { margin: 1.15rem 0 .2rem; display: grid; gap: .75rem; }
-  .cancel-button { width: 100%; min-height: 3rem; border: 1px solid var(--error); border-radius: .75rem; background: transparent; color: var(--error); font-weight: 800; cursor: pointer; }
+  .cancel-button { width: 100%; min-height: 3rem; border: 1px solid var(--error); border-radius: .75rem; background: transparent; color: var(--ui-danger); font-weight: 800; cursor: pointer; }
   .cancel-note { margin: 0; text-align: center; color: var(--error); font-size: .72rem; line-height: 1.4; }
   .cancel-note button { padding: 0; border: 0; background: none; color: inherit; text-decoration: underline; font-weight: 800; cursor: pointer; }
   .main-button, .secondary-button { width: 100%; min-height: 3rem; border-radius: .75rem; font-weight: 800; cursor: pointer; }
   .main-button { border: 0; background: var(--primary); color: #171717; }
   .secondary-button { border: 1px solid var(--border); background: var(--panel); color: var(--ink); }
 
-  .modal-backdrop { position: fixed; z-index: 20; inset: 0; background: color-mix(in oklab, #000 50%, transparent); backdrop-filter: blur(3px); }
   .modal { position: fixed; z-index: 21; left: 50%; bottom: max(1rem, env(safe-area-inset-bottom)); width: min(calc(100% - 2rem), 30rem); transform: translateX(-50%); padding: 1.4rem; border: 1px solid var(--border); border-radius: 1.15rem; background: var(--panel); box-shadow: 0 20px 60px color-mix(in oklab, #000 30%, transparent); text-align: center; }
   .modal-close { position: absolute; top: .7rem; right: .7rem; width: 2rem; height: 2rem; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--soft); color: var(--muted); cursor: pointer; }
   .modal-close :global(svg) { width: .85rem; }
@@ -685,4 +691,5 @@
 
 
 
+}
 </style>

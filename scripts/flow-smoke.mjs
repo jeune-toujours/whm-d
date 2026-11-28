@@ -16,6 +16,22 @@ async function pageFor(route) {
 
 try {
   {
+    const { page, errors } = await pageFor('profile');
+    const trigger = page.getByRole('button', { name: 'Изменить', exact: true }).first();
+    await trigger.click();
+    const dialog = page.getByRole('dialog', { name: 'Изменить личные данные' });
+    await dialog.waitFor();
+    for (let i = 0; i < 10; i++) {
+      await page.keyboard.press('Tab');
+      assert.ok(await dialog.evaluate(node => node.contains(document.activeElement)), 'Tab stays inside the profile dialog');
+    }
+    await page.keyboard.press('Escape');
+    await dialog.waitFor({ state: 'hidden' });
+    await page.waitForFunction(node => node === document.activeElement, await trigger.elementHandle());
+    assert.deepEqual(errors, []);
+    await page.close();
+  }
+  {
     const {page,errors}=await pageFor('intake');
     await page.locator('.service-card').filter({hasText:'Я упакую сам'}).getByRole('button',{name:'Выбрать',exact:true}).click();
     await page.getByRole('button',{name:/Увеличить количество/}).first().click();

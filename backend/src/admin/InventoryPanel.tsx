@@ -1,4 +1,5 @@
 'use client'
+import { Button } from './ui/Button'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -48,7 +49,7 @@ export function InventoryPanel() {
     return () => { active = false; clearInterval(timer) }
   }, [sessionID, state, page, revision, acceptDetail])
   return <Gutter><section className="whm-work whm-inventory">
-    <div className="inventory-toolbar"><h1>Инвентаризация</h1><button type="button" onClick={() => setRevision(n => n + 1)} aria-label="Обновить инвентаризации"><RefreshCw size={18} aria-hidden="true" /> Обновить</button></div>
+    <div className="inventory-toolbar"><h1>Инвентаризация</h1><Button type="button" onClick={() => setRevision(n => n + 1)} aria-label="Обновить инвентаризации"><RefreshCw size={18} aria-hidden="true" /> Обновить</Button></div>
     <p>Ручная сверка выбранных ячеек. Результат сохраняется отдельно и не изменяет размещение вещей.</p>
     {error && <p role="alert" className="whm-error">{error}</p>}
     {loading && <p role="status">Загрузка…</p>}
@@ -80,7 +81,7 @@ export function InventoryPanel() {
       </>}
     </> : <>
       <div className="inventory-toolbar"><label>Показать<select value={state} onChange={e => { setState(e.target.value); setPage(1) }}><option value="open">В работе</option><option value="closed">История</option><option value="all">Все операции</option></select></label>
-        {canCreate && <button type="button" onClick={() => setCreating(value => !value)}><Plus size={18} aria-hidden="true" /> {creating ? 'Скрыть создание' : 'Создать инвентаризацию'}</button>}
+        {canCreate && <Button type="button" onClick={() => setCreating(value => !value)}><Plus size={18} aria-hidden="true" /> {creating ? 'Скрыть создание' : 'Создать инвентаризацию'}</Button>}
       </div>
       {creating && canCreate && <InventoryCreate onCreated={id => { setCreating(false); router.push(`${root}?session=${id}`) }} />}
       {!loading && !operations.length && <p className="whm-empty">Инвентаризаций в этом списке пока нет.</p>}
@@ -96,7 +97,7 @@ export function InventoryPanel() {
 }
 
 function Pagination({ page, pages, onChange }: { page: number; pages: number; onChange: (page: number) => void }) {
-  return pages > 1 ? <nav aria-label="Страницы" className="inventory-toolbar"><button type="button" disabled={page <= 1} onClick={() => onChange(page - 1)}>Назад</button><span>{page} / {pages}</span><button type="button" disabled={page >= pages} onClick={() => onChange(page + 1)}>Далее</button></nav> : null
+  return pages > 1 ? <nav aria-label="Страницы" className="inventory-toolbar"><Button type="button" disabled={page <= 1} onClick={() => onChange(page - 1)}>Назад</Button><span>{page} / {pages}</span><Button type="button" disabled={page >= pages} onClick={() => onChange(page + 1)}>Далее</Button></nav> : null
 }
 
 function InventoryCreate({ onCreated }: { onCreated: (id: string) => void }) {
@@ -136,9 +137,9 @@ function InventoryCreate({ onCreated }: { onCreated: (id: string) => void }) {
     </div>)}</div>
     {!loading && !catalog.cells.length && <p>Ячейки не найдены. Измените фильтры.</p>}
     <Pagination page={page} pages={catalog.totalPages} onChange={setPage} />
-    <div className="inventory-selection"><h3 role="status">Выбрано ячеек: {chosen.length}</h3>{chosen.length > 0 && <ul>{chosen.map(cell => <li key={cell.id}>{cell.warehouseName} / {cell.zone || 'Без зоны'} / {cell.name}<button type="button" disabled={busy} aria-label={`Убрать ячейку ${cell.name}`} onClick={() => toggle(cell)}>Убрать</button></li>)}</ul>}</div>
+    <div className="inventory-selection"><h3 role="status">Выбрано ячеек: {chosen.length}</h3>{chosen.length > 0 && <ul>{chosen.map(cell => <li key={cell.id}>{cell.warehouseName} / {cell.zone || 'Без зоны'} / {cell.name}<Button type="button" disabled={busy} aria-label={`Убрать ячейку ${cell.name}`} onClick={() => toggle(cell)}>Убрать</Button></li>)}</ul>}</div>
     {error && <p role="alert" className="whm-error">{error}</p>}
-    <button type="submit" disabled={busy || !chosen.length}>{busy ? 'Создаём…' : 'Запустить инвентаризацию'}</button>
+    <Button type="submit" variant="default" disabled={busy || !chosen.length}>{busy ? 'Создаём…' : 'Запустить инвентаризацию'}</Button>
     <p className="inventory-note">Одна операция по выбранным ячейкам. Содержимое сохраняется снимком; автоматических исправлений учёта нет.</p>
   </form>
 }
@@ -170,13 +171,13 @@ function CellCheck({ sessionID, check, onSaved }: { sessionID: string; check: In
         return <label className="whm-checkbox" key={item.id}><input type="checkbox" checked={present.has(code)} onChange={() => setPresent(current => { const next = new Set(current); if (next.has(code)) next.delete(code); else next.add(code); return next })} /><span>На месте: {item.title} · {item.internalID} · {code}</span></label>
       })}</> : <p>По снимку ячейка пустая. Подтвердите пустую ячейку или добавьте обнаруженные коды.</p>}
       <BarcodeField label="Добавить найденный код" value={scan} onChange={setScan} required={false} disabled={busy} onEnter={addCode} />
-      <button type="button" disabled={!scan.trim()} onClick={addCode}>Добавить код</button>
+      <Button type="button" disabled={!scan.trim()} onClick={addCode}>Добавить код</Button>
       <label>Дополнительные коды — по одному в строке<textarea value={extras} onChange={e => setExtras(e.target.value)} placeholder="Штрихкод или внутренний номер найденной вещи" /></label>
       <p className="inventory-note">У найденной вещи нет кода? Введите короткое описание вместо кода. Для нескольких предметов используйте разные обозначения, по одному на строку.</p>
       <label>Комментарий к проверке<textarea maxLength={2000} value={comment} onChange={e => setComment(e.target.value)} placeholder="При расхождении укажите, что обнаружено" /></label>
       <p className="inventory-note">Без изменений и дополнительных кодов подтверждается соответствие. Неотмеченные вещи сохранятся как недостача. Для расхождения нужен комментарий.</p>
       {error && <p role="alert" className="whm-error">{error}</p>}
-      <button type="submit">{busy ? 'Сохраняем…' : 'Сохранить проверку'}</button>
+      <Button type="submit" variant="default">{busy ? 'Сохраняем…' : 'Сохранить проверку'}</Button>
     </fieldset>
   </form>
 }

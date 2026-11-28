@@ -1,4 +1,7 @@
 <script>
+  import DialogFrame from '$lib/components/ui/dialog.svelte';
+  import Brand from '$lib/components/Brand.svelte';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { ArrowRight, Check, ChevronLeft, Lock, Moon, Search, Sun, TriangleAlert, Truck, Warehouse, X } from '@lucide/svelte';
   import { tick } from 'svelte';
   import { nationalPhone, formatNationalPhone, courierAddress } from './src/courier-fields.js';
@@ -481,16 +484,16 @@
   <div class="ambient ambient-two"></div>
 
   <header class="app-header">
-    <button class="brand" type="button" aria-label="Закрыть оформление" onclick={requestExit}>
-      <span class="system-label">Клиентский интерфейс</span>
+    <button class="brand" type="button" aria-label="WHM D — закрыть оформление" onclick={requestExit}>
+      <Brand />
     </button>
 
     <div class="header-actions">
       {#if screen !== 'success'}
-        <button class="close-button" type="button" onclick={requestExit}>Закрыть</button>
+        <button data-slot="button" class="close-button {buttonVariants({ variant: 'outline', size: 'sm' })}" type="button" onclick={requestExit}>Закрыть</button>
       {/if}
       <button
-        class="theme-toggle"
+        data-slot="button" class="theme-toggle {buttonVariants({ variant: 'outline', size: 'icon' })}"
         type="button"
         aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
         title={isDark ? 'Светлая тема' : 'Тёмная тема'}
@@ -525,7 +528,7 @@
     {#key screen}
       {#if screen === 'success'}
         <section class="success-layout screen-enter">
-          <div class="success-card">
+          <div data-slot="card" class="success-card">
             <div class="success-icon" aria-hidden="true">
               <Check aria-hidden="true" />
             </div>
@@ -540,7 +543,7 @@
             </div>
 
             <div class="success-details">
-              <article class="returned-items-card">
+              <article data-slot="card" class="returned-items-card">
                 <span>Возвращаем</span>
                 <div class="returned-items-list">
                   {#each visibleReturnedUnits as unit}
@@ -588,7 +591,7 @@
 
             <div class="success-actions">
               <button
-                class="primary-button"
+                data-slot="button" class="primary-button {buttonVariants()}"
                 type="button"
                 onclick={() => onNavigateToOrder({ ...buildPayload(), orderId: live ? createdOrderID : orderId })}
               >
@@ -596,7 +599,7 @@
                 <ArrowRight aria-hidden="true" />
               </button>
               <button
-                class="secondary-button"
+                data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}"
                 type="button"
                 onclick={() => (typeof onNavigateHome === 'function' ? onNavigateHome() : resetFlow())}
               >На главный экран</button>
@@ -605,9 +608,9 @@
         </section>
       {:else}
         <div class="flow-layout screen-enter">
-          <section class="content-panel">
+          <section data-slot="card" class="content-panel">
             <div class="panel-top">
-              <button class="back-button" type="button" aria-label="Назад" onclick={goBack}>
+              <button data-slot="button" class="back-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Назад" onclick={goBack}>
                 <ChevronLeft aria-hidden="true" />
               </button>
               <span class="form-progress">{currentStep + 1} / {steps.length}</span>
@@ -696,7 +699,7 @@
               {/if}
 
               <div class="panel-actions">
-                <button class="primary-button" type="button" disabled={selectedIds.length === 0} onclick={goToMethod}>
+                <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={selectedIds.length === 0} onclick={goToMethod}>
                   <span>Продолжить</span>
                   <ArrowRight aria-hidden="true" />
                 </button>
@@ -749,7 +752,7 @@
               {/if}
 
               <div class="panel-actions">
-                <button class="primary-button" type="button" disabled={!method} onclick={goToSchedule}>
+                <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={!method} onclick={goToSchedule}>
                   <span>Продолжить</span>
                   <ArrowRight aria-hidden="true" />
                 </button>
@@ -782,7 +785,7 @@
                       />
                       {#if live}<datalist id="return-addresses">{#each config.addresses as a}<option value={a.value}>{a.inZone ? "Тестовая зона доставки" : "Вне зоны"}</option>{/each}</datalist>{/if}
                       {#if missingAddress}<small class="field-error">Укажите адрес доставки</small>{/if}
-                      {#if live && addressState.blocked}<small class="field-error">Адрес вне тестовой зоны доставки.</small><button class="text-button" type="button" onclick={()=>onSupport({unitId:selectedIds[0],note:'Возврат: адрес вне зоны доставки'})}>Обратиться в поддержку</button>{/if}
+                      {#if live && addressState.blocked}<small class="field-error">Адрес вне тестовой зоны доставки.</small><button data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={()=>onSupport({unitId:selectedIds[0],note:'Возврат: адрес вне зоны доставки'})}>Обратиться в поддержку</button>{/if}
                       {#if live && addressState.valid && addressState.manual}<small>Адрес введён вручную. В тестовом контуре зона доставки не проверяется.</small>{/if}
                     </label>
 
@@ -859,7 +862,7 @@
                 </div>
               {:else}
                 <div class="pickup-layout">
-                  <div class="warehouse-card">
+                  <div data-slot="card" class="warehouse-card">
                     <span class="method-icon large">
                       <Warehouse aria-hidden="true" />
                     </span>
@@ -868,7 +871,7 @@
                       <p>{pickupWarehouse.address}</p>
                       <span>{pickupWarehouse.hours}</span>
                     </div>
-                    <button class="secondary-button route-button" type="button">Построить маршрут</button>
+                    <button data-slot="button" class="secondary-button route-button {buttonVariants({ variant: 'outline' })}" type="button">Построить маршрут</button>
                   </div>
 
                   <div class="pickup-schedule">
@@ -905,7 +908,7 @@
               {/if}
 
               <div class="panel-actions">
-                <button class="primary-button" type="button" disabled={!scheduleValid || isBusy} onclick={calculateAndReview}>
+                <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={!scheduleValid || isBusy} onclick={calculateAndReview}>
                   {#if isBusy}
                     <span class="button-spinner"></span>
                     <span>Рассчитываем</span>
@@ -923,7 +926,7 @@
               </div>
 
               <div class="review-list">
-                <article class="review-card">
+                <article data-slot="card" class="review-card">
                   <div class="review-head">
                     <h2>Возвращаем</h2>
                     <button type="button" onclick={() => (screen = 'select')}>Изменить</button>
@@ -938,7 +941,7 @@
                   </div>
                 </article>
 
-                <article class="review-card">
+                <article data-slot="card" class="review-card">
                   <div class="review-head">
                     <h2>Получение</h2>
                     <button type="button" onclick={() => (screen = 'method')}>Изменить</button>
@@ -953,7 +956,7 @@
                   </div>
                 </article>
 
-                <article class="review-card price-review">
+                <article data-slot="card" class="review-card price-review">
                   <div class="review-head">
                     <h2>Стоимость</h2>
                   </div>
@@ -985,7 +988,7 @@
               {/if}
 
               <div class="panel-actions">
-                <button class="primary-button" type="button" disabled={isBusy || !acceptedReturnTerms} onclick={submitReturn}>
+                <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={isBusy || !acceptedReturnTerms} onclick={submitReturn}>
                   {#if isBusy}
                     <span class="button-spinner"></span>
                     <span>Создаём заявку</span>
@@ -1002,7 +1005,7 @@
                 <strong>{formatMoney(futureMonthly)}/мес. после возврата</strong>
               </div>
               <button
-                class="primary-button compact-button"
+                data-slot="button" class="primary-button compact-button {buttonVariants()}"
                 type="button"
                 disabled={isBusy || (screen === 'select' && selectedIds.length === 0) || (screen === 'method' && !method) || (screen === 'schedule' && !scheduleValid) || (screen === 'review' && !acceptedReturnTerms)}
                 onclick={() => { if (screen === 'select') goToMethod(); else if (screen === 'method') goToSchedule(); else if (screen === 'schedule') calculateAndReview(); else if (screen === 'review') submitReturn(); }}
@@ -1018,17 +1021,16 @@
   </main>
 
   {#if infoModal}
-    <div class="modal-backdrop" role="presentation" onclick={() => (infoModal = '')}>
-      <div
+    <DialogFrame onDismiss={() => (infoModal = '')}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps}
         class="modal-card"
         role="dialog"
         aria-modal="true"
         aria-labelledby="method-modal-title"
         tabindex="-1"
-        onclick={(event) => event.stopPropagation()}
-        onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (infoModal = '')}><X aria-hidden="true" /></button>
+        <button data-slot="button" class="modal-close {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={() => (infoModal = '')}><X aria-hidden="true" /></button>
         {#if infoModal !== 'terms'}<span class="method-icon large">
           {#if infoModal === 'courier'}
             <Truck aria-hidden="true" />
@@ -1054,23 +1056,23 @@
             <li>Адрес и маршрут будут доступны в активном заказе</li>
           </ul>
         {/if}
-        <button class="primary-button" type="button" onclick={() => (infoModal = '')}>Понятно</button>
+        <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={() => (infoModal = '')}>Понятно</button>
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if itemPreview}
-    <div class="modal-backdrop" role="presentation" onclick={() => (itemPreview = null)}>
-      <div
+    <DialogFrame onDismiss={() => (itemPreview = null)}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps}
         class="modal-card item-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="item-modal-title"
         tabindex="-1"
-        onclick={(event) => event.stopPropagation()}
-        onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (itemPreview = null)}><X aria-hidden="true" /></button>
+        <button data-slot="button" class="modal-close {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={() => (itemPreview = null)}><X aria-hidden="true" /></button>
         <div class="media-placeholder modal-placeholder" role="img" aria-label="Плейсхолдер фотографии">
           <span class="placeholder-glyph" aria-hidden="true"></span>
           <span class="placeholder-label">Фото</span>
@@ -1086,36 +1088,37 @@
         {#if itemPreview.lockReason}
           <div class="warning-banner"><p>{itemPreview.lockReason}</p></div>
         {/if}
-        <button class="primary-button" type="button" onclick={() => (itemPreview = null)}>Закрыть</button>
+        <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={() => (itemPreview = null)}>Закрыть</button>
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if exitConfirm}
-    <div class="modal-backdrop" role="presentation" onclick={() => (exitConfirm = false)}>
-      <div
+    <DialogFrame onDismiss={() => (exitConfirm = false)}>
+      {#snippet children(dialogProps)}
+        <div {...dialogProps}
         class="modal-card"
         role="dialog"
         aria-modal="true"
         aria-labelledby="exit-modal-title"
         tabindex="-1"
-        onclick={(event) => event.stopPropagation()}
-        onkeydown={(event) => event.stopPropagation()}
       >
-        <button class="modal-close" type="button" aria-label="Закрыть" onclick={() => (exitConfirm = false)}><X aria-hidden="true" /></button>
+        <button data-slot="button" class="modal-close {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Закрыть" onclick={() => (exitConfirm = false)}><X aria-hidden="true" /></button>
         <h2 id="exit-modal-title">Прервать оформление?</h2>
         <p>Вы можете сохранить выбранные вещи и продолжить позже.</p>
         <div class="modal-actions">
-          <button class="primary-button" type="button" onclick={() => confirmExit(true)}>Сохранить черновик</button>
-          <button class="secondary-button" type="button" onclick={() => confirmExit(false)}>Выйти без сохранения</button>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={() => confirmExit(true)}>Сохранить черновик</button>
+          <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={() => confirmExit(false)}>Выйти без сохранения</button>
         </div>
       </div>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if paymentState === 'processing'}
     <div class="payment-overlay" role="status" aria-live="polite">
-      <div class="payment-card">
+      <div data-slot="card" class="payment-card">
         <span class="button-spinner large-spinner"></span>
         <h2>{demoMode ? 'Оформляем демо-заявку' : 'Переходим к оплате'}</h2>
         <p>{demoMode ? 'Реальное списание не выполняется.' : 'Оплата доставки проходит во внешнем эквайринге.'}</p>
@@ -1125,6 +1128,7 @@
 </div>
 
 <style>
+@layer screens {
   :global(*, *::before, *::after) {
     box-sizing: border-box;
   }
@@ -1178,61 +1182,7 @@
     transition: background-color 200ms ease, color 200ms ease;
   }
 
-  .whm-app[data-theme='bumblebee'] {
-    color-scheme: light;
-    --color-base-100: oklch(100% 0 0);
-    --color-base-200: oklch(97% 0 0);
-    --color-base-300: oklch(92% 0 0);
-    --color-base-content: oklch(20% 0 0);
-    --color-primary: oklch(85% 0.199 91.936);
-    --color-primary-content: oklch(42% 0.095 57.708);
-    --color-secondary: oklch(75% 0.183 55.934);
-    --color-secondary-content: oklch(40% 0.123 38.172);
-    --color-accent: oklch(0% 0 0);
-    --color-accent-content: oklch(100% 0 0);
-    --color-neutral: oklch(37% 0.01 67.558);
-    --color-neutral-content: oklch(92% 0.003 48.717);
-    --color-info: oklch(74% 0.16 232.661);
-    --color-info-content: oklch(39% 0.09 240.876);
-    --color-success: oklch(76% 0.177 163.223);
-    --color-success-content: oklch(37% 0.077 168.94);
-    --color-warning: oklch(82% 0.189 84.429);
-    --color-warning-content: oklch(41% 0.112 45.904);
-    --color-error: oklch(70% 0.191 22.216);
-    --color-error-content: oklch(39% 0.141 25.723);
-    --radius-selector: 1rem;
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
-  .whm-app[data-theme='halloween'] {
-    color-scheme: dark;
-    --color-base-100: oklch(21% 0.006 56.043);
-    --color-base-200: oklch(14% 0.004 49.25);
-    --color-base-300: oklch(0% 0 0);
-    --color-base-content: oklch(84.955% 0 0);
-    --color-primary: oklch(76% 0.188 70.08);
-    --color-primary-content: oklch(19.693% 0.004 196.779);
-    --color-secondary: oklch(45.98% 0.248 305.03);
-    --color-secondary-content: oklch(89.196% 0.049 305.03);
-    --color-accent: oklch(64.8% 0.223 136.073);
-    --color-accent-content: oklch(0% 0 0);
-    --color-neutral: oklch(24.371% 0.046 65.681);
-    --color-neutral-content: oklch(84.874% 0.009 65.681);
-    --color-info: oklch(54.615% 0.215 262.88);
-    --color-info-content: oklch(90.923% 0.043 262.88);
-    --color-success: oklch(62.705% 0.169 149.213);
-    --color-success-content: oklch(12.541% 0.033 149.213);
-    --color-warning: oklch(66.584% 0.157 58.318);
-    --color-warning-content: oklch(13.316% 0.031 58.318);
-    --color-error: oklch(65.72% 0.199 27.33);
-    --color-error-content: oklch(13.144% 0.039 27.33);
-    --radius-selector: 1rem;
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
   .ambient {
     position: fixed;
@@ -2900,10 +2850,6 @@
       height: 3.8rem;
     }
 
-    .modal-backdrop {
-      align-items: end;
-      padding: 0;
-    }
 
     .modal-card {
       width: 100%;
@@ -2982,4 +2928,5 @@
 
 
 
+}
 </style>

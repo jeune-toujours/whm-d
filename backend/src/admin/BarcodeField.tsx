@@ -1,4 +1,5 @@
 'use client'
+import { Button } from './ui/Button'
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Camera, X } from 'lucide-react'
@@ -55,11 +56,11 @@ function CameraScanner({ label, onCode, onClose }: { label: string; onCode: (cod
     return () => { cancelled = true; stop() }
   }, [attempt])
   return createPortal(<dialog className="whm-scanner" ref={dialog} aria-labelledby={titleID} aria-describedby={descriptionID} onCancel={e => { e.preventDefault(); callbacks.current.onClose() }}>
-    <div className="whm-scanner-heading"><h2 id={titleID}>Сканировать: {label.toLowerCase()}</h2><button type="button" className="whm-scanner-close" aria-label="Закрыть сканер" onClick={() => callbacks.current.onClose()}><X size={22} aria-hidden="true" /></button></div>
+    <div className="whm-scanner-heading"><h2 id={titleID}>Сканировать: {label.toLowerCase()}</h2><Button type="button" className="whm-scanner-close" aria-label="Закрыть сканер" onClick={() => callbacks.current.onClose()}><X size={22} aria-hidden="true" /></Button></div>
     <p id={descriptionID}>Наведите камеру на один штрихкод. После распознавания он появится в поле.</p>
     <div className="whm-scanner-preview"><video ref={video} autoPlay playsInline muted /><div className="whm-scanner-target" aria-hidden="true" /></div>
     {error ? <p role="alert" className="whm-scanner-error">{error}</p> : <p role="status">{starting ? 'Запуск камеры…' : 'Ищем штрихкод… Держите код целиком в кадре.'}</p>}
-    <div className="whm-scanner-actions">{error && <button type="button" onClick={() => setAttempt(value => value + 1)}>Повторить</button>}<button type="button" onClick={() => callbacks.current.onClose()}>Ввести вручную</button></div>
+    <div className="whm-scanner-actions">{error && <Button type="button" onClick={() => setAttempt(value => value + 1)}>Повторить</Button>}<Button type="button" onClick={() => callbacks.current.onClose()}>Ввести вручную</Button></div>
   </dialog>, document.body)
 }
 
@@ -68,7 +69,7 @@ export function BarcodeField({ label, value, onChange, disabled = false, require
   const [scanning, setScanning] = useState(false), [scanned, setScanned] = useState('')
   return <div className="whm-barcode-field">
     <label htmlFor={id}>{label}</label>
-    <div className="whm-barcode-input"><input id={id} ref={input} required={required} maxLength={80} autoComplete="off" value={value} disabled={disabled} onKeyDown={e => { if (e.key === 'Enter' && onEnter) { e.preventDefault(); onEnter() } }} onChange={e => { onChange(e.target.value); setScanned('') }} /><button type="button" className="whm-camera-button" disabled={disabled} aria-label={`Сканировать камерой: ${label.toLowerCase()}`} title="Сканировать камерой" onClick={() => { setScanned(''); setScanning(true) }}><Camera size={22} aria-hidden="true" /></button></div>
+    <div className="whm-barcode-input"><input id={id} ref={input} required={required} maxLength={80} autoComplete="off" value={value} disabled={disabled} onKeyDown={e => { if (e.key === 'Enter' && onEnter) { e.preventDefault(); onEnter() } }} onChange={e => { onChange(e.target.value); setScanned('') }} /><Button type="button" className="whm-camera-button" disabled={disabled} aria-label={`Сканировать камерой: ${label.toLowerCase()}`} title="Сканировать камерой" onClick={() => { setScanned(''); setScanning(true) }}><Camera size={22} aria-hidden="true" /></Button></div>
     {scanned && <p className="whm-barcode-result" role="status">Считан код: {scanned}</p>}
     {scanning && <CameraScanner label={label} onClose={() => setScanning(false)} onCode={code => { onChange(code); setScanned(code); setScanning(false); requestAnimationFrame(() => input.current?.focus()) }} />}
   </div>

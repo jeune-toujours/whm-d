@@ -1,4 +1,5 @@
 'use client'
+import { Button } from './ui/Button'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Gutter } from '@payloadcms/ui'
 import Link from 'next/link'
@@ -23,7 +24,7 @@ export function WarehousePanel({ mode }: { mode: Mode }) {
   const perform = async (fn: () => Promise<unknown>) => { setLoading(true); setError(''); try { await fn(); await load() } catch (e) { setError((e as Error).message) } finally { setLoading(false) } }
   const orders = (data?.orders || []).filter((o: any) => mode === 'receive' ? o.type === 'intake' && o.backendStatus === 'created' : mode === 'place' ? o.type === 'intake' && o.backendStatus === 'received' : mode === 'pick' ? o.type === 'return' && ['created', 'picking'].includes(o.backendStatus) : o.type === 'return' && o.backendStatus === 'ready')
   return <Gutter><section className="whm-work"><h1>{titles[mode]}</h1><p>Изменения сохраняются на сервере. Для каждой операции проверяются права, штрихкоды и текущий статус.</p>
-    <button onClick={() => void load()} disabled={loading}>Обновить очередь</button>
+    <Button onClick={() => void load()} disabled={loading}>Обновить очередь</Button>
     {error && <p className="whm-error" role="alert">{error}</p>}
     {!data && !error && <p role="status">Загрузка…</p>}
     {mode === 'support' ? (data?.tickets || []).map((ticket: any) => <Ticket key={ticket.id} ticket={ticket} busy={loading} perform={perform} />) : orders.map((order: any) => <section key={order.id} className="whm-order"><h2>{order.number} · {order.statusLabel}</h2><p>{order.clientName || 'Клиент'} · {order.fulfillment === 'courier' ? 'Курьер' : 'Самостоятельная передача'} · {order.slot || 'Время не согласовано'}</p><p>{order.address}</p>
@@ -60,7 +61,7 @@ function ItemOperation({ mode, order, item, cells, busy, perform }: { mode: Mode
       <p>Сфотографируйте пломбу крупно, чтобы её номер был читаемым. Это отдельный снимок от общего фото приёмки.</p>
       <label>Опись<textarea value={contents} onChange={e => setContents(e.target.value)} placeholder="Каждая позиция с новой строки" /></label><label>Фото или видео<input required type="file" accept="image/jpeg,image/png,image/webp,video/mp4" onChange={e => setFile(e.target.files?.[0] || null)} /></label></>}
     {mode === 'place' && <><label htmlFor={`cell-${item.id}`}>Ячейка</label><select id={`cell-${item.id}`} required value={cell} onChange={e => setCell(e.target.value)}><option value="">Выберите ячейку</option>{cells.filter(c => c.active).map(c => <option key={c.id} value={c.id}>{c.name} · {c.occupied}/{c.capacity} · {c.barcode}</option>)}</select><BarcodeField label="Скан ячейки" value={cellBarcode} onChange={setCellBarcode} disabled={busy} /></>}
-    <button type="submit" disabled={busy}>{busy ? 'Сохранение…' : mode === 'receive' ? 'Принять' : mode === 'place' ? 'Разместить' : 'Подобрать'}</button>
+    <Button type="submit" variant="default" disabled={busy}>{busy ? 'Сохранение…' : mode === 'receive' ? 'Принять' : mode === 'place' ? 'Разместить' : 'Подобрать'}</Button>
   </form>
 }
 function Handover({ order, busy, perform }: { order: any; busy: boolean; perform: Perform }) {
@@ -75,9 +76,9 @@ function Handover({ order, busy, perform }: { order: any; busy: boolean; perform
     <ul>{order.items.map((i: any) => <li key={i.id}>{i.name} · {i.internalID}</li>)}</ul>
     <label>Фото или видео выдачи<input required type="file" accept="image/jpeg,image/png,image/webp,video/mp4" onChange={e => setFile(e.target.files?.[0] || null)} /></label>
     <label>Подпись получателя<canvas ref={canvas} width={600} height={180} onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); const ctx = e.currentTarget.getContext('2d')!; ctx.strokeStyle = '#111'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(...point(e) as [number, number]); drawing.current = true }} onPointerMove={e => { if (!drawing.current) return; const ctx = e.currentTarget.getContext('2d')!; ctx.lineTo(...point(e) as [number, number]); ctx.stroke(); setSigned(true) }} onPointerUp={() => { drawing.current = false }} onPointerCancel={() => { drawing.current = false }} /></label>
-    <button type="button" onClick={() => { canvas.current?.getContext('2d')?.clearRect(0, 0, 600, 180); setSigned(false) }}>Очистить подпись</button>
+    <Button type="button" onClick={() => { canvas.current?.getContext('2d')?.clearRect(0, 0, 600, 180); setSigned(false) }}>Очистить подпись</Button>
     <label className="whm-checkbox"><input type="checkbox" required checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />Все вещи переданы получателю</label>
-    <p>Подпись фиксирует тестовую операцию. Юридический шаблон акта ещё не утверждён.</p><button type="submit" disabled={busy}>Завершить выдачу</button>
+    <p>Подпись фиксирует тестовую операцию. Юридический шаблон акта ещё не утверждён.</p><Button type="submit" variant="default" disabled={busy}>Завершить выдачу</Button>
   </form>
 }
 function Ticket({ ticket, busy, perform }: { ticket: any; busy: boolean; perform: Perform }) {
@@ -91,12 +92,12 @@ function Ticket({ ticket, busy, perform }: { ticket: any; busy: boolean; perform
       <form className="whm-support-form" onSubmit={e => { e.preventDefault(); void perform(async () => { await reply(message); setMessage('') }) }}>
         <label htmlFor={`reply-${ticket.id}`}>Ответ клиенту</label>
         <textarea id={`reply-${ticket.id}`} required disabled={busy} value={message} onChange={e => setMessage(e.target.value)} />
-        <button disabled={busy || !message.trim()} type="submit">Ответить</button>
+        <Button disabled={busy || !message.trim()} type="submit" variant="default">Ответить</Button>
       </form>
       <form className="whm-support-form" onSubmit={e => { e.preventDefault(); if (!closeReason.trim()) return; void perform(() => api(`/support-tickets/${ticket.id}`, { status: 'resolved', closeReason: closeReason.trim() }, 'PATCH')) }}>
         <label htmlFor={`close-reason-${ticket.id}`}>Причина закрытия обращения</label>
         <textarea id={`close-reason-${ticket.id}`} required disabled={busy} value={closeReason} onChange={e => setCloseReason(e.target.value)} placeholder="Опишите, почему обращение закрыто" />
-        <button disabled={busy || !closeReason.trim()} type="submit">Закрыть обращение</button>
+        <Button disabled={busy || !closeReason.trim()} type="submit" variant="default">Закрыть обращение</Button>
       </form>
     </>}
   </section>

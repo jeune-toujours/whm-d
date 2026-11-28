@@ -1,5 +1,8 @@
 <script>
-  import { Archive, ArrowRight, Check, ChevronLeft, ChevronRight, CircleHelp, Copy, MapPin, Minus, Moon, Plus, Search, Sun, User, Warehouse, X } from '@lucide/svelte';
+  import DialogFrame from '$lib/components/ui/dialog.svelte';
+  import Brand from '$lib/components/Brand.svelte';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
+  import { Archive, ArrowRight, Check, ChevronLeft, ChevronRight, CircleHelp, Copy, MapPin, Minus, Moon, Plus, Search, Sun, Truck, Package, User, Warehouse, X } from '@lucide/svelte';
   import { onMount } from 'svelte';
   import { nationalPhone, courierAddress } from './src/courier-fields.js';
 
@@ -839,12 +842,12 @@
     <section class="home-screen" aria-labelledby="home-title">
       <header class="home-topbar">
         <a class="brand" href="#home" aria-label="Клиентский интерфейс — главная">
-          <span class="system-label">Клиентский интерфейс</span>
+          <Brand />
         </a>
         <div class="topbar-actions">
           <button
             type="button"
-            class="icon-button"
+            data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}"
             aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
             title={isDark ? 'Светлая тема' : 'Тёмная тема'}
             onclick={toggleTheme}
@@ -875,23 +878,23 @@
         </section>
 
         {#if hasDraft}
-          <section class="draft-card" aria-label="Незавершённая заявка">
+          <section data-slot="card" class="draft-card" aria-label="Незавершённая заявка">
             <div>
               <h2>Оформление не завершено</h2>
               <p>Все выбранные вещи и параметры сохранены.</p>
             </div>
-            <button type="button" class="secondary-button compact" onclick={resumeDraft}>
+            <button type="button" data-slot="button" class="secondary-button compact {buttonVariants({ variant: 'outline' })}" onclick={resumeDraft}>
               Продолжить
             </button>
           </section>
         {/if}
 
         <section class="home-actions" aria-label="Действия с вещами">
-          <button type="button" class="primary-button home-primary" onclick={startFlow}>
+          <button type="button" data-slot="button" class="primary-button home-primary {buttonVariants()}" onclick={startFlow}>
             <span>Сдать вещи</span>
             <ArrowRight aria-hidden="true" />
           </button>
-          <button type="button" class="secondary-button home-secondary" disabled>
+          <button type="button" data-slot="button" class="secondary-button home-secondary {buttonVariants({ variant: 'outline' })}" disabled>
             Вернуть вещи
             <span class="button-note">Нет вещей на хранении</span>
           </button>
@@ -926,7 +929,7 @@
     </section>
   {:else if view === 'success'}
     <section class="success-screen" aria-labelledby="success-title">
-      <div class="success-card">
+      <div data-slot="card" class="success-card">
         <div class="success-media media-placeholder" aria-label="Заявка оформлена">
           <span class="success-check" aria-hidden="true">
             <Check aria-hidden="true" />
@@ -950,10 +953,10 @@
         </div>
 
         <div class="success-actions">
-          <button type="button" class="primary-button" onclick={finishToOrder}>
+          <button type="button" data-slot="button" class="primary-button {buttonVariants()}" onclick={finishToOrder}>
             Перейти к заказу
           </button>
-          <button type="button" class="secondary-button" onclick={finishToHome}>
+          <button type="button" data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" onclick={finishToHome}>
             На главный экран
           </button>
         </div>
@@ -966,7 +969,7 @@
           {#if view !== 'service'}
             <button
               type="button"
-              class="icon-button"
+              data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}"
               aria-label="Назад"
               onclick={goBack}
             >
@@ -992,7 +995,7 @@
         <div class="header-side end">
           <button
             type="button"
-            class="icon-button small-theme"
+            data-slot="button" class="icon-button small-theme {buttonVariants({ variant: 'outline', size: 'icon' })}"
             aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
             onclick={toggleTheme}
           >
@@ -1004,7 +1007,7 @@
           </button>
           <button
             type="button"
-            class="icon-button"
+            data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}"
             aria-label="Закрыть оформление"
             onclick={requestExit}
           >
@@ -1027,8 +1030,9 @@
               </div>
 
               <div class="service-stack">
-                <article class="service-card">
+                <article data-slot="card" class="service-card">
                   <div class="service-media media-placeholder">
+                    <Truck size={30} strokeWidth={1.35} aria-hidden="true" />
                     <span class="media-label">Курьер с коробками</span>
                   </div>
                   <div class="service-card-copy">
@@ -1040,7 +1044,7 @@
                     <div class="card-actions">
                       <button
                         type="button"
-                        class="card-link-button"
+                        data-slot="button" class="card-link-button {buttonVariants({ size: 'sm' })}"
                         onclick={() => chooseService('turnkey')}
                       >
                         Выбрать
@@ -1056,8 +1060,9 @@
                   </div>
                 </article>
 
-                <article class="service-card">
+                <article data-slot="card" class="service-card">
                   <div class="service-media media-placeholder">
+                    <Package size={30} strokeWidth={1.35} aria-hidden="true" />
                     <span class="media-label">Подготовленные коробки</span>
                   </div>
                   <div class="service-card-copy">
@@ -1068,7 +1073,7 @@
                     <div class="card-actions">
                       <button
                         type="button"
-                        class="card-link-button"
+                        data-slot="button" class="card-link-button {buttonVariants({ size: 'sm' })}"
                         onclick={() => chooseService('self')}
                       >
                         Выбрать
@@ -1092,7 +1097,7 @@
                   <h1 id="items-title">Что будем хранить?</h1>
                   <p>Выберите тип и количество.</p>
                 </div>
-                <button type="button" class="text-button" onclick={() => (sizeGuideOpen = true)}>
+                <button type="button" data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" onclick={() => (sizeGuideOpen = true)}>
                   Как выбрать размер?
                 </button>
               </div>
@@ -1168,7 +1173,7 @@
                     </article>
                   {/each}
                   {#each oversizeItems as item, index}
-                    <article class="separate-card oversize-entity">
+                    <article data-slot="card" class="separate-card oversize-entity">
                       <div class="compact-media media-placeholder oversize-photo" aria-hidden="true">
                         <span class="media-label">Фото</span>
                       </div>
@@ -1189,7 +1194,7 @@
                   {/each}
                   <button
                     type="button"
-                    class="separate-card oversize-trigger"
+                    data-slot="card" class="separate-card oversize-trigger"
                     onclick={openOversizeForm}
                   >
                     <div class="compact-media media-placeholder" aria-hidden="true"></div>
@@ -1218,7 +1223,7 @@
                 </div>
                 <button
                   type="button"
-                  class="primary-button"
+                  data-slot="button" class="primary-button {buttonVariants()}"
                   disabled={totalQuantity < 1}
                   onclick={() => go('options')}
                 >
@@ -1236,7 +1241,7 @@
                   <h1 id="options-title">Дополнительные услуги</h1>
                   <p>Добавьте по необходимости.</p>
                 </div>
-                <button type="button" class="text-button" onclick={continueFromOptions}>
+                <button type="button" data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" onclick={continueFromOptions}>
                   Пропустить
                 </button>
               </div>
@@ -1268,7 +1273,7 @@
                   <span>Хранение и услуги</span>
                   <strong>{formatPrice(monthlyTotal)} / мес. + {formatPrice(oneTimeOptions)} разово</strong>
                 </div>
-                <button type="button" class="primary-button" onclick={continueFromOptions}>
+                <button type="button" data-slot="button" class="primary-button {buttonVariants()}" onclick={continueFromOptions}>
                   Продолжить
                 </button>
               </div>
@@ -1280,13 +1285,13 @@
                   <h1 id="insurance-title">Страхование вещей</h1>
                   <p>Укажите общую стоимость имущества, которое передаёте на хранение.</p>
                 </div>
-                <button type="button" class="text-button" onclick={skipInsurance}>
+                <button type="button" data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" onclick={skipInsurance}>
                   Пропустить
                 </button>
               </div>
 
               <div class="insurance-layout">
-                <section class="insurance-form-card">
+                <section data-slot="card" class="insurance-form-card">
                   <label for="insurance-value">
                     <span class="field-label">Заявленная стоимость вещей</span>
                     <span class="money-input">
@@ -1339,7 +1344,7 @@
                 </div>
                 <button
                   type="button"
-                  class="primary-button"
+                  data-slot="button" class="primary-button {buttonVariants()}"
                   disabled={!insuranceReady}
                   onclick={addInsurance}
                 >
@@ -1357,7 +1362,7 @@
               <div class="service-stack">
                 <button
                   type="button"
-                  class="service-card"
+                  data-slot="card" class="service-card"
                   onclick={() => chooseDelivery('courier')}
                 >
                   <div class="service-media media-placeholder">
@@ -1372,7 +1377,7 @@
 
                 <button
                   type="button"
-                  class="service-card"
+                  data-slot="card" class="service-card"
                   onclick={() => chooseDelivery('self')}
                 >
                   <div class="service-media media-placeholder">
@@ -1465,7 +1470,7 @@
                 </div>
                 <button
                   type="button"
-                  class="primary-button"
+                  data-slot="button" class="primary-button {buttonVariants()}"
                   disabled={!selectedSlot}
                   onclick={continueFromSlots}
                 >
@@ -1551,7 +1556,7 @@
                         />
                         <button
                           type="button"
-                          class="secondary-button compact"
+                          data-slot="button" class="secondary-button compact {buttonVariants({ variant: 'outline' })}"
                           disabled={!notifyEmail.includes('@')}
                           onclick={sendZoneNotice}
                         >
@@ -1624,7 +1629,7 @@
               <div class="sticky-bar">
                 <button
                   type="button"
-                  class="primary-button"
+                  data-slot="button" class="primary-button {buttonVariants()}"
                   disabled={!addressState.valid || contactPhone.length !== 10}
                   onclick={continueFromAddress}
                 >
@@ -1646,7 +1651,7 @@
                 </span>
               </div>
 
-              {/if}<article class="warehouse-card">
+              {/if}<article data-slot="card" class="warehouse-card">
                 <div>
                   <h2>{warehouse.name}</h2>
                   <p>{warehouse.address}</p>
@@ -1654,7 +1659,7 @@
                 </div>
                 <button
                   type="button"
-                  class="icon-button"
+                  data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}"
                   aria-label="Скопировать адрес"
                   onclick={copyWarehouseAddress}
                 >
@@ -1663,10 +1668,10 @@
               </article>
 
               <div class="route-actions">
-                <button type="button" class="primary-button" onclick={buildRoute}>
+                <button type="button" data-slot="button" class="primary-button {buttonVariants()}" onclick={buildRoute}>
                   Построить маршрут
                 </button>
-                <button type="button" class="secondary-button" onclick={saveCalendarReminder}>
+                <button type="button" data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" onclick={saveCalendarReminder}>
                   Сохранить в календарь
                 </button>
               </div>
@@ -1677,7 +1682,7 @@
               </div>
 
               <div class="sticky-bar">
-                <button type="button" class="primary-button" onclick={() => go('review')}>
+                <button type="button" data-slot="button" class="primary-button {buttonVariants()}" onclick={() => go('review')}>
                   Перейти к проверке
                 </button>
               </div>
@@ -1693,7 +1698,7 @@
                 <section class="review-section">
                   <div class="review-heading">
                     <h2>Что сдаём</h2>
-                    <button type="button" class="text-button" onclick={() => go('items', 'back')}>
+                    <button type="button" data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" onclick={() => go('items', 'back')}>
                       Изменить
                     </button>
                   </div>
@@ -1722,7 +1727,7 @@
                 <section class="review-section">
                   <div class="review-heading">
                     <h2>Дополнительные услуги</h2>
-                    <button type="button" class="text-button" onclick={() => go('options', 'back')}>
+                    <button type="button" data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" onclick={() => go('options', 'back')}>
                       Изменить
                     </button>
                   </div>
@@ -1743,7 +1748,7 @@
                 <section class="review-section insurance-review-section">
                   <div class="review-heading">
                     <h2>Страхование</h2>
-                    <button type="button" class="text-button" onclick={() => go('insurance', 'back')}>
+                    <button type="button" data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}" onclick={() => go('insurance', 'back')}>
                       Изменить
                     </button>
                   </div>
@@ -1768,7 +1773,7 @@
                     <h2>Передача вещей</h2>
                     <button
                       type="button"
-                      class="text-button"
+                      data-slot="button" class="text-button {buttonVariants({ variant: 'link', size: 'inline' })}"
                       onclick={() =>
                         go(deliveryMode === 'self' ? 'warehouse' : 'slots', 'back')}
                     >
@@ -1844,7 +1849,7 @@
 
               <button
                 type="button"
-                class="primary-button review-submit"
+                data-slot="button" class="primary-button review-submit {buttonVariants()}"
                 disabled={!acceptedTerms || isSubmitting || (live && (!serverQuote || quoting))}
                 onclick={confirmOrder}
               >
@@ -1858,13 +1863,13 @@
   {/if}
 
   {#if serviceInfoOpen}
-    <div class="modal-backdrop" role="presentation" onclick={() => (serviceInfoOpen = '')}>
-      <dialog
+    <DialogFrame onDismiss={() => (serviceInfoOpen = '')}>
+      {#snippet children(dialogProps)}
+        <dialog {...dialogProps}
         open
         class="modal-card process-modal"
         aria-modal="true"
         aria-labelledby="process-info-title"
-        onclick={(event) => event.stopPropagation()}
       >
         <div class="modal-header">
           <div>
@@ -1873,7 +1878,7 @@
           </div>
           <button
             type="button"
-            class="icon-button"
+            data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}"
             aria-label="Закрыть"
             onclick={() => (serviceInfoOpen = '')}
           >
@@ -1894,7 +1899,7 @@
         </div>
         <button
           type="button"
-          class="primary-button"
+          data-slot="button" class="primary-button {buttonVariants()}"
           onclick={() => {
             const selectedService = serviceInfoOpen;
             serviceInfoOpen = '';
@@ -1904,17 +1909,18 @@
           Выбрать этот вариант
         </button>
       </dialog>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if sizeGuideOpen}
-    <div class="modal-backdrop" role="presentation" onclick={() => (sizeGuideOpen = false)}>
-      <dialog
+    <DialogFrame onDismiss={() => (sizeGuideOpen = false)}>
+      {#snippet children(dialogProps)}
+        <dialog {...dialogProps}
         open
         class="modal-card guide-modal"
         aria-modal="true"
         aria-labelledby="size-guide-title"
-        onclick={(event) => event.stopPropagation()}
       >
         <div class="modal-header">
           <div>
@@ -1923,7 +1929,7 @@
           </div>
           <button
             type="button"
-            class="icon-button"
+            data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}"
             aria-label="Закрыть"
             onclick={() => (sizeGuideOpen = false)}
           >
@@ -1942,21 +1948,22 @@
             </article>
           {/each}
         </div>
-        <button type="button" class="primary-button" onclick={() => (sizeGuideOpen = false)}>
+        <button type="button" data-slot="button" class="primary-button {buttonVariants()}" onclick={() => (sizeGuideOpen = false)}>
           Понятно
         </button>
       </dialog>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if oversizeOpen}
-    <div class="modal-backdrop" role="presentation" onclick={() => (oversizeOpen = false)}>
-      <dialog
+    <DialogFrame onDismiss={() => (oversizeOpen = false)}>
+      {#snippet children(dialogProps)}
+        <dialog {...dialogProps}
         open
         class="modal-card"
         aria-modal="true"
         aria-labelledby="oversize-title"
-        onclick={(event) => event.stopPropagation()}
       >
         <div class="modal-header">
           <div>
@@ -1965,7 +1972,7 @@
           </div>
           <button
             type="button"
-            class="icon-button"
+            data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}"
             aria-label="Закрыть"
             onclick={() => (oversizeOpen = false)}
           >
@@ -2001,42 +2008,45 @@
         <p class="modal-note">Менеджер перезвонит и рассчитает стоимость вручную.</p>
         <button
           type="button"
-          class="primary-button"
+          data-slot="button" class="primary-button {buttonVariants()}"
           disabled={oversizeDescription.trim().length < 10 || !oversizePhotoName}
           onclick={submitOversize}
         >
           Добавить предмет
         </button>
       </dialog>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 
   {#if exitDialogOpen}
-    <div class="modal-backdrop" role="presentation" onclick={() => (exitDialogOpen = false)}>
-      <dialog
+    <DialogFrame onDismiss={() => (exitDialogOpen = false)}>
+      {#snippet children(dialogProps)}
+        <dialog {...dialogProps}
         open
         class="modal-card confirm-modal"
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="exit-title"
-        onclick={(event) => event.stopPropagation()}
       >
         <h2 id="exit-title">Прервать оформление?</h2>
         <p>Выбранные параметры сохранятся в черновике.</p>
         <div class="modal-actions">
-          <button type="button" class="secondary-button" onclick={() => (exitDialogOpen = false)}>
+          <button type="button" data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" onclick={() => (exitDialogOpen = false)}>
             Остаться
           </button>
-          <button type="button" class="primary-button" onclick={confirmExit}>
+          <button type="button" data-slot="button" class="primary-button {buttonVariants()}" onclick={confirmExit}>
             Сохранить и выйти
           </button>
         </div>
       </dialog>
-    </div>
+      {/snippet}
+    </DialogFrame>
   {/if}
 </div>
 
 <style>
+@layer screens {
   :global(html) {
     font-family: 'Open Sans', sans-serif;
   }
@@ -2082,65 +2092,15 @@
   }
 
   .whm-app[data-theme='bumblebee'] {
-    color-scheme: light;
-    --color-base-100: oklch(100% 0 0);
-    --color-base-200: oklch(97% 0 0);
-    --color-base-300: oklch(92% 0 0);
-    --color-base-content: oklch(20% 0 0);
-    --color-primary: oklch(85% 0.199 91.936);
-    --color-primary-content: oklch(42% 0.095 57.708);
-    --color-secondary: oklch(75% 0.183 55.934);
-    --color-secondary-content: oklch(40% 0.123 38.172);
-    --color-accent: oklch(0% 0 0);
-    --color-accent-content: oklch(100% 0 0);
-    --color-neutral: oklch(37% 0.01 67.558);
-    --color-neutral-content: oklch(92% 0.003 48.717);
-    --color-info: oklch(74% 0.16 232.661);
-    --color-info-content: oklch(39% 0.09 240.876);
-    --color-success: oklch(76% 0.177 163.223);
-    --color-success-content: oklch(37% 0.077 168.94);
-    --color-warning: oklch(82% 0.189 84.429);
-    --color-warning-content: oklch(41% 0.112 45.904);
-    --color-error: oklch(70% 0.191 22.216);
-    --color-error-content: oklch(39% 0.141 25.723);
-    --radius-selector: 1rem;
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
     --size-selector: 0.25rem;
     --size-field: 0.25rem;
-    --border: 1px;
     --depth: 1;
     --noise: 0;
   }
 
   .whm-app[data-theme='halloween'] {
-    color-scheme: dark;
-    --color-base-100: oklch(21% 0.006 56.043);
-    --color-base-200: oklch(14% 0.004 49.25);
-    --color-base-300: oklch(0% 0 0);
-    --color-base-content: oklch(84.955% 0 0);
-    --color-primary: oklch(76% 0.188 70.08);
-    --color-primary-content: oklch(19.693% 0.004 196.779);
-    --color-secondary: oklch(45.98% 0.248 305.03);
-    --color-secondary-content: oklch(89.196% 0.049 305.03);
-    --color-accent: oklch(64.8% 0.223 136.073);
-    --color-accent-content: oklch(0% 0 0);
-    --color-neutral: oklch(24.371% 0.046 65.681);
-    --color-neutral-content: oklch(84.874% 0.009 65.681);
-    --color-info: oklch(54.615% 0.215 262.88);
-    --color-info-content: oklch(90.923% 0.043 262.88);
-    --color-success: oklch(62.705% 0.169 149.213);
-    --color-success-content: oklch(12.541% 0.033 149.213);
-    --color-warning: oklch(66.584% 0.157 58.318);
-    --color-warning-content: oklch(13.316% 0.031 58.318);
-    --color-error: oklch(65.72% 0.199 27.33);
-    --color-error-content: oklch(13.144% 0.039 27.33);
-    --radius-selector: 1rem;
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
     --size-selector: 0.25rem;
     --size-field: 0.25rem;
-    --border: 1px;
     --depth: 1;
     --noise: 0;
     --placeholder-bg: oklch(35% 0 0);
@@ -3779,16 +3739,6 @@
     height: 1.15rem;
   }
 
-  .modal-backdrop {
-    position: fixed;
-    z-index: 90;
-    inset: 0;
-    display: grid;
-    padding: 1rem;
-    place-items: end center;
-    background: color-mix(in oklab, black 56%, transparent);
-    backdrop-filter: blur(5px);
-  }
 
   .modal-card {
     position: relative;
@@ -3981,9 +3931,6 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .modal-backdrop {
-      place-items: center;
-    }
   }
 
   @media (min-width: 60rem) {
@@ -4110,4 +4057,5 @@
   .compact-media.media-placeholder:empty::after { content: 'Фото'; color: var(--soft-content); font-size: 0.68rem; }
   .map-placeholder.media-placeholder, .warehouse-map.media-placeholder { background: var(--color-base-200); border: 1px dashed var(--color-base-300); }
 
+}
 </style>

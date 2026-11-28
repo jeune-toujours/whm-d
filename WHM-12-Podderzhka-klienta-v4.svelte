@@ -1,4 +1,6 @@
 <script>
+  import Brand from '$lib/components/Brand.svelte';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { Check, ChevronLeft, Monitor, Moon, Sun, TriangleAlert, Warehouse, X } from '@lucide/svelte';
   import { clientMediaURL } from './src/api.js';
   /*
@@ -458,14 +460,14 @@
   <div class="ambient ambient-two"></div>
 
   <header class="app-header">
-    <button class="back-button" type="button" aria-label="Назад" onclick={goBack}>
+    <button data-slot="button" class="back-button {buttonVariants({ variant: 'outline', size: 'icon' })}" type="button" aria-label="Назад" onclick={goBack}>
       <ChevronLeft aria-hidden="true" />
     </button>
     <div class="brand" aria-label="Клиентский интерфейс">
-      <span class="system-label">Клиентский интерфейс</span>
+      <Brand />
     </div>
     <button
-      class="icon-button"
+      data-slot="button" class="icon-button {buttonVariants({ variant: 'outline', size: 'icon' })}"
       type="button"
       aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
       onclick={toggleTheme}
@@ -502,7 +504,7 @@
         </button>
       </div>
 
-      <button class="link-button standalone" type="button" onclick={openList}>Мои обращения</button>
+      <button data-slot="button" class="link-button standalone {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={openList}>Мои обращения</button>
 
     {:else if screen === 'form'}
       {#if ticketType === 'incident'}
@@ -538,7 +540,7 @@
               </span>
             {/each}
           </div>
-          <button class="secondary-button small" type="button" onclick={attachIncidentFile}>Приложить файл</button>
+          <button data-slot="button" class="secondary-button small {buttonVariants({ variant: 'outline' })}" type="button" onclick={attachIncidentFile}>Приложить файл</button>
         </div>
 
         {#if formError}
@@ -546,7 +548,7 @@
         {/if}
 
         <div class="form-actions">
-          <button class="primary-button" type="button" disabled={submitting} onclick={submitIncident}>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={submitting} onclick={submitIncident}>
             {submitting ? 'Отправляем…' : 'Отправить обращение'}
           </button>
         </div>
@@ -582,7 +584,7 @@
               </span>
             {/each}
           </div>
-          <button class="secondary-button small" type="button" onclick={attachTechnicalFile}>Приложить файл</button>
+          <button data-slot="button" class="secondary-button small {buttonVariants({ variant: 'outline' })}" type="button" onclick={attachTechnicalFile}>Приложить файл</button>
         </div>
 
         <p class="inline-note">Мы автоматически приложим техническую информацию об устройстве и версии приложения.</p>
@@ -592,14 +594,14 @@
         {/if}
 
         <div class="form-actions">
-          <button class="primary-button" type="button" disabled={submitting} onclick={submitTechnical}>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={submitting} onclick={submitTechnical}>
             {submitting ? 'Отправляем…' : 'Отправить обращение'}
           </button>
         </div>
       {/if}
 
     {:else if screen === 'confirmation'}
-      <div class="confirmation-card">
+      <div data-slot="card" class="confirmation-card">
         <div class="confirmation-icon" aria-hidden="true">
           <Check aria-hidden="true" />
         </div>
@@ -610,8 +612,8 @@
           <p class="field-caption">{lastExpectedResponse}</p>
         {/if}
         <div class="confirmation-actions">
-          <button class="primary-button" type="button" onclick={openList}>Мои обращения</button>
-          <button class="secondary-button" type="button" onclick={() => { resetToSelect(); onGoHome(); }}>На главный экран</button>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" onclick={openList}>Мои обращения</button>
+          <button data-slot="button" class="secondary-button {buttonVariants({ variant: 'outline' })}" type="button" onclick={() => { resetToSelect(); onGoHome(); }}>На главный экран</button>
         </div>
       </div>
 
@@ -625,7 +627,7 @@
         <div class="error-banner" role="alert">
           <TriangleAlert aria-hidden="true" />
           <span>Не удалось загрузить обращения.</span>
-          <button class="link-button" type="button" onclick={openList}>Повторить</button>
+          <button data-slot="button" class="link-button {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={openList}>Повторить</button>
         </div>
       {:else if ticketsLoading}
         <div class="ticket-card skeleton" aria-hidden="true"></div>
@@ -653,7 +655,7 @@
         </div>
       {/if}
 
-      <button class="link-button standalone" type="button" onclick={() => (screen = 'select')}>Новое обращение</button>
+      <button data-slot="button" class="link-button standalone {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={() => (screen = 'select')}>Новое обращение</button>
 
     {:else if screen === 'detail' && selectedTicket}
       {#if live && selectedTicket.attachments?.length}<div class="inline-note">Вложения: {#each selectedTicket.attachments as file}<a href={clientMediaURL(file.url)} target="_blank" rel="noopener">{file.filename}</a> {/each}</div>{/if}
@@ -663,11 +665,11 @@
       </div>
 
       {#if selectedTicket.relatedOrderId}
-        <button class="secondary-button small" type="button" onclick={() => onOpenRelatedOrder(selectedTicket)}>
+        <button data-slot="button" class="secondary-button small {buttonVariants({ variant: 'outline' })}" type="button" onclick={() => onOpenRelatedOrder(selectedTicket)}>
           Открыть заказ {selectedTicket.relatedOrderId}
         </button>
       {/if}
-      {#if selectedTicket.relatedItemId}<button class="secondary-button small" onclick={()=>onOpenRelatedItem(selectedTicket.relatedItemId)}>Открыть вещь</button>{/if}
+      {#if selectedTicket.relatedItemId}<button data-slot="button" class="secondary-button small {buttonVariants({ variant: 'outline' })}" onclick={()=>onOpenRelatedItem(selectedTicket.relatedItemId)}>Открыть вещь</button>{/if}
 
       <div class="thread">
         {#each selectedTicket.messages as message}
@@ -689,7 +691,7 @@
           <p class="inline-note warning" role="alert">{replyError}</p>
         {/if}
         <div class="form-actions">
-          <button class="primary-button" type="button" disabled={replyBusy} onclick={sendReply}>
+          <button data-slot="button" class="primary-button {buttonVariants()}" type="button" disabled={replyBusy} onclick={sendReply}>
             {replyBusy ? 'Отправляем…' : 'Отправить сообщение'}
           </button>
         </div>
@@ -701,6 +703,7 @@
 </div>
 
 <style>
+@layer screens {
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(html) { min-width: 320px; background: var(--color-base-100, white); }
   :global(body) { margin: 0; font-family: 'Open Sans', sans-serif; }
@@ -733,37 +736,7 @@
     transition: background-color 200ms ease, color 200ms ease;
   }
 
-  .whm-app[data-theme='bumblebee'] {
-    color-scheme: light;
-    --color-base-100: oklch(100% 0 0);
-    --color-base-200: oklch(97% 0 0);
-    --color-base-content: oklch(20% 0 0);
-    --color-primary: oklch(85% 0.199 91.936);
-    --color-primary-content: oklch(42% 0.095 57.708);
-    --color-warning: oklch(82% 0.189 84.429);
-    --color-error: oklch(70% 0.191 22.216);
-    --color-success: oklch(76% 0.177 163.223);
-    --color-secondary: oklch(75% 0.183 55.934);
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
-  .whm-app[data-theme='halloween'] {
-    color-scheme: dark;
-    --color-base-100: oklch(21% 0.006 56.043);
-    --color-base-200: oklch(14% 0.004 49.25);
-    --color-base-content: oklch(84.955% 0 0);
-    --color-primary: oklch(76% 0.188 70.08);
-    --color-primary-content: oklch(19.693% 0.004 196.779);
-    --color-warning: oklch(66.584% 0.157 58.318);
-    --color-error: oklch(65.72% 0.199 27.33);
-    --color-success: oklch(62.705% 0.169 149.213);
-    --color-secondary: oklch(45.98% 0.248 305.03);
-    --radius-field: 0.5rem;
-    --radius-box: 1rem;
-    --border: 1px;
-  }
 
   .ambient { position: fixed; z-index: -1; border-radius: 999px; pointer-events: none; opacity: 0.5; }
   .ambient-one { top: -14rem; right: -12rem; width: 30rem; height: 30rem; background: radial-gradient(circle, var(--primary-faint), transparent 68%); }
@@ -951,4 +924,5 @@
 
 
 
+}
 </style>

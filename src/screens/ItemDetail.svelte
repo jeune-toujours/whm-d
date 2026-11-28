@@ -1,4 +1,6 @@
 <script>
+  import Brand from '$lib/components/Brand.svelte';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { Check, Copy, ExternalLink, Camera, Image, Video } from '@lucide/svelte';
   import BackButton from '../components/BackButton.svelte';
   import { formatMoney } from '../demo.js';
@@ -30,7 +32,7 @@
 <div class:dark class="detail-page">
   <header class="header">
     <BackButton {onBack} />
-    <div class="brand"><strong class="system-label">Клиентский интерфейс</strong></div>
+    <div class="brand"><Brand /></div>
     <button class="header-link" type="button" onclick={() => onSupport({ orderId: item?.sourceOrderId, unitId: item?.id })}>Помощь</button>
   </header>
 
@@ -49,7 +51,7 @@
           <span class="visual-label">{live ? 'Фотографии доступны в материалах приёмки после загрузки сотрудником.' : 'Фотография появится после подключения складского контура'}</span>
         </section>
 
-        <section class="card">
+        <section data-slot="card" class="card">
           <div class="section-title"><h2>Что внутри</h2><span>{contents.length} позиции</span></div>
           {#if contents.length}
             <ul class="contents">{#each contents as content}<li><span class="check"><Check size={14} aria-hidden="true" /></span>{content}</li>{/each}</ul>
@@ -57,24 +59,24 @@
           <p class="note">{live ? 'Опись сохранена сотрудником при приёмке. Юридический шаблон акта ещё не утверждён.' : 'Опись в этом прототипе демонстрационная и не является актом приёмки.'}</p>
         </section>
 
-        <section class="card">
+        <section data-slot="card" class="card">
           <div class="section-title"><h2>Материалы приёмки</h2></div>
           {#if live && item.media?.length}<div class="media-list">{#each item.media as media}<a href={clientMediaURL(media.url)} target="_blank" rel="noopener">{#if media.mimeType?.startsWith('video/')}<Video />{:else}<Camera />{/if}<strong>{media.filename}</strong><small>Открыть материал</small></a>{/each}</div>{:else}<div class="media-list"><div><Camera aria-hidden="true" /><strong>Фотографии</strong><small>Появятся после фотофиксации</small></div><div><Video aria-hidden="true" /><strong>Видео</strong><small>Появится, если запись была сделана</small></div></div>{/if}
         </section>
 
         {#if live && (problemsLoading || problemsError || problems.length)}
-          <section class="card" aria-label="Повреждения при поступлении">
+          <section data-slot="card" class="card" aria-label="Повреждения при поступлении">
             <div class="section-title"><h2>Повреждения при поступлении</h2></div>
             {#if problemsLoading}<p role="status" class="muted">Загрузка истории…</p>{/if}
             {#if problemsError}<p role="alert">{problemsError}</p>{/if}
             {#each problems as problem (problem.number)}
-              <article class="problem-record"><strong>{problem.number}</strong><p class="muted">Зафиксировано {new Date(problem.createdAt).toLocaleString('ru-RU')}</p><p class="problem-description">{problem.description}</p><button class="text-link" type="button" onclick={() => onSupport({ unitId: item.id, ticketID: problem.ticketID })}>Открыть поддержку <ExternalLink size={16} aria-hidden="true" /></button></article>
+              <article class="problem-record"><strong>{problem.number}</strong><p class="muted">Зафиксировано {new Date(problem.createdAt).toLocaleString('ru-RU')}</p><p class="problem-description">{problem.description}</p><button data-slot="button" class="text-link {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={() => onSupport({ unitId: item.id, ticketID: problem.ticketID })}>Открыть поддержку <ExternalLink size={16} aria-hidden="true" /></button></article>
             {/each}
             <p class="note">Операционная фиксация. Юридическая форма акта ещё не утверждена.</p>
           </section>
         {/if}
 
-        <section class="card">
+        <section data-slot="card" class="card">
           <div class="section-title"><h2>Путь вещи</h2></div>
           <ol class="timeline">
             <li><span class="dot"></span><div><strong>Принята на хранение</strong><small>{item?.storedSinceLabel || item?.storedSince || 'Дата уточняется'}</small></div></li>
@@ -84,7 +86,7 @@
       </div>
 
       <aside class="side-column">
-        <section class="card summary">
+        <section data-slot="card" class="card summary">
           <div class="section-title"><h2>Информация</h2></div>
           <dl>
             <div><dt>Номер вещи</dt><dd><button class="copy" type="button" onclick={copyId} aria-label={`Скопировать номер вещи ${displayID}`}><span>{displayID}</span>{#if copied}<Check size={14} aria-hidden="true" />{:else}<Copy size={14} aria-hidden="true" />{/if}</button></dd></div>
@@ -96,17 +98,18 @@
           </dl>
           <div class="price"><span>Стоимость хранения</span><strong>{formatMoney(item?.monthlyPrice)}<small>/мес.</small></strong></div>
           {#if item?.lockReason}<p class="warning">{item.lockReason}</p>{/if}
-          {#if canReturn}<button class="primary" type="button" onclick={() => onReturn(item)}>Вернуть эту вещь <ExternalLink size={16} aria-hidden="true" /></button>{/if}
+          {#if canReturn}<button data-slot="button" class="primary {buttonVariants()}" type="button" onclick={() => onReturn(item)}>Вернуть эту вещь <ExternalLink size={16} aria-hidden="true" /></button>{/if}
           {#if archived}<p class="note">Эта единица уже возвращена и доступна только для просмотра истории.</p>{/if}
         </section>
-        <button class="secondary" type="button" onclick={() => onSupport({ orderId: item?.sourceOrderId, unitId: item?.id })}>Сообщить о проблеме</button>
-        <button class="text-link" type="button" onclick={() => onOpenDocument(item)}>Документы по вещи <ExternalLink size={16} aria-hidden="true" /></button>
+        <button data-slot="button" class="secondary {buttonVariants({ variant: 'outline' })}" type="button" onclick={() => onSupport({ orderId: item?.sourceOrderId, unitId: item?.id })}>Сообщить о проблеме</button>
+        <button data-slot="button" class="text-link {buttonVariants({ variant: 'link', size: 'inline' })}" type="button" onclick={() => onOpenDocument(item)}>Документы по вещи <ExternalLink size={16} aria-hidden="true" /></button>
       </aside>
     </div>
   </main>
 </div>
 
 <style>
+@layer screens {
   .problem-record { padding:16px 0; overflow-wrap:anywhere; }
   .problem-record + .problem-record { border-top:1px solid var(--line); }
   .problem-description { white-space:pre-wrap; }
@@ -127,4 +130,5 @@
   .copy :global(svg) { flex:0 0 auto; }
   .media-list > a { min-width:0; display:grid; gap:4px; padding:16px; border:1px solid var(--line); border-radius:10px; color:var(--ink); text-decoration:none; overflow-wrap:anywhere; }
   .media-list > a:hover { border-color:var(--yellow); }
+}
 </style>
